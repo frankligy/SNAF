@@ -67,9 +67,9 @@ class JunctionCountMatrixQuery():
         except:
             shape_cond_subset_df = None
         try:
-            len_candidates = len(self.candidates)
+            len_results = len(self.results)
         except:
-            len_candidates = None
+            len_results = None
         return 'junction_count_matrix: {}\n'\
                'cores: {}\n'\
                'valid: {}\n'\
@@ -78,8 +78,8 @@ class JunctionCountMatrixQuery():
                'subset: {}\n'\
                'translated: list of {} nj objects\n'\
                'cond_subset_df: {}\n'\
-               'candidates: list of length {}'.format(self.junction_count_matrix.shape,self.cores,len(self.valid),len(self.invalid),
-                                               self.cond_df.shape,self.subset.shape,len_translated,shape_cond_subset_df,len_candidates)
+               'results: list of length {}'.format(self.junction_count_matrix.shape,self.cores,len(self.valid),len(self.invalid),
+                                               self.cond_df.shape,self.subset.shape,len_translated,shape_cond_subset_df,len_results)
     
     def get_neojunctions(self):
         self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix)
@@ -200,26 +200,87 @@ class JunctionCountMatrixQuery():
             for collect in r:
                 result = collect.get()
                 results.append(result)
-            self.candidates = results  
+            self.results = results  
 
 
-    def show_neoantigen_burden(self,outdir,name,only_peptide):
+    def show_neoantigen_burden(self,outdir,name,stage,only_peptide):
         tmp_valid_df = self.subset.copy()
-        for column_result, column_name in zip(self.candidates,tmp_valid_df.columns):
-            if only_peptide:
-                to_insert = []
-                for nj in column_result:
-                    if nj is None or len(nj.candidates)==0:
+        for column_result, column_name in zip(self.results,tmp_valid_df.columns):
+            to_insert = []
+            for nj in column_result:
+                if nj is None:
+                    to_insert.append(0)
+                else:
+                    nj.derive_candicates(stage=stage,only_peptide=only_peptide)                            
+                    if len(nj.candidates)==0:
                         to_insert.append(0)
                     else:
-                        to_insert.append(len(set(list(zip(*nj.candidates))[0])))
-            else:
-                to_insert = [len(set(nj.candidates)) if nj is not None else 0 for nj in column_result]
+                        to_insert.append(len(set(nj.candidates)))
             tmp_valid_df.loc[:,column_name] = to_insert
         tmp_invalid_df = self.junction_count_matrix.loc[self.invalid,:].copy()
         for col in tmp_invalid_df.columns:
             tmp_invalid_df.loc[:,col] = np.full(tmp_invalid_df.shape[0],0)
         pd.concat((tmp_valid_df,tmp_invalid_df),axis=0).loc[self.junction_count_matrix.index,:].to_csv(os.path.join(outdir,name),sep='\t')    
+
+    def show_neoantigen_frequency(self,outdir,name,stage,only_peptide,plot,plot_name):
+        dic = {}
+        for column_result,column_name in zip(self.results,self.subset.columns):
+            for nj in column_result:
+                if nj is None:
+                    continue
+                else:
+                    nj.derive_candicates(stage=stage,only_peptide=only_peptide)
+                    if len(nj.candidates) == 0:
+                        continue
+                    else:
+                        for cand in nj.candidates:
+                            try:
+                                dic[cand].append(column_name)
+                            except KeyError:
+                                dic[cand] = []
+                                dic[cand].append(column_name)
+        # statistics
+        df = pd.Series(data=dic).to_frame(name='samples')
+        df['n_sample'] = df.apply(lambda x:len(set(x[0])),axis=1).values
+        df.sort_values(by='n_sample',ascending=False,inplace=True)
+        df.to_csv(os.path.join(outdir,name),sep='\t')
+        # plot
+        if plot:
+            fig,ax = plt.subplots()
+            ax.bar(x=np.arange(df.shape[0]),height=df['n_sample'].values,edgecolor=k)
+            plt.savefig(os.path.join(outdir,plot_name),bbox_inches='tight')
+            plt.close()
+
+    def show_neoantigen_as_fasta(self,outdir,name,stage)
+        dic = {}
+        for column_result,column_name in zip(self.results,self.subset.columns):
+            for nj in column_result:
+                if nj is None:
+                    continue
+                else:
+                    nj.derive_candicates(stage=stage,only_peptide=True)
+                    if len(nj.candidates) == 0:
+                        continue
+                    else:
+                        for cand in nj.candidates:
+                            try:
+                                dic[cand].append(column_name)
+                            except KeyError:
+                                dic[cand] = []
+                                dic[cand].append(column_name)
+        # statistics
+        df = pd.Series(data=dic).to_frame(name='samples')
+        df['n_sample'] = df.apply(lambda x:len(set(x[0])),axis=1).values
+        df.sort_values(by='n_sample',ascending=False,inplace=True)
+
+        # write to fasta
+        with open(os.path.join(outdir,name),'w') as f:
+            for row in df.itertuples():
+                f.write('>pep_{}_frequency_{}\n'.format(row.Index,row.n_sample))   
+                f.write('{}\n'.format(row.Index)) 
+
+                        
+
 
 
 
@@ -288,7 +349,7 @@ class EnhancedPeptides():
                 for row in sub_sub_df.itertuples(index=False):
                     self.info[index][peptide][row.hla][attr_name] = (float(row.score),str(row.identity))
 
-    def filter_based_on_criterion(self,criteria):
+    def filter_based_on_criterion(self,criteria,reinstantiate=True):
         # criterion: [(net),], ['netMHCpan_el',1,==,SB]
         peptides = {k:[] for k in self.mers}
         for i,k in enumerate(self.mers):
@@ -311,7 +372,10 @@ class EnhancedPeptides():
                     boolean_final = all(boolean_list)
                     if boolean_final:
                         peptides[k].append((pep,extra,n_from_first,hla))
-        return peptides
+        if reinstantiate:
+            return EnhancedPeptides(peptides,None,1)
+        else:
+            return peptides
 
 
 class NeoJunction():
@@ -320,6 +384,42 @@ class NeoJunction():
             NeoJunction.is_neojunction(uid,count)
         self.uid = uid
         self.count = count
+
+    def __str__(self):
+        try:
+            ts = self.tumor_specificity
+        except:
+            ts = None
+        try:
+            et = self.event_type
+        except:
+            et = None
+        try:
+            j = self.junction[:5] + '...' + self.junction[-5:]
+        except:
+            j = None
+        try:
+            peptides = list(self.peptides.keys())
+        except:
+            peptides = None
+        try:
+            ep = self.EnhancedPeptides.mers
+        except:
+            ep = None
+        try:
+            cand = self.candidates[0]
+        except:
+            cand = None
+        return 'uid: {}\n'\
+               'count: {}\n'\
+               'tumor specificity: {}\n'\
+               'event type: {}\n'\
+               'junction: {}\n'\
+               'peptides: {}\n'\
+               'Enhanced peptides: {}\n'\
+               'Candidates: {}\n'.format(self.uid,self.count,ts,et,j,peptides,ep,cand)
+
+
 
     @staticmethod
     def is_neojunction(uid,count):
@@ -411,15 +511,17 @@ class NeoJunction():
         if ep.is_empty():
             raise Exception('Already no candidates after in-silico translation')
         for k,v in self.peptides.items():
-            v = list(zip(*v))[0]
+            try:
+                v = list(zip(*v))[0]
+            except IndexError:
+                continue
             df = run_netMHCpan(software_path,v,hla_formatting(hlas,'netMHCpan_output','netMHCpan_input'),k)
             ep.register_attr(df,'netMHCpan_el')
         self.enhanced_peptides = ep
 
 
     def immunogenicity_prediction(self,hlas=None):
-        reduced = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),])
-        ep = EnhancedPeptides(reduced,hlas,1)
+        ep = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),])
         if ep.is_empty():
             raise Exception('Already no candidates after binding prediction')
         for k,v in reduced.items():
@@ -437,12 +539,18 @@ class NeoJunction():
                                'identity':[True if item > 0.5 else False for item in df_output['immunogenicity'].values]})
             ep.register_attr(df,attr_name='deepimmuno_immunogenicity')
             self.enhanced_peptides.register_attr(df,attr_name='deepimmuno_immunogenicity')
-        # add new slot
-        self.candidates = EnhancedPeptides(ep.filter_based_on_criterion([('deepimmuno_immunogenicity',1,'==','True'),]),hlas,1).simplify_to_list(only_peptide=False)
+
+    def derive_candicates(self,stage,only_peptide):
+        if stage == 1: # all translated peptides
+            self.candidates = self.EnhancedPeptides.simplify_to_list(only_peptide)
+        elif stage == 2: # all bound peptides
+            self.candidates = self.EnhancedPeptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),]).simplify_to_list(only_peptide)
+        elif stage == 3: # immunogenic peptides
+            self.candidates = self.EnhancedPeptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]).simplify_to_list(only_peptide)
 
 
-    def visualize(self,name='../scratch/check.pdf'):
-        reduced = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),])
+    def visualize(self,outdir,name):
+        reduced = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),],False)
         '''
         {9: [('LPSPPAQEL', 2, 0, 'HLA-B*08:01'), ('LPSPPAQEL', 2, 0, 'HLA-B*08:02'), 
              ('SLYLLLQHR', 1, 2, 'HLA-A*68:01')], 
@@ -482,7 +590,7 @@ class NeoJunction():
                 ax.axis('off') 
         fig.subplots_adjust(top=0.9)             
         fig.suptitle('{} Count:{}'.format(self.uid,self.count))
-        plt.savefig(name,bbox_inches='tight')
+        plt.savefig(os.path.join(outdir,name),bbox_inches='tight')
         plt.close()
 
        
