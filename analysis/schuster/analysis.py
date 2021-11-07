@@ -23,14 +23,20 @@ gtex_db = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/GTEx_junction_counts
 # paper: https://www.pnas.org/content/114/46/E9942.long#sec-9
 # GEO: https://www.ncbi.nlm.nih.gov/sra?linkname=bioproject_sra_all&from_uid=398141
 snaf.initialize(exon_table=exon_table,fasta=fasta,software_path=netMHCpan_path,gtex_db=gtex_db)
+# for testing purpose, let's downsample the df a bit
+df = df.sample(frac=0.01,axis=0).sample(n=5,axis=1)
 jcmq_schuster = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=None)
 jcmq_schuster.parallelize_run(kind=1)
 sample_to_hla = pd.read_csv('./sample_hla.txt',sep='\t',index_col=2)['HLA'].to_dict()
 hlas = [hla_string.split(',') for hla_string in df.columns.map(sample_to_hla)]
 jcmq_schuster.parallelize_run(kind=4,hlas=hlas)
 with open('breakpoint.p','wb') as f:
-    pickle(jcmq_schuster,f)
-print(jcmq_schuster)
+    pickle.dump(jcmq_schuster,f)
+with open('breakpoint.p','rb') as f:
+    jcmq_schuster = pickle.load(f)
+jcmq_schuster.show_neoantigen_burden('./','check_burden.txt',True)
+
+
 
 
 

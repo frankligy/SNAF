@@ -17,6 +17,7 @@ import requests
 import xmltodict
 import multiprocessing as mp
 import functools
+from tqdm import tqdm
 
 # for biopython, pip install biopython
 from Bio.SeqIO.FastaIO import SimpleFastaParser
@@ -57,6 +58,18 @@ class JunctionCountMatrixQuery():
         self.get_neojunctions()
 
     def __str__(self):
+        try:
+            len_translated = len(self.translated)
+        except:
+            len_translated = None
+        try:
+            shape_cond_subset_df = self.cond_subset_df.shape
+        except:
+            shape_cond_subset_df = None
+        try:
+            len_candidates = len(self.candidates)
+        except:
+            len_candidates = None
         return 'junction_count_matrix: {}\n'\
                'cores: {}\n'\
                'valid: {}\n'\
@@ -66,8 +79,7 @@ class JunctionCountMatrixQuery():
                'translated: list of {} nj objects\n'\
                'cond_subset_df: {}\n'\
                'candidates: list of length {}'.format(self.junction_count_matrix.shape,self.cores,len(self.valid),len(self.invalid),
-                                               self.cond_df.shape,self.subset.shape,len(self.translated),self.cond_subset_df.shape,
-                                               len(self.candidates))
+                                               self.cond_df.shape,self.subset.shape,len_translated,shape_cond_subset_df,len_candidates)
     
     def get_neojunctions(self):
         self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix)
@@ -127,7 +139,7 @@ class JunctionCountMatrixQuery():
                 nj_list.append(nj) 
         elif kind == 4:
             nj_list = []
-            for nj in input_:
+            for nj in tqdm(input_):
                 if nj is None:
                     nj_list.append(None)
                     continue
@@ -167,9 +179,9 @@ class JunctionCountMatrixQuery():
                 results.extend(result)
             self.candicates = results
         elif kind == 4: # heterogeneous hlas for each sample
-            self.cond_subset_df = self.cond_df.loc[self.subset.index,:]
+            self.cond_subset_df = self.cond_df.loc[self.valid,:]
             need_to_predict_across_samples = []  # [[nj,None,nj,nj,None...],]
-            for label,content in self.cond_subset_df.iteritems():
+            for i,(label,content) in enumerate(self.cond_subset_df.iteritems()):
                 need_to_predict = []
                 number_need = 0
                 for item in zip(self.translated,content.values):
@@ -179,7 +191,8 @@ class JunctionCountMatrixQuery():
                     else:
                         need_to_predict.append(None)
                 need_to_predict_across_samples.append(need_to_predict)
-                print('{} has {} junctions to proceed predictions'.format(label,number_need))
+                print('{} has {} junctions to proceed predictions, HLA are {}'.format(label,number_need,hlas[i]))
+            print('Binding and immunogenicity prediction starts')
             r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(need_to_predict,kind,hlas,)) for need_to_predict,hlas in zip(need_to_predict_across_samples,hlas)]
             pool.close()
             pool.join()
@@ -187,27 +200,26 @@ class JunctionCountMatrixQuery():
             for collect in r:
                 result = collect.get()
                 results.append(result)
-            self.candidates = results   
+            self.candidates = results  
 
-    def to_txt(self,outdir,name,is_heterogeneous,sep='\t'):
-        if not is_heterogeneous:
-            self.subset['result'] = [len(set(nj.candidates)) for nj in self.candidates]
-            tmp_invalid_df = junction_count_matrix.loc[self.invalid,:]['result'] = [0 for i in np.arange(len(self.invalid))]
-            pd.concat((self.subset,tmp_invalid_df),axis=1).loc[junction_count_matrix.index,:].to_csv(os.path.join(outdir,name),sep=sep)
-        else:
-            tmp_valid_df = self.subset.copy()
-            for column_result,column_name in zip(self.candidates,tmp_valid_df.columns):
+
+    def show_neoantigen_burden(self,outdir,name,only_peptide):
+        tmp_valid_df = self.subset.copy()
+        for column_result, column_name in zip(self.candidates,tmp_valid_df.columns):
+            if only_peptide:
+                to_insert = []
+                for nj in column_result:
+                    if nj is None or len(nj.candidates)==0:
+                        to_insert.append(0)
+                    else:
+                        to_insert.append(len(set(list(zip(*nj.candidates))[0])))
+            else:
                 to_insert = [len(set(nj.candidates)) if nj is not None else 0 for nj in column_result]
-                tmp_valid_df.loc[:,column_name] = to_insert
-            tmp_invalid_df = junction_count_matrix.loc[self.invalid,:].copy()
-            for col in tmp_invalid_df.columns:
-                tmp_invalid_df[col].values[:] = 0
-            pd.concat((self.subset,tmp_invalid_df),axis=1).loc[junction_count_matrix.index,:].to_csv(os.path.join(outdir,name),sep=sep)            
-
-
-        
-
-
+            tmp_valid_df.loc[:,column_name] = to_insert
+        tmp_invalid_df = self.junction_count_matrix.loc[self.invalid,:].copy()
+        for col in tmp_invalid_df.columns:
+            tmp_invalid_df.loc[:,col] = np.full(tmp_invalid_df.shape[0],0)
+        pd.concat((tmp_valid_df,tmp_invalid_df),axis=0).loc[self.junction_count_matrix.index,:].to_csv(os.path.join(outdir,name),sep='\t')    
 
 
 
@@ -405,13 +417,16 @@ class NeoJunction():
         self.enhanced_peptides = ep
 
 
-    def immunogenicity_prediction(self):
+    def immunogenicity_prediction(self,hlas=None):
         reduced = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),])
         ep = EnhancedPeptides(reduced,hlas,1)
         if ep.is_empty():
             raise Exception('Already no candidates after binding prediction')
         for k,v in reduced.items():
-            v_pep,v_hla = list(zip(*v))[0],list(zip(*v))[3]
+            try:
+                v_pep,v_hla = list(zip(*v))[0],list(zip(*v))[3]
+            except IndexError:  # one of the mer, no candicate, but the other mer has, so pass the empty check
+                continue
             data = np.column_stack((v_pep,v_hla))
             df_input = pd.DataFrame(data=data)
             df_input[1] = hla_formatting(df_input[1].tolist(),'netMHCpan_output','deepimmuno')
