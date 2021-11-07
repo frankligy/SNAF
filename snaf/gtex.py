@@ -18,25 +18,30 @@ import arviz as az
 this script is to query the tumor specificity of the junction
 '''
 
-def gtex_configuration(gtex_db):
+
+def gtex_configuration(gtex_db,t_min_arg,n_max_arg):
     global adata
+    global t_min
+    global n_max
     adata = anndata.read_h5ad(gtex_db)
+    t_min = t_min_arg
+    n_max = n_max_arg
+
 
 def multiple_crude_sifting(junction_count_matrix):
     df = pd.DataFrame(index=junction_count_matrix.index,
                       data = {'max':junction_count_matrix.max(axis=1).values})
-    junction_to_mean = adata.obs[adata.obs_names.isin(junction_count_matrix.index),'mean'].to_dict()
+    junction_to_mean = adata.obs.loc[adata.obs_names.isin(junction_count_matrix.index),'mean'].to_dict()
     df['mean'] = df.index.map(junction_to_mean).fillna(value=0)
     df['diff'] = df['max'] - df['mean']
-    df['cond'] = (df['mean'] < 3) & (df['diff'] > 20)
+    df['cond'] = (df['mean'] < n_max) & (df['diff'] > t_min)
     valid = df.loc[df['cond']].index.tolist()
     invalid = df.loc[~df['cond']].index.tolist()
 
     gtex_df = pd.concat([df['mean']]*junction_count_matrix.shape[1],axis=1)
     gtex_df.columns = junction_count_matrix.columns
     diff_df = junction_count_matrix - gtex_df
-    cond_df = (gtex_df < 3) & (diff_df > 20)
-
+    cond_df = (gtex_df < n_max) & (diff_df > t_min)
     return valid,invalid,cond_df
 
 
@@ -49,7 +54,7 @@ def crude_tumor_specificity(uid,count):
     else:
         mean_value = adata.obs.loc[uid,'mean']
     diff = count - mean_value
-    if mean_value <= 3 and diff >= 20:
+    if mean_value < n_max and diff >= t_min:
         identity = True
     else:
         identity = False

@@ -32,7 +32,12 @@ part I: using netMHCpan4.1b
 5. done
 '''
 
-def run_netMHCpan(software_path,peptides,hlas,length,cmd_num=1,tmp_dir='../scratch/pep',tmp_name='test.pep'):
+def run_netMHCpan(software_path,peptides,hlas,length,cmd_num=1,tmp_dir=None,tmp_name=None):
+    # set the default
+    if tmp_dir is None:
+        tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),'scratch')
+    if tmp_name is None:
+        tmp_name = 'input_{}.pep'.format(os.getpid())
     # create the tmp_dir folder if not exist
     if not os.path.exists(tmp_dir):
         os.mkdir(tmp_dir)

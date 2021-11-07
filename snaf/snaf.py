@@ -31,12 +31,16 @@ from .gtex import *
 from .gtex_viewer import *
 
 
+
+
 # configuration
-def snaf_configuration(exon_table,fasta,software_path):
+def snaf_configuration(exon_table,fasta,software_path_arg):
     global dict_exonCoords
     global dict_fa
+    global software_path
     dict_exonCoords = exonCoords_to_dict(exon_table)
     dict_fa = fasta_to_dict(fasta)
+    software_path = software_path_arg
 
 '''
 Now for a junction, you need to obtain the translated neo-epitopes, simply put, you just need two things
@@ -50,6 +54,20 @@ class JunctionCountMatrixQuery():
         if cores is None:
             cores = mp.cpu_count()
         self.cores = cores
+        self.get_neojunctions()
+
+    def __str__(self):
+        return 'junction_count_matrix: {}\n'\
+               'cores: {}\n'\
+               'valid: {}\n'\
+               'invalid: {}\n'\
+               'cond_df: {}\n'\
+               'subset: {}\n'\
+               'translated: list of {} nj objects\n'\
+               'cond_subset_df: {}\n'\
+               'candidates: list of length {}'.format(self.junction_count_matrix.shape,self.cores,len(self.valid),len(self.invalid),
+                                               self.cond_df.shape,self.subset.shape,len(self.translated),self.cond_subset_df.shape,
+                                               len(self.candidates))
     
     def get_neojunctions(self):
         self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix)
@@ -87,6 +105,7 @@ class JunctionCountMatrixQuery():
             nj_list = []
             for uid in input_.index:
                 nj = NeoJunction(uid=uid,count=50,check_gtex=False)
+                nj.detect_type()
                 nj.retrieve_junction_seq()
                 nj.in_silico_translation()    
                 nj_list.append(nj) 
@@ -94,6 +113,7 @@ class JunctionCountMatrixQuery():
             nj_list = []
             for uid in input_.index:
                 nj = NeoJunction(uid=uid,count=50,check_gtex=False)
+                nj.detect_type()
                 nj.retrieve_junction_seq()
                 nj.in_silico_translation()    
                 nj.binding_prediction()
@@ -148,15 +168,18 @@ class JunctionCountMatrixQuery():
             self.candicates = results
         elif kind == 4: # heterogeneous hlas for each sample
             self.cond_subset_df = self.cond_df.loc[self.subset.index,:]
-            need_to_predict_across_samples = []
-            for label,content in cond_subset_df.iteritems():
+            need_to_predict_across_samples = []  # [[nj,None,nj,nj,None...],]
+            for label,content in self.cond_subset_df.iteritems():
                 need_to_predict = []
+                number_need = 0
                 for item in zip(self.translated,content.values):
                     if item[1]:
                         need_to_predict.append(item[0])
+                        number_need += 1
                     else:
                         need_to_predict.append(None)
                 need_to_predict_across_samples.append(need_to_predict)
+                print('{} has {} junctions to proceed predictions'.format(label,number_need))
             r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(need_to_predict,kind,hlas,)) for need_to_predict,hlas in zip(need_to_predict_across_samples,hlas)]
             pool.close()
             pool.join()
