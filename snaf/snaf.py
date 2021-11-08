@@ -60,15 +60,15 @@ class JunctionCountMatrixQuery():
     def __str__(self):
         try:
             len_translated = len(self.translated)
-        except:
+        except AttributeError:
             len_translated = None
         try:
             shape_cond_subset_df = self.cond_subset_df.shape
-        except:
+        except AttributeError:
             shape_cond_subset_df = None
         try:
             len_results = len(self.results)
-        except:
+        except AttributeError:
             len_results = None
         return 'junction_count_matrix: {}\n'\
                'cores: {}\n'\
@@ -200,7 +200,17 @@ class JunctionCountMatrixQuery():
             for collect in r:
                 result = collect.get()
                 results.append(result)
-            self.results = results  
+            self.results = results 
+
+    def serialize(self,outdir,name):
+        with open(os.path.join(outdir,name),'wb') as f:
+            pickle.dump(self,f)
+
+    @staticmethod
+    def deserialize(outdir,name):
+        with open(os.path.join(outdir,name),'rb') as f:
+            jcmq = pickle.load(f)
+        return jcmq
 
 
     def show_neoantigen_burden(self,outdir,name,stage,only_peptide):
@@ -211,7 +221,7 @@ class JunctionCountMatrixQuery():
                 if nj is None:
                     to_insert.append(0)
                 else:
-                    nj.derive_candicates(stage=stage,only_peptide=only_peptide)                            
+                    nj.derive_candidates(stage=stage,only_peptide=only_peptide)                            
                     if len(nj.candidates)==0:
                         to_insert.append(0)
                     else:
@@ -222,14 +232,14 @@ class JunctionCountMatrixQuery():
             tmp_invalid_df.loc[:,col] = np.full(tmp_invalid_df.shape[0],0)
         pd.concat((tmp_valid_df,tmp_invalid_df),axis=0).loc[self.junction_count_matrix.index,:].to_csv(os.path.join(outdir,name),sep='\t')    
 
-    def show_neoantigen_frequency(self,outdir,name,stage,only_peptide,plot,plot_name):
+    def show_neoantigen_frequency(self,outdir,name,stage,only_peptide,plot,plot_name=None):
         dic = {}
         for column_result,column_name in zip(self.results,self.subset.columns):
             for nj in column_result:
                 if nj is None:
                     continue
                 else:
-                    nj.derive_candicates(stage=stage,only_peptide=only_peptide)
+                    nj.derive_candidates(stage=stage,only_peptide=only_peptide)
                     if len(nj.candidates) == 0:
                         continue
                     else:
@@ -247,18 +257,21 @@ class JunctionCountMatrixQuery():
         # plot
         if plot:
             fig,ax = plt.subplots()
-            ax.bar(x=np.arange(df.shape[0]),height=df['n_sample'].values,edgecolor=k)
+            ax.bar(x=np.arange(df.shape[0]),height=df['n_sample'].values,edgecolor='k')
+            ax.set_xlabel('Neoantigen rank by its occurence (descending order)')
+            ax.set_ylabel('Occurence (n_sample)')
+            ax.set_title('Neoantigen Occurence')
             plt.savefig(os.path.join(outdir,plot_name),bbox_inches='tight')
             plt.close()
 
-    def show_neoantigen_as_fasta(self,outdir,name,stage)
+    def show_neoantigen_as_fasta(self,outdir,name,stage):
         dic = {}
         for column_result,column_name in zip(self.results,self.subset.columns):
             for nj in column_result:
                 if nj is None:
                     continue
                 else:
-                    nj.derive_candicates(stage=stage,only_peptide=True)
+                    nj.derive_candidates(stage=stage,only_peptide=True)
                     if len(nj.candidates) == 0:
                         continue
                     else:
@@ -276,7 +289,7 @@ class JunctionCountMatrixQuery():
         # write to fasta
         with open(os.path.join(outdir,name),'w') as f:
             for row in df.itertuples():
-                f.write('>pep_{}_frequency_{}\n'.format(row.Index,row.n_sample))   
+                f.write('>pep{}_{}_frequency_{}\n'.format(len(row.Index),row.Index,row.n_sample))   
                 f.write('{}\n'.format(row.Index)) 
 
                         
@@ -388,28 +401,29 @@ class NeoJunction():
     def __str__(self):
         try:
             ts = self.tumor_specificity
-        except:
+        except AttributeError:
             ts = None
         try:
             et = self.event_type
-        except:
+        except AttributeError:
             et = None
         try:
             j = self.junction[:5] + '...' + self.junction[-5:]
-        except:
+        except AttributeError:
             j = None
         try:
-            peptides = list(self.peptides.keys())
-        except:
+            peptides = {k:len(v) for k,v in self.peptides.items()}
+        except AttributeError:
             peptides = None
         try:
-            ep = self.EnhancedPeptides.mers
-        except:
+            ep = {i:len(self.enhanced_peptides[i]) for i in self.enhanced_peptides.mers}
+        except AttributeError:
             ep = None
         try:
-            cand = self.candidates[0]
-        except:
-            cand = None
+            cand_len = len(self.candidates)
+            cand_example = self.candidates[0]
+        except AttributeError:
+            cand_len,cand_example = None,None
         return 'uid: {}\n'\
                'count: {}\n'\
                'tumor specificity: {}\n'\
@@ -417,7 +431,7 @@ class NeoJunction():
                'junction: {}\n'\
                'peptides: {}\n'\
                'Enhanced peptides: {}\n'\
-               'Candidates: {}\n'.format(self.uid,self.count,ts,et,j,peptides,ep,cand)
+               'Candidates: len is {}, first is {}\n'.format(self.uid,self.count,ts,et,j,peptides,ep,cand_len,cand_example)
 
 
 
@@ -432,13 +446,13 @@ class NeoJunction():
         self.tumor_specificity = tumor_specificity
         return tumor_specificity
 
-    def gtex_viewer(self,kind):
+    def gtex_viewer(self,kind,outdir):
         if kind == 1:   # line plot, all tissues, count (norm or not)
-            gtex_visual_count('../data',self.uid,norm=True,out_folder='../scratch')
+            gtex_visual_count(self.uid,norm=True,out_folder=outdir)
         elif kind == 2: # hist plot, combined, norm count
-            gtex_visual_norm_count_combined('../data',self.uid,out_folder='../scratch')
+            gtex_visual_norm_count_combined(self.uid,out_folder=outdir)
         elif kind == 3:  # hist plot, per tissue, number of samples that are non-zero in each tissue
-            gtex_visual_per_tissue_count('../data',self.uid,out_folder='../scratch')
+            gtex_visual_per_tissue_count(self.uid,out_folder=outdir)
 
     
     def detect_type(self):
@@ -520,8 +534,9 @@ class NeoJunction():
         self.enhanced_peptides = ep
 
 
-    def immunogenicity_prediction(self,hlas=None):
-        ep = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),])
+    def immunogenicity_prediction(self):
+        reduced = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),],False)
+        ep = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),],True)
         if ep.is_empty():
             raise Exception('Already no candidates after binding prediction')
         for k,v in reduced.items():
@@ -537,16 +552,16 @@ class NeoJunction():
                                'hla':hla_formatting(df_output['HLA'].values.tolist(),'deepimmuno','netMHCpan_output'),
                                'score':df_output['immunogenicity'].values,
                                'identity':[True if item > 0.5 else False for item in df_output['immunogenicity'].values]})
-            ep.register_attr(df,attr_name='deepimmuno_immunogenicity')
             self.enhanced_peptides.register_attr(df,attr_name='deepimmuno_immunogenicity')
 
-    def derive_candicates(self,stage,only_peptide):
+
+    def derive_candidates(self,stage,only_peptide):
         if stage == 1: # all translated peptides
-            self.candidates = self.EnhancedPeptides.simplify_to_list(only_peptide)
+            self.candidates = self.enhanced_peptides.simplify_to_list(only_peptide)
         elif stage == 2: # all bound peptides
-            self.candidates = self.EnhancedPeptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),]).simplify_to_list(only_peptide)
+            self.candidates = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),]).simplify_to_list(only_peptide)
         elif stage == 3: # immunogenic peptides
-            self.candidates = self.EnhancedPeptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]).simplify_to_list(only_peptide)
+            self.candidates = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]).simplify_to_list(only_peptide)
 
 
     def visualize(self,outdir,name):

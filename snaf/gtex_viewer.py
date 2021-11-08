@@ -17,15 +17,17 @@ this is gtex viewer
 
 # gtex viewer
 
-def gtex_visual_norm_count_combined(data_folder,query,out_folder='.'):
-    adata = ad.read_h5ad(os.path.join(data_folder,'GTEx_junction_counts.h5ad'))
+def gtex_viewer_configuration(gtex_db):
+    global adata
+    adata = ad.read_h5ad(gtex_db)
+
+def gtex_visual_norm_count_combined(query,out_folder='.'):
     data = adata[query,:].X.toarray().squeeze() / adata.var['total_count'].values
     sns.histplot(data,binwidth=0.01)
     plt.savefig(os.path.join(out_folder,'hist_{}.pdf'.format(query.replace(':','_'))),bbox_inches='tight')
     plt.close()
 
-def gtex_visual_per_tissue_count(data_folder,query,out_folder='.'):
-    adata = ad.read_h5ad(os.path.join(data_folder,'GTEx_junction_counts.h5ad'))
+def gtex_visual_per_tissue_count(query,out_folder='.'):
     per_tissue_count = []
     for tissue in adata.var['tissue'].unique():
         sub = adata[query,adata.var['tissue']==tissue]
@@ -65,8 +67,7 @@ def gtex_visual_psi(data_folder,query,out_folder='.'):
     plt.savefig(os.path.join(out_folder,'gtex_visual_psi_{}.pdf'.format(identifier)),bbox_inches='tight')
     plt.close()
 
-def gtex_visual_count(data_folder,query,norm=True,out_folder='.'):
-    adata = ad.read_h5ad(os.path.join(data_folder,'GTEx_junction_counts.h5ad'))
+def gtex_visual_count(query,norm=True,out_folder='.'):
     if type(query) == int:
         info = adata[[query],:]
     else:

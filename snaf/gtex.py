@@ -68,7 +68,6 @@ def mle_func(parameters,y):
     return neg_ll
 
 def accurate_tumor_specificity(uid,method):
-    adata = anndata.read_h5ad('../data/GTEx_junction_counts.h5ad')
     if method == 'mle':
         y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
         mle_model = minimize(mle_func,np.array([0.2]),args=(y,),bounds=((0,1),),method='L-BFGS-B')
@@ -102,7 +101,7 @@ def accurate_tumor_specificity(uid,method):
             c = pm.Poisson('c',mu=rate,observed=x)
         with m:
             step = pm.NUTS()
-            trace = pm.sample(200,step=step,return_inferencedata=False,cores=1)
+            trace = pm.sample(100,step=step,return_inferencedata=False,cores=1)
         df = az.summary(trace,round_to=2)
         sigma = df.iloc[0]['mean']
     return 1-sigma
