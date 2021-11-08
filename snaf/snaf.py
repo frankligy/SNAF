@@ -230,7 +230,20 @@ class JunctionCountMatrixQuery():
         tmp_invalid_df = self.junction_count_matrix.loc[self.invalid,:].copy()
         for col in tmp_invalid_df.columns:
             tmp_invalid_df.loc[:,col] = np.full(tmp_invalid_df.shape[0],0)
-        pd.concat((tmp_valid_df,tmp_invalid_df),axis=0).loc[self.junction_count_matrix.index,:].to_csv(os.path.join(outdir,name),sep='\t')    
+        burden = pd.concat((tmp_valid_df,tmp_invalid_df),axis=0).loc[self.junction_count_matrix.index,:]
+        burden['mean'] = burden.mean(axis=1)
+        burden.loc['burden'] = burden.sum(axis=0)
+        burden.sort_values(by='mean',axis=0,ascending=False,inplace=True)
+        burden.sort_values(by='burden',axis=1,ascending=True,inplace=True)
+        # reorder a bit
+        c_list = burden.columns.tolist()
+        c_list.remove('mean')
+        c_list.append('mean')
+        i_list = burden.index.tolist()
+        i_list.remove('burden')
+        i_list.append('burden')
+        burden = burden.loc[i_list,c_list]
+        burden.to_csv(os.path.join(outdir,name),sep='\t')    
 
     def show_neoantigen_frequency(self,outdir,name,stage,only_peptide,plot,plot_name=None):
         dic = {}
@@ -264,7 +277,7 @@ class JunctionCountMatrixQuery():
             plt.savefig(os.path.join(outdir,plot_name),bbox_inches='tight')
             plt.close()
 
-    def show_neoantigen_as_fasta(self,outdir,name,stage):
+    def show_neoantigen_as_fasta(self,outdir,name,stage,sample=None):
         dic = {}
         for column_result,column_name in zip(self.results,self.subset.columns):
             for nj in column_result:
@@ -286,6 +299,10 @@ class JunctionCountMatrixQuery():
         df['n_sample'] = df.apply(lambda x:len(set(x[0])),axis=1).values
         df.sort_values(by='n_sample',ascending=False,inplace=True)
 
+        # subset
+        if sample is not None:
+            df = df.loc[df.apply(lambda x:sample in x['samples'], axis=1),:] 
+            name = 'neoantigen_' + sample + '.fasta'
         # write to fasta
         with open(os.path.join(outdir,name),'w') as f:
             for row in df.itertuples():
