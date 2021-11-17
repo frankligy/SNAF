@@ -9,6 +9,42 @@ import h5py
 import matplotlib.pyplot as plt
 import xmltodict
 import copy
+from tqdm import tqdm
+
+from Bio.SeqIO.FastaIO import SimpleFastaParser
+
+
+def chop_normal_pep_db(fasta_path,output_path,mers,allow_duplicates):
+    # for human genome in uniprot, 9-10mer, remove duplicates will decrease from 44,741,578 to 41,638,172
+    if allow_duplicates:
+        with open(fasta_path,'r') as in_handle, open(output_path,'w') as out_handle:
+            for title,seq in tqdm(SimpleFastaParser(in_handle)):
+                count = 0
+                length = len(seq)
+                for i in range(length):
+                    for mer in mers:
+                        if i+mer <= length:
+                            out_handle.write('>{}_{}_{}\n'.format(title,mer,count))
+                            out_handle.write('{}\n'.format(seq[i:i+mer]))
+                            count += 1
+    else:
+        with open(fasta_path,'r') as in_handle, open(output_path,'w') as out_handle:
+            existing = set()
+            for title,seq in tqdm(SimpleFastaParser(in_handle)):
+                count = 0
+                length = len(seq)
+                for i in range(length):
+                    for mer in mers:
+                        if i+mer <= length:
+                            subseq = seq[i:i+mer]
+                            if subseq not in existing:                                
+                                out_handle.write('>{}_{}_{}\n'.format(title,mer,count))
+                                out_handle.write('{}\n'.format(subseq))
+                                existing.add(subseq)
+                                count += 1        
+
+
+                    
 
 #######################  following functions are all for setting mqpar.xml file for maxQuant
 def add_database_file(doc,dbs):
@@ -124,7 +160,7 @@ def change_length(doc,minPepLen,maxPeptideMass,minPeptideLengthForUnspecificSear
 
 def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
                                outname='mqpar.xml',protein_fdr=0.01,peptide_fdr=0.01,site_fdr=0.01,include_contaminants=True,
-                               minPepLen=8,maxPeptideMass=4600,minPeptideLengthForUnspecificSearch=9,maxPeptideLengthForUnspecificSearch=10,):
+                               minPepLen=9,maxPeptideMass=4600,minPeptideLengthForUnspecificSearch=9,maxPeptideLengthForUnspecificSearch=10):
     with open (os.path.join(os.path.dirname(__file__),'mqpar.xml'),'r') as fr:
         doc = xmltodict.parse(fr.read()) 
         doc = add_database_file(doc,dbs)
