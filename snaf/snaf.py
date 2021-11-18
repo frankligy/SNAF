@@ -177,7 +177,7 @@ class JunctionCountMatrixQuery():
             for collect in r:
                 result = collect.get()
                 results.extend(result)
-            self.candicates = results
+            self.candidates = results
         elif kind == 4: # heterogeneous hlas for each sample
             self.cond_subset_df = self.cond_df.loc[self.valid,:]
             need_to_predict_across_samples = []  # [[nj,None,nj,nj,None...],]
@@ -213,7 +213,7 @@ class JunctionCountMatrixQuery():
         return jcmq
 
 
-    def show_neoantigen_burden(self,outdir,name,stage,only_peptide):
+    def show_neoantigen_burden(self,outdir,name,stage,verbosity):
         tmp_valid_df = self.subset.copy()
         for column_result, column_name in zip(self.results,tmp_valid_df.columns):
             to_insert = []
@@ -221,7 +221,7 @@ class JunctionCountMatrixQuery():
                 if nj is None:
                     to_insert.append(0)
                 else:
-                    nj.derive_candidates(stage=stage,only_peptide=only_peptide)                            
+                    nj.derive_candidates(stage=stage,verbosity=verbosity)                            
                     if len(nj.candidates)==0:
                         to_insert.append(0)
                     else:
@@ -245,14 +245,14 @@ class JunctionCountMatrixQuery():
         burden = burden.loc[i_list,c_list]
         burden.to_csv(os.path.join(outdir,name),sep='\t')    
 
-    def show_neoantigen_frequency(self,outdir,name,stage,only_peptide,plot,plot_name=None):
+    def show_neoantigen_frequency(self,outdir,name,stage,verbosity,plot,plot_name=None):
         dic = {}
         for column_result,column_name in zip(self.results,self.subset.columns):
             for nj in column_result:
                 if nj is None:
                     continue
                 else:
-                    nj.derive_candidates(stage=stage,only_peptide=only_peptide)
+                    nj.derive_candidates(stage=stage,verbosity=verbosity)
                     if len(nj.candidates) == 0:
                         continue
                     else:
@@ -284,7 +284,7 @@ class JunctionCountMatrixQuery():
                 if nj is None:
                     continue
                 else:
-                    nj.derive_candidates(stage=stage,only_peptide=True)
+                    nj.derive_candidates(stage=stage,verbosity=3,contain_uid=True)
                     if len(nj.candidates) == 0:
                         continue
                     else:
@@ -306,8 +306,9 @@ class JunctionCountMatrixQuery():
         # write to fasta
         with open(os.path.join(outdir,name),'w') as f:
             for row in df.itertuples():
-                f.write('>pep{}_{}_frequency_{}\n'.format(len(row.Index),row.Index,row.n_sample))   
-                f.write('{}\n'.format(row.Index)) 
+                tmp = [str(item) for item in row.Index]
+                f.write('>{}|{}\n'.format('|'.join(tmp),row.n_sample))   
+                f.write('{}\n'.format(row.Index[0])) 
 
                         
 
@@ -353,18 +354,27 @@ class EnhancedPeptides():
         else:
             return False
 
-    def simplify_to_list(self,only_peptide):   # make sure to first filter and re-instantiate
-        if only_peptide:
+    def simplify_to_list(self,verbosity):   # make sure to first filter and re-instantiate
+        if verbosity==1:  # only peptide
             result_list = []
             for mer in self.mers:
                 result_list.extend(list(self[mer].keys()))
-        else:
+            result_list = [(item,) for item in result_list]
+        elif verbosity==2:  # peptide and hla
             result_list = []
             for mer in self.mers:
                 for pep,hla_complex in self[mer].items():
                     for hla in hla_complex.keys():
                         if hla != 'origin':
                             result_list.append((pep,hla))
+        elif verbosity==3:
+            result_list = []
+            for mer in self.mers:
+                for pep,hla_complex in self[mer].items():
+                    extra,n_from_first = hla_complex['origin']
+                    for hla in hla_complex.keys():
+                        if hla != 'origin':
+                            result_list.append((pep,hla,extra,n_from_first))
         return result_list
 
     def register_attr(self,df,attr_name):
@@ -572,13 +582,23 @@ class NeoJunction():
             self.enhanced_peptides.register_attr(df,attr_name='deepimmuno_immunogenicity')
 
 
-    def derive_candidates(self,stage,only_peptide):
+    def derive_candidates(self,stage,verbosity,contain_uid=False):
         if stage == 1: # all translated peptides
-            self.candidates = self.enhanced_peptides.simplify_to_list(only_peptide)
+            self.candidates = self.enhanced_peptides.simplify_to_list(verbosity=verbosity)
         elif stage == 2: # all bound peptides
-            self.candidates = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),]).simplify_to_list(only_peptide)
+            self.candidates = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),]).simplify_to_list(verbosity=verbosity)
         elif stage == 3: # immunogenic peptides
-            self.candidates = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]).simplify_to_list(only_peptide)
+            self.candidates = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]).simplify_to_list(verbosity=verbosity)
+        if contain_uid:
+            new = []
+            for item in self.candidates:
+                tmp = list(item)
+                tmp.append(self.uid)
+                new.append(tuple(tmp))
+            self.candidates = new
+
+
+
 
 
     def visualize(self,outdir,name):

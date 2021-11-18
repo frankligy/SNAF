@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 
-
+########################## Following is for manipulating fasta db files
 def chop_normal_pep_db(fasta_path,output_path,mers,allow_duplicates):
     # for human genome in uniprot, 9-10mer, remove duplicates will decrease from 44,741,578 to 41,638,172
     if allow_duplicates:
@@ -43,9 +43,32 @@ def chop_normal_pep_db(fasta_path,output_path,mers,allow_duplicates):
                                 existing.add(subseq)
                                 count += 1        
 
+def compare_two_fasta(fa1_path,fa2_path):
+    seq1,seq2 = set(),set()
+    for i,path in enumerate([fa1_path,fa2_path]):
+        with open(path,'r') as f:
+            for t,s in SimpleFastaParser(f):
+                if i == 0:
+                    seq1.add(s)
+                elif i == 1:
+                    seq2.add(s)
+    comm = seq1.intersection(seq2)
+    unique1 = seq1.difference(seq2)
+    unique2 = seq2.difference(seq1)
+    return len(comm),len(unique1),len(unique2)
 
-                    
+def remove_redundant(fasta_path,out_path):
+    existing = set()
+    with open(fasta_path,'r') as f1, open(out_path,'w') as f2:
+        for t,s in SimpleFastaParser(f1):
+            if s not in existing:
+                f2.write('>{}\n{}\n'.format(t,s))
+                existing.add(s)
+                
 
+######################## Marks the end of fasta db manipulation
+
+            
 #######################  following functions are all for setting mqpar.xml file for maxQuant
 def add_database_file(doc,dbs):
     for db in dbs:
