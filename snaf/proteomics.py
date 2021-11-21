@@ -67,21 +67,21 @@ def compare_two_fasta(fa1_path,fa2_path,write_comm=False,write_unique1=False,wri
             for item in comm:
                 seq1_list = list(seq1)
                 item_t = seq1_t[seq1_list.index(item)]
-                f.write('{}\n{}\n'.format(item_t,item))
+                f.write('>{}\n{}\n'.format(item_t,item))
     if write_unique1:
         print('writing unique1')
         with open('{}unique1.fasta'.format(prefix),'w') as f:
             for item in unique1:
                 seq1_list = list(seq1)
                 item_t = seq1_t[seq1_list.index(item)]
-                f.write('{}\n{}\n'.format(item_t,item))
+                f.write('>{}\n{}\n'.format(item_t,item))
     if write_unique2:
         print('writing unique2')
         with open('{}unique2.fasta'.format(prefix),'w') as f:
             for item in unique2:
                 seq2_list = list(seq2)
                 item_t = seq2_t[seq2_list.index(item)]
-                f.write('{}\n{}\n'.format(item_t,item))
+                f.write('>{}\n{}\n'.format(item_t,item))
 
 
 
