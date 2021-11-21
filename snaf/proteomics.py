@@ -43,19 +43,48 @@ def chop_normal_pep_db(fasta_path,output_path,mers,allow_duplicates):
                                 existing.add(subseq)
                                 count += 1        
 
-def compare_two_fasta(fa1_path,fa2_path):
+def compare_two_fasta(fa1_path,fa2_path,write_comm=False,write_unique1=False,write_unique2=False,prefix=''):
     seq1,seq2 = set(),set()
+    seq1_t,seq2_t = [],[]
     for i,path in enumerate([fa1_path,fa2_path]):
         with open(path,'r') as f:
             for t,s in SimpleFastaParser(f):
                 if i == 0:
-                    seq1.add(s)
+                    if s not in seq1:
+                        seq1.add(s)
+                        seq1_t.append(t)
                 elif i == 1:
-                    seq2.add(s)
+                    if s not in seq2:
+                        seq2.add(s)
+                        seq2_t.append(t)
     comm = seq1.intersection(seq2)
     unique1 = seq1.difference(seq2)
     unique2 = seq2.difference(seq1)
-    return len(comm),len(unique1),len(unique2)
+    print('common:{}\nunique1:{}\nunique2:{}'.format(len(comm),len(unique1),len(unique2)))
+    if write_comm:
+        print('writing comm')
+        with open('{}comm.fasta'.format(prefix),'w') as f:
+            for item in comm:
+                seq1_list = list(seq1)
+                item_t = seq1_t[seq1_list.index(item)]
+                f.write('{}\n{}\n'.format(item_t,item))
+    if write_unique1:
+        print('writing unique1')
+        with open('{}unique1.fasta'.format(prefix),'w') as f:
+            for item in unique1:
+                seq1_list = list(seq1)
+                item_t = seq1_t[seq1_list.index(item)]
+                f.write('{}\n{}\n'.format(item_t,item))
+    if write_unique2:
+        print('writing unique2')
+        with open('{}unique2.fasta'.format(prefix),'w') as f:
+            for item in unique2:
+                seq2_list = list(seq2)
+                item_t = seq2_t[seq2_list.index(item)]
+                f.write('{}\n{}\n'.format(item_t,item))
+
+
+
 
 def remove_redundant(fasta_path,out_path):
     existing = set()
