@@ -49,16 +49,19 @@ def multiple_crude_sifting(junction_count_matrix):
 
 
 def crude_tumor_specificity(uid,count):
+    detail = ''
     if uid not in set(adata.obs_names):
         mean_value = 0
+        detail = 'not detected in GTEx'
     else:
         mean_value = adata.obs.loc[uid,'mean']
+        detail = 'dected in GTEx as mean value {}'.format(mean_value)
     diff = count - mean_value
     if mean_value < n_max and diff >= t_min:
         identity = True
     else:
         identity = False
-    return identity
+    return identity,detail
 
 
 def mle_func(parameters,y):

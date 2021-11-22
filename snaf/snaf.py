@@ -464,7 +464,7 @@ class NeoJunction():
 
     @staticmethod
     def is_neojunction(uid,count):
-        identity = crude_tumor_specificity(uid,count)
+        identity,detail = crude_tumor_specificity(uid,count)
         if not identity:
             raise Exception('This is not a NeoJunction, instantiation fails')
 
