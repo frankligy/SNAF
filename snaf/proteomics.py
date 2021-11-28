@@ -43,7 +43,7 @@ def chop_normal_pep_db(fasta_path,output_path,mers,allow_duplicates):
                                 existing.add(subseq)
                                 count += 1        
 
-def compare_two_fasta(fa1_path,fa2_path,write_comm=False,write_unique1=False,write_unique2=False,prefix=''):
+def compare_two_fasta(fa1_path,fa2_path,outdir='.',write_comm=False,write_unique1=False,write_unique2=False,prefix=''):
     seq1,seq2 = set(),set()
     seq1_t,seq2_t = [],[]
     for i,path in enumerate([fa1_path,fa2_path]):
@@ -63,21 +63,21 @@ def compare_two_fasta(fa1_path,fa2_path,write_comm=False,write_unique1=False,wri
     print('common:{}\nunique1:{}\nunique2:{}'.format(len(comm),len(unique1),len(unique2)))
     if write_comm:
         print('writing comm')
-        with open('{}comm.fasta'.format(prefix),'w') as f:
+        with open(os.path.join(outdir,'{}comm.fasta'.format(prefix)),'w') as f:
             for item in comm:
                 seq1_list = list(seq1)
                 item_t = seq1_t[seq1_list.index(item)]
                 f.write('>{}\n{}\n'.format(item_t,item))
     if write_unique1:
         print('writing unique1')
-        with open('{}unique1.fasta'.format(prefix),'w') as f:
+        with open(os.path.join(outdir,'{}unique1.fasta'.format(prefix)),'w') as f:
             for item in unique1:
                 seq1_list = list(seq1)
                 item_t = seq1_t[seq1_list.index(item)]
                 f.write('>{}\n{}\n'.format(item_t,item))
     if write_unique2:
         print('writing unique2')
-        with open('{}unique2.fasta'.format(prefix),'w') as f:
+        with open(os.path.join(outdir,'{}unique2.fasta'.format(prefix)),'w') as f:
             for item in unique2:
                 seq2_list = list(seq2)
                 item_t = seq2_t[seq2_list.index(item)]
@@ -88,11 +88,14 @@ def compare_two_fasta(fa1_path,fa2_path,write_comm=False,write_unique1=False,wri
 
 def remove_redundant(fasta_path,out_path):
     existing = set()
+    original_count = 0
     with open(fasta_path,'r') as f1, open(out_path,'w') as f2:
         for t,s in SimpleFastaParser(f1):
+            original_count += 1
             if s not in existing:
                 f2.write('>{}\n{}\n'.format(t,s))
                 existing.add(s)
+    print('reduce from {} down to {}'.format(original_count,len(existing)))
                 
 
 ######################## Marks the end of fasta db manipulation
