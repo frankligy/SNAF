@@ -45,6 +45,7 @@ def chop_normal_pep_db(fasta_path,output_path,mers,allow_duplicates):
 
 def compare_two_fasta(fa1_path,fa2_path,outdir='.',write_comm=False,write_unique1=False,write_unique2=False,prefix=''):
     seq1,seq2 = set(),set()
+    seq1_l,seq2_l = [],[]
     seq1_t,seq2_t = [],[]
     for i,path in enumerate([fa1_path,fa2_path]):
         with open(path,'r') as f:
@@ -52,10 +53,12 @@ def compare_two_fasta(fa1_path,fa2_path,outdir='.',write_comm=False,write_unique
                 if i == 0:
                     if s not in seq1:
                         seq1.add(s)
+                        seq1_l.append(s)
                         seq1_t.append(t)
                 elif i == 1:
                     if s not in seq2:
                         seq2.add(s)
+                        seq2_l.append(s)
                         seq2_t.append(t)
     comm = seq1.intersection(seq2)
     unique1 = seq1.difference(seq2)
@@ -65,21 +68,21 @@ def compare_two_fasta(fa1_path,fa2_path,outdir='.',write_comm=False,write_unique
         print('writing comm')
         with open(os.path.join(outdir,'{}comm.fasta'.format(prefix)),'w') as f:
             for item in comm:
-                seq1_list = list(seq1)
+                seq1_list = seq1_l
                 item_t = seq1_t[seq1_list.index(item)]
                 f.write('>{}\n{}\n'.format(item_t,item))
     if write_unique1:
         print('writing unique1')
         with open(os.path.join(outdir,'{}unique1.fasta'.format(prefix)),'w') as f:
             for item in unique1:
-                seq1_list = list(seq1)
+                seq1_list = seq1_l
                 item_t = seq1_t[seq1_list.index(item)]
                 f.write('>{}\n{}\n'.format(item_t,item))
     if write_unique2:
         print('writing unique2')
         with open(os.path.join(outdir,'{}unique2.fasta'.format(prefix)),'w') as f:
             for item in unique2:
-                seq2_list = list(seq2)
+                seq2_list = seq2_l
                 item_t = seq2_t[seq2_list.index(item)]
                 f.write('>{}\n{}\n'.format(item_t,item))
 
