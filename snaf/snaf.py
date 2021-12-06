@@ -6,6 +6,8 @@ import os
 import sys
 import pickle
 import h5py
+from functools import reduce
+from copy import deepcopy
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import anndata as ad
@@ -112,7 +114,7 @@ class JunctionCountMatrixQuery():
         
             
     @staticmethod
-    def each_chunk_func(input_,kind,hlas=None):
+    def each_chunk_func(input_,kind,hlas=None,combined_unique_hlas=None):
         if kind == 1:
             nj_list = []
             for uid in input_.index:
@@ -133,10 +135,23 @@ class JunctionCountMatrixQuery():
                 nj_list.append(nj)  
         elif kind == 3:
             nj_list = []
-            for nj in input_:
-                nj.binding_prediction(hlas=hlas)
-                nj.immunogenicity_prediction()
-                nj_list.append(nj) 
+            for nj in tqdm(input_):
+                try:
+                    nj.binding_prediction(hlas=combined_unique_hlas)
+                except Exception as e:
+                    nj_list.append([None]*len(hlas))
+                    continue
+                try:
+                    nj.immunogenicity_prediction()
+                except Exception as e:
+                    nj_list.append([None]*len(hlas))
+                    continue                    
+                inner_nj_list = []
+                for hla in hlas:
+                    nj_copy = deepcopy(nj)
+                    nj_copy.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=hla)
+                    inner_nj_list.append(nj_copy)
+                nj_list.append(inner_nj_list) 
         elif kind == 4:
             nj_list = []
             for nj in tqdm(input_):
@@ -170,14 +185,20 @@ class JunctionCountMatrixQuery():
             self.translated = results
         elif kind == 3:
             sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.translated,self.cores)
-            r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(sub_array,kind,hlas,)) for sub_array in sub_arrays]
+            combined_unique_hlas = reduce(lambda a,b:list(set(a+b)),hlas)
+            print('the combiend unique hlas [length: {}] are: {}'.format(len(combined_unique_hlas),combined_unique_hlas))
+            r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(sub_array,kind,hlas,combined_unique_hlas,)) for sub_array in sub_arrays]
             pool.close()
             pool.join()
             results = []
             for collect in r:
                 result = collect.get()
                 results.extend(result)
-            self.candidates = results
+            # transpose
+            results = list(map(list,zip(*results)))
+            self.results = results
+
+
         elif kind == 4: # heterogeneous hlas for each sample
             self.cond_subset_df = self.cond_df.loc[self.valid,:]
             need_to_predict_across_samples = []  # [[nj,None,nj,nj,None...],]
@@ -317,26 +338,30 @@ class JunctionCountMatrixQuery():
 
 class EnhancedPeptides():
     def __init__(self,peptides,hlas,kind):
-        self.mers = []
-        self.info = []
-        for k,v in peptides.items():
-            self.mers.append(k)
-            phlas = {}  # {pep1:{origin:(extra,n_from_first),hla1:{},hla2:{}}}
-            for pep in v:
-                if kind == 0:  # each pep is (pep,extra,n_from_first)
-                    pairs = {}
-                    pairs['origin'] = (pep[1],pep[2])
-                    for hla in hlas:
-                        pairs[hla] = {}
-                    phlas[pep[0]] = pairs
-                elif kind == 1:   # echo pep is (pep,extra,n_from_first,hla)
-                    try:
-                        phlas[pep[0]]['origin'] = (pep[1],pep[2])
-                    except KeyError:
-                        phlas[pep[0]] = {}
-                        phlas[pep[0]]['origin'] = (pep[1],pep[2])
-                    phlas[pep[0]][pep[3]] = {}
-            self.info.append(phlas)
+        if kind == 2:  # hla-reduced enhanced peptide.
+            self.mers = peptides
+            self.info = hlas
+        else:
+            self.mers = []
+            self.info = []
+            for k,v in peptides.items():
+                self.mers.append(k)
+                phlas = {}  # {pep1:{origin:(extra,n_from_first),hla1:{},hla2:{}}}
+                for pep in v:
+                    if kind == 0:  # each pep is (pep,extra,n_from_first)
+                        pairs = {}
+                        pairs['origin'] = (pep[1],pep[2])
+                        for hla in hlas:
+                            pairs[hla] = {}
+                        phlas[pep[0]] = pairs
+                    elif kind == 1:   # each pep is (pep,extra,n_from_first,hla)
+                        try:
+                            phlas[pep[0]]['origin'] = (pep[1],pep[2])
+                        except KeyError:
+                            phlas[pep[0]] = {}
+                            phlas[pep[0]]['origin'] = (pep[1],pep[2])
+                        phlas[pep[0]][pep[3]] = {}
+                self.info.append(phlas)
 
     def __str__(self):
         return str(self.info)
@@ -389,6 +414,31 @@ class EnhancedPeptides():
                 for row in sub_sub_df.itertuples(index=False):
                     self.info[index][peptide][row.hla][attr_name] = (float(row.score),str(row.identity))
 
+    def filter_based_on_hla(self,selected_hla,reinstantiate=True):
+        new_mers = []
+        new_info = []
+        selected_hla = set(selected_hla)
+        for i,k in enumerate(self.mers):
+            new_info_container = {}
+            for pep,hla_complex in self.info[i].items():
+                reduced_hla_complex = {}
+                for hla,attrs in hla_complex.items():
+                    if hla == 'origin':
+                        reduced_hla_complex['origin'] = attrs
+                    else:
+                        if hla in selected_hla:
+                            reduced_hla_complex[hla] = attrs
+                new_info_container[pep] = reduced_hla_complex
+            new_mers.append(k)
+            new_info.append(new_info_container)
+        if reinstantiate:
+            ep = EnhancedPeptides(peptides=new_mers,hlas=new_info,kind=2)
+        return ep
+                
+
+        
+
+
     def filter_based_on_criterion(self,criteria,reinstantiate=True):
         # criterion: [(net),], ['netMHCpan_el',1,==,SB]
         peptides = {k:[] for k in self.mers}
@@ -400,9 +450,9 @@ class EnhancedPeptides():
                         continue
                     boolean_list = []
                     for criterion in criteria:
-                        if criterion[1] == 1:
+                        if criterion[1] == 1:   # matched is not a number
                             eval_string = 'attrs[\'{}\'][{}] {} \'{}\''.format(criterion[0],criterion[1],criterion[2],criterion[3])
-                        elif criterion[1] == 0:
+                        elif criterion[1] == 0:   # matched is a number
                             eval_string = 'attrs[\'{}\'][{}] {} {}'.format(criterion[0],criterion[1],criterion[2],criterion[3])
                         try:
                             boolean = eval(eval_string)                            
@@ -411,7 +461,7 @@ class EnhancedPeptides():
                         boolean_list.append(boolean)
                     boolean_final = all(boolean_list)
                     if boolean_final:
-                        peptides[k].append((pep,extra,n_from_first,hla))
+                        peptides[k].append((pep,extra,n_from_first,hla))   # if not reinstantiate, this format is called reduced form
         if reinstantiate:
             return EnhancedPeptides(peptides,None,1)
         else:
@@ -548,6 +598,7 @@ class NeoJunction():
         return peptides
 
     def binding_prediction(self,hlas):
+        hlas = list(set(hlas))
         ep = EnhancedPeptides(self.peptides,hlas,0)
         if ep.is_empty():
             raise Exception('Already no candidates after in-silico translation')
@@ -795,6 +846,7 @@ def retrieveSeqFromUCSCapi(chr_,start,end):
         my_dict = xmltodict.parse(response.content)
     except:
         exon_seq = '#' * 10  # indicating the UCSC doesn't work
+        return exon_seq
     exon_seq = my_dict['DASDNA']['SEQUENCE']['DNA']['#text'].replace('\n','').upper()
     return exon_seq
 
