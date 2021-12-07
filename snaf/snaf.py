@@ -123,7 +123,7 @@ class JunctionCountMatrixQuery():
                 nj.retrieve_junction_seq()
                 nj.in_silico_translation()    
                 nj_list.append(nj) 
-        elif kind == 2:
+        elif kind == 2:   # out of development
             nj_list = []
             for uid in input_.index:
                 nj = NeoJunction(uid=uid,count=50,check_gtex=False)
@@ -139,13 +139,19 @@ class JunctionCountMatrixQuery():
                 try:
                     nj.binding_prediction(hlas=combined_unique_hlas)
                 except Exception as e:
-                    nj_list.append([None]*len(hlas))
-                    continue
+                    if str(e) == 'Already no candidates after in-silico translation':
+                        nj_list.append([None]*len(hlas))
+                        continue
+                    else:
+                        raise Exception('binding prediction error: {}'.format(e))
                 try:
                     nj.immunogenicity_prediction()
                 except Exception as e:
-                    nj_list.append([None]*len(hlas))
-                    continue                    
+                    if str(e) == 'Already no candidates after binding prediction':
+                        nj_list.append([None]*len(hlas))
+                        continue               
+                    else:
+                        raise Exception('immunogenic prediction error: {}'.format(e))     
                 inner_nj_list = []
                 for hla in hlas:
                     nj_copy = deepcopy(nj)

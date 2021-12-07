@@ -46,21 +46,59 @@ def run_netMHCpan(software_path,peptides,hlas,length,cmd_num=1,tmp_dir=None,tmp_
     with open(peptides_path,'w') as f:
         for pep in peptides:
             f.write('{}\n'.format(pep))
-    hla_strings = ','.join(hlas)
-    if cmd_num == 1:
-        reconstruct = ' || '.join(['$3 == ' + '"{}"'.format(pep) for pep in peptides])
-        cmd = '{} -p {} -a {} -l {} | awk \'BEGIN {{OFS = "\\t"}} {{if ({}) {{print $3, length($3),$2,$13, $15}}}}\''.format(software_path,peptides_path,hla_strings,length,reconstruct)
-        '''
-        ../external/netMHCpan-4.1/netMHCpan -p ./test.pep -a HLA-A01:01,HLA-A02:01 -l 9 | awk 'BEGIN {OFS = "\t"} {if ($3 == "AAAWYLWEV" || $3 == "AAGLQDCTM" || $3 == "AARNIVRRA") {print $3, length($3),$2,$13, $15}}'
-        '''
-    elif cmd_num == 2:
-        reconstruct = '\|'.join(peptides)
-        cmd = '{} -p {} -a {} -l {} | grep \'{}\' | awk \'BEGIN {{OFS = "\\t"}} {{print $3, length($3),$2,$13, $15}}\''.format(software_path,peptides_path,hla_strings,length,reconstruct)
-        '''
-        ../external/netMHCpan-4.1/netMHCpan -p ./test.pep -a HLA-A01:01,HLA-A02:01 -l 9 | grep 'AAAWYLWEV\|AAGLQDCTM\|AARNIVRRA' | awk 'BEGIN {OFS = "\t"} {print $3, length($3),$2,$13, $15}'
-        '''
-    df = pd.read_csv(StringIO(subprocess.run(cmd,shell=True,capture_output=True).stdout.decode('utf-8')),sep='\t',header=None)
-    df.columns = ['peptide','mer','hla','score','identity']
+    # netMHCpan has a hard limit for 1024 characters for -a, so to be safe, 90 HLA as max for one goal, each input format 11 character 'HLA-B57:01,'
+    if len(hlas) <= 90:
+        hla_strings = ','.join(hlas)
+        if cmd_num == 1:
+            reconstruct = ' || '.join(['$3 == ' + '"{}"'.format(pep) for pep in peptides])
+            cmd = '{} -p {} -a {} -l {} | awk \'BEGIN {{OFS = "\\t"}} {{if ({}) {{print $3, length($3),$2,$13, $15}}}}\''.format(software_path,peptides_path,hla_strings,length,reconstruct)
+            '''
+            ../external/netMHCpan-4.1/netMHCpan -p ./test.pep -a HLA-A01:01,HLA-A02:01 -l 9 | awk 'BEGIN {OFS = "\t"} {if ($3 == "AAAWYLWEV" || $3 == "AAGLQDCTM" || $3 == "AARNIVRRA") {print $3, length($3),$2,$13, $15}}'
+            '''
+        elif cmd_num == 2:
+            reconstruct = '\|'.join(peptides)
+            cmd = '{} -p {} -a {} -l {} | grep \'{}\' | awk \'BEGIN {{OFS = "\\t"}} {{print $3, length($3),$2,$13, $15}}\''.format(software_path,peptides_path,hla_strings,length,reconstruct)
+            '''
+            ../external/netMHCpan-4.1/netMHCpan -p ./test.pep -a HLA-A01:01,HLA-A02:01 -l 9 | grep 'AAAWYLWEV\|AAGLQDCTM\|AARNIVRRA' | awk 'BEGIN {OFS = "\t"} {print $3, length($3),$2,$13, $15}'
+            '''
+        try:
+            df = pd.read_csv(StringIO(subprocess.run(cmd,shell=True,capture_output=True).stdout.decode('utf-8')),sep='\t',header=None)
+            df.columns = ['peptide','mer','hla','score','identity']
+        except:   # no stdout, just no candidates
+            df = pd.DataFrame(columns=['peptide','mer','hla','score','identity'])
+
+
+    else:
+        total = len(hlas)   # 91,137,180
+        df_store = []
+        i = 0 
+        while i < total:
+            if i + 90 <= total:
+                batch_hlas = hlas[i:i+90]
+            else:
+                batch_hlas = hlas[i:]
+            hla_strings = ','.join(batch_hlas)
+            if cmd_num == 1:
+                reconstruct = ' || '.join(['$3 == ' + '"{}"'.format(pep) for pep in peptides])
+                cmd = '{} -p {} -a {} -l {} | awk \'BEGIN {{OFS = "\\t"}} {{if ({}) {{print $3, length($3),$2,$13, $15}}}}\''.format(software_path,peptides_path,hla_strings,length,reconstruct)
+                '''
+                ../external/netMHCpan-4.1/netMHCpan -p ./test.pep -a HLA-A01:01,HLA-A02:01 -l 9 | awk 'BEGIN {OFS = "\t"} {if ($3 == "AAAWYLWEV" || $3 == "AAGLQDCTM" || $3 == "AARNIVRRA") {print $3, length($3),$2,$13, $15}}'
+                '''
+            elif cmd_num == 2:
+                reconstruct = '\|'.join(peptides)
+                cmd = '{} -p {} -a {} -l {} | grep \'{}\' | awk \'BEGIN {{OFS = "\\t"}} {{print $3, length($3),$2,$13, $15}}\''.format(software_path,peptides_path,hla_strings,length,reconstruct)
+                '''
+                ../external/netMHCpan-4.1/netMHCpan -p ./test.pep -a HLA-A01:01,HLA-A02:01 -l 9 | grep 'AAAWYLWEV\|AAGLQDCTM\|AARNIVRRA' | awk 'BEGIN {OFS = "\t"} {print $3, length($3),$2,$13, $15}'
+                '''
+            try:
+                df = pd.read_csv(StringIO(subprocess.run(cmd,shell=True,capture_output=True).stdout.decode('utf-8')),sep='\t',header=None)
+                df.columns = ['peptide','mer','hla','score','identity']
+            except:   # no stdout, just no candidates
+                df = pd.DataFrame(columns=['peptide','mer','hla','score','identity'])
+            df_store.append(df)
+            i += 90  
+        df = pd.concat(df_store,axis=0)         
+
     return df
 
 
