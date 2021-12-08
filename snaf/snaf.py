@@ -49,6 +49,7 @@ def snaf_configuration(exon_table,fasta,software_path_arg=None,binding_method_ar
     binding_method = binding_method_arg
 
 
+
 '''
 Now for a junction, you need to obtain the translated neo-epitopes, simply put, you just need two things
 1. junction DNA sequence
@@ -159,7 +160,7 @@ class JunctionCountMatrixQuery():
                 nj_list.append(nj) 
         elif kind == 4:
             nj_list = []
-            for nj in tqdm(input_):
+            for nj in input_:
                 if nj is None:
                     nj_list.append(None)
                     continue
@@ -280,23 +281,6 @@ class JunctionCountMatrixQuery():
         hlas = self.results[1]
         column_names = self.subset.columns
         pool = mp.Pool(processes=self.cores)
-
-        # let's define the single function to run in each subprocess
-        def show_neoantigen_frequency_single_run(sub_array,hlas,column_names,stage,verbosity):
-            dic = {}
-            for nj in sub_array:
-                for hla,column_name in zip(hlas,column_names):
-                    if nj is not None:
-                        nj_copy = deepcopy(nj)
-                        nj_copy.enhanced_peptides = nj_copy.enhanced_peptides.filter_based_on_hla(selected_hla=hla)
-                        nj_copy.derive_candidates(stage=stage,verbosity=verbosity)
-                        for cand in nj_copy.candidates:
-                            try:
-                                dic[cand].append(column_name)
-                            except KeyError:
-                                dic[cand] = []
-                                dic[cand].append(column_name)       
-            return dic   
 
         r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,hlas,column_names,stage,verbosity,)) for sub_array in sub_arrays]
         pool.close()
@@ -679,6 +663,7 @@ class NeoJunction():
                 df = run_netMHCpan(software_path,v,hla_formatting(hlas,'netMHCpan_output','netMHCpan_input'),k)
             elif binding_method == 'MHCflurry':
                 df = run_MHCflurry(v,hla_formatting(hlas,'netMHCpan_output','deepimmuno'))
+                df['hla'] = hla_formatting(df['hla'].tolist(),'deepimmuno','netMHCpan_output')
             ep.register_attr(df,'netMHCpan_el')
         self.enhanced_peptides = ep
 

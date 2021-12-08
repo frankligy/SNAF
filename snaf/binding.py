@@ -8,13 +8,15 @@ import pickle
 import matplotlib.pyplot as plt
 import subprocess
 from io import StringIO
+from copy import deepcopy,copy
+
 
 
 def binding_configuration(binding_method):
     if binding_method == 'MHCflurry':
         global predictor
         from mhcflurry import Class1PresentationPredictor
-        predictor = Class1PresentationPredictor.load()
+
 
 
 '''
@@ -113,10 +115,12 @@ def run_netMHCpan(software_path,peptides,hlas,length,cmd_num=1,tmp_dir=None,tmp_
 
 
 def run_MHCflurry(peptides,hlas):
+    peptides = list(peptides)
     tmp_dic_for_alleles= {}
     for index,mhc_ in enumerate(hlas):
         tmp_dic_for_alleles['sample{}'.format(index)] = [mhc_]
-    result = predictor.predict(peptides=peptides,alleles=tmp_dic_for_alleles,verbose=0)   
+    predictor = Class1PresentationPredictor.load()   # very time consuming
+    result = predictor.predict(peptides=peptides,alleles=tmp_dic_for_alleles,verbose=0) 
     df = result.loc[:,['peptide','best_allele','presentation_percentile']]
     df['mer'] = [len(item) for item in df['peptide']]
     df['identity'] = np.full(shape=df.shape[0],fill_value=None)
