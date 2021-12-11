@@ -52,16 +52,14 @@ def crude_tumor_specificity(uid,count):
     detail = ''
     if uid not in set(adata.obs_names):
         mean_value = 0
-        detail = 'not detected in GTEx'
     else:
         mean_value = adata.obs.loc[uid,'mean']
-        detail = 'dected in GTEx as mean value {}'.format(mean_value)
     diff = count - mean_value
     if mean_value < n_max and diff >= t_min:
         identity = True
     else:
         identity = False
-    return identity,detail
+    return identity,mean_value
 
 
 def mle_func(parameters,y):
@@ -72,41 +70,49 @@ def mle_func(parameters,y):
 
 def accurate_tumor_specificity(uid,method):
     if method == 'mle':
-        y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
-        mle_model = minimize(mle_func,np.array([0.2]),args=(y,),bounds=((0,1),),method='L-BFGS-B')
-        '''
-        fun: nan
-        hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
-        jac: array([6368.36862213])
-        message: b'ABNORMAL_TERMINATION_IN_LNSRCH'
-        nfev: 42
-        nit: 0
-        status: 2
-        success: False
-        x: array([0.2])
-        '''
-        if mle_model.success:
-            sigma = mle_model.x[0]
-        else:   # usually means too many zero, so true expression is near zero
+        try:
+            y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
+        except KeyError:
             sigma = 0
+        else:
+            mle_model = minimize(mle_func,np.array([0.2]),args=(y,),bounds=((0,1),),method='L-BFGS-B')
+            '''
+            fun: nan
+            hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+            jac: array([6368.36862213])
+            message: b'ABNORMAL_TERMINATION_IN_LNSRCH'
+            nfev: 42
+            nit: 0
+            status: 2
+            success: False
+            x: array([0.2])
+            '''
+            if mle_model.success:
+                sigma = mle_model.x[0]
+            else:   # usually means too many zero, so true expression is near zero
+                sigma = 0
     elif method == 'bayesian':
-        y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
-        x = []
-        for tissue in adata.var['tissue'].unique():
-            sub = adata[uid,adata.var['tissue']==tissue]
-            c = np.count_nonzero(sub.X.toarray())
-            x.append(c)
-        x = np.array(x)
-        with pm.Model() as m:
-            sigma = pm.Uniform('sigma',lower=0,upper=1)
-            nc = pm.HalfNormal('nc',sigma=sigma,observed=y)
-            rate = pm.math.sum(nc)/len(y)
-            c = pm.Poisson('c',mu=rate,observed=x)
-        with m:
-            step = pm.NUTS()
-            trace = pm.sample(100,step=step,return_inferencedata=False,cores=1)
-        df = az.summary(trace,round_to=2)
-        sigma = df.iloc[0]['mean']
+        try:
+            y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
+        except KeyError:
+            sigma = 0
+        else:
+            x = []
+            for tissue in adata.var['tissue'].unique():
+                sub = adata[uid,adata.var['tissue']==tissue]
+                c = np.count_nonzero(sub.X.toarray())
+                x.append(c)
+            x = np.array(x)
+            with pm.Model() as m:
+                sigma = pm.Uniform('sigma',lower=0,upper=1)
+                nc = pm.HalfNormal('nc',sigma=sigma,observed=y)
+                rate = pm.math.sum(nc)/len(y)
+                c = pm.Poisson('c',mu=rate,observed=x)
+            with m:
+                step = pm.NUTS()
+                trace = pm.sample(100,step=step,return_inferencedata=False,cores=1)
+            df = az.summary(trace,round_to=2)
+            sigma = df.iloc[0]['mean']
     return 1-sigma
             
 
