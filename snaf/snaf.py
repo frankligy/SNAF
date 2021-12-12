@@ -240,10 +240,11 @@ class JunctionCountMatrixQuery():
 
     def show_neoantigen_burden(self,outdir,name,stage,verbosity):
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
+        sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_df,self.cores)
         hlas = self.results[1]
         pool = mp.Pool(processes=self.cores)
 
-        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_burden_single_run,args=(sub_array,hlas,stage,verbosity,)) for sub_array in sub_arrays]
+        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_burden_single_run,args=(sub_array,sub_cond,hlas,stage,verbosity,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
         pool.close()
         pool.join()
         results = []
@@ -278,11 +279,12 @@ class JunctionCountMatrixQuery():
 
     def show_neoantigen_frequency(self,outdir,name,stage,verbosity,plot,plot_name=None):
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
+        sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_df,self.cores)
         hlas = self.results[1]
         column_names = self.subset.columns
         pool = mp.Pool(processes=self.cores)
 
-        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,hlas,column_names,stage,verbosity,)) for sub_array in sub_arrays]
+        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,sub_cond,hlas,column_names,stage,verbosity,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
         pool.close()
         pool.join()
         results = []
@@ -354,12 +356,13 @@ class JunctionCountMatrixQuery():
 
     # let's define an atomic function inside here
     @staticmethod
-    def show_neoantigen_burden_single_run(sub_array,hlas,stage,verbosity):
+    def show_neoantigen_burden_single_run(sub_array,sub_cond,hlas,stage,verbosity):
         nj_burden_2d = []
-        for nj in sub_array:
+        for nj,index in zip(sub_array,range(sub_cond.shape[0])):
             nj_burden = []
-            for hla in hlas:
-                if nj is None:
+            cond_row = sub_cond.iloc[index].values
+            for hla,cond in zip(hlas,cond_row):
+                if nj is None or not cond :
                     nj_burden.append(0)
                 else:
                     nj_copy = deepcopy(nj)
@@ -372,11 +375,12 @@ class JunctionCountMatrixQuery():
 
     # let's define the single function to run in each subprocess
     @staticmethod
-    def show_neoantigen_frequency_single_run(sub_array,hlas,column_names,stage,verbosity):
+    def show_neoantigen_frequency_single_run(sub_array,sub_cond,hlas,column_names,stage,verbosity):
         dic = {}
-        for nj in sub_array:
-            for hla,column_name in zip(hlas,column_names):
-                if nj is not None:
+        for nj,index in zip(sub_array,range(sub_cond.shape[0])):
+            cond_row = sub_cond.iloc[index].values
+            for hla,column_name,cond in zip(hlas,column_names,cond_row):
+                if nj is not None and cond:
                     nj_copy = deepcopy(nj)
                     nj_copy.enhanced_peptides = nj_copy.enhanced_peptides.filter_based_on_hla(selected_hla=hla)
                     nj_copy.derive_candidates(stage=stage,verbosity=verbosity)
