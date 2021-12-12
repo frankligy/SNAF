@@ -240,7 +240,8 @@ class JunctionCountMatrixQuery():
 
     def show_neoantigen_burden(self,outdir,name,stage,verbosity):
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
-        sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_df,self.cores)
+        self.cond_subset_df = self.cond_df.loc[self.valid,:]
+        sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
         hlas = self.results[1]
         pool = mp.Pool(processes=self.cores)
 
@@ -279,7 +280,8 @@ class JunctionCountMatrixQuery():
 
     def show_neoantigen_frequency(self,outdir,name,stage,verbosity,plot,plot_name=None):
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
-        sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_df,self.cores)
+        self.cond_subset_df = self.cond_df.loc[self.valid,:]
+        sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
         hlas = self.results[1]
         column_names = self.subset.columns
         pool = mp.Pool(processes=self.cores)
