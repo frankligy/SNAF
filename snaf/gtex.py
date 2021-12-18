@@ -28,7 +28,7 @@ def gtex_configuration(gtex_db,t_min_arg,n_max_arg):
     n_max = n_max_arg
 
 
-def multiple_crude_sifting(junction_count_matrix):
+def multiple_crude_sifting(junction_count_matrix):   # for JunctionCountMatrixQuery class
     df = pd.DataFrame(index=junction_count_matrix.index,
                       data = {'max':junction_count_matrix.max(axis=1).values})
     junction_to_mean = adata.obs.loc[adata.obs_names.isin(junction_count_matrix.index),'mean'].to_dict()
@@ -45,10 +45,7 @@ def multiple_crude_sifting(junction_count_matrix):
     return valid,invalid,cond_df
 
 
-
-
-
-def crude_tumor_specificity(uid,count):
+def crude_tumor_specificity(uid,count):    # for NeoJunction class
     detail = ''
     if uid not in set(adata.obs_names):
         mean_value = 0

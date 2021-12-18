@@ -20,6 +20,7 @@ import xmltodict
 import multiprocessing as mp
 import functools
 from tqdm import tqdm
+from itertools import compress
 
 
 # for biopython, pip install biopython
@@ -49,12 +50,6 @@ def snaf_configuration(exon_table,fasta,software_path_arg=None,binding_method_ar
     binding_method = binding_method_arg
 
 
-
-'''
-Now for a junction, you need to obtain the translated neo-epitopes, simply put, you just need two things
-1. junction DNA sequence
-2. How to translate them
-'''
 
 class JunctionCountMatrixQuery():
     def __init__(self,junction_count_matrix,cores=None):
@@ -91,6 +86,7 @@ class JunctionCountMatrixQuery():
     def get_neojunctions(self):
         self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix)
         self.subset = self.junction_count_matrix.loc[self.valid,:]
+        self.cond_subset_df = self.cond_df.loc[self.valid,:]
 
     @staticmethod    
     def split_df_to_chunks(df,cores=None):
@@ -119,7 +115,7 @@ class JunctionCountMatrixQuery():
         
             
     @staticmethod
-    def each_chunk_func(input_,kind,hlas=None,binding_method=None):
+    def each_chunk_func(input_,kind,hlas=None,sub_cond_df=None,binding_method=None):
         if kind == 1:
             nj_list = []
             for uid in input_.index:
@@ -140,9 +136,12 @@ class JunctionCountMatrixQuery():
                 nj_list.append(nj)  
         elif kind == 3:  # currently recommended
             nj_list = []
-            for nj in tqdm(input_):
+            for nj,index in tqdm(zip(input_,range(sub_cond_df.shape[0]))):
+                cond_row = sub_cond_df.iloc[index].tolist()
+                hlas_row = list(compress(hlas,cond_row))
+                combined_unique_hlas = reduce(lambda a,b:list(set(a+b)),hlas_row)
                 try:
-                    nj.binding_prediction(hlas=hlas,binding_method=binding_method)
+                    nj.binding_prediction(hlas=combined_unique_hlas,binding_method=binding_method)
                 except Exception as e:
                     if str(e) == 'Already no candidates after in-silico translation':
                         nj_list.append(None)
@@ -191,9 +190,8 @@ class JunctionCountMatrixQuery():
             self.translated = results
         elif kind == 3:
             sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.translated,self.cores)
-            combined_unique_hlas = reduce(lambda a,b:list(set(a+b)),hlas)
-            print('the combiend unique hlas [length: {}] are: {}'.format(len(combined_unique_hlas),combined_unique_hlas))
-            r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(sub_array,kind,combined_unique_hlas,binding_method,)) for sub_array in sub_arrays]
+            sub_cond_dfs = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
+            r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(sub_array,kind,hlas,sub_cond_df,binding_method,)) for sub_array,sub_cond_df in zip(sub_arrays,sub_cond_dfs)]
             pool.close()
             pool.join()
             results = []
@@ -238,14 +236,14 @@ class JunctionCountMatrixQuery():
         return jcmq
 
 
-    def show_neoantigen_burden(self,outdir,name,stage,verbosity):
+
+    def show_neoantigen_burden(self,outdir,name,stage,verbosity,contain_uid):
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
-        self.cond_subset_df = self.cond_df.loc[self.valid,:]
         sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
         hlas = self.results[1]
         pool = mp.Pool(processes=self.cores)
 
-        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_burden_single_run,args=(sub_array,sub_cond,hlas,stage,verbosity,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
+        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_burden_single_run,args=(sub_array,sub_cond,hlas,stage,verbosity,contain_uid,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
         pool.close()
         pool.join()
         results = []
@@ -278,15 +276,14 @@ class JunctionCountMatrixQuery():
         burden = burden.loc[i_list,c_list]
         burden.to_csv(os.path.join(outdir,name),sep='\t')    
 
-    def show_neoantigen_frequency(self,outdir,name,stage,verbosity,plot,plot_name=None):
+    def show_neoantigen_frequency(self,outdir,name,stage,verbosity,contain_uid,plot,plot_name=None):
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
-        self.cond_subset_df = self.cond_df.loc[self.valid,:]
         sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
         hlas = self.results[1]
         column_names = self.subset.columns
         pool = mp.Pool(processes=self.cores)
 
-        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,sub_cond,hlas,column_names,stage,verbosity,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
+        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,sub_cond,hlas,column_names,stage,verbosity,contain_uid,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
         pool.close()
         pool.join()
         results = []
@@ -322,28 +319,30 @@ class JunctionCountMatrixQuery():
 
 
 
-    def show_neoantigen_as_fasta(self,outdir,name,stage,sample=None):
-        dic = {}
-        for column_result,column_name in zip(self.results,self.subset.columns):
-            for nj in column_result:
-                if nj is None:
-                    continue
-                else:
-                    nj.derive_candidates(stage=stage,verbosity=3,contain_uid=True)
-                    if len(nj.candidates) == 0:
-                        continue
-                    else:
-                        for cand in nj.candidates:
-                            try:
-                                dic[cand].append(column_name)
-                            except KeyError:
-                                dic[cand] = []
-                                dic[cand].append(column_name)
+    def show_neoantigen_as_fasta(self,outdir,name,stage,verbosity,contain_uid,sample=None):
+        sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
+        sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
+        hlas = self.results[1]
+        column_names = self.subset.columns
+        pool = mp.Pool(processes=self.cores)
+
+        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,sub_cond,hlas,column_names,stage,verbosity,contain_uid,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
+        pool.close()
+        pool.join()
+        results = []
+        for collect in r:
+            result = collect.get()
+            results.append(result)  
+
+        # let's define another function for merging dictionary, but not overwrite the values
+        def merge_key_and_values(dic1,dic2):
+            return {x:list(set(dic1.get(x,[]) + dic2.get(x,[]))) for x in set(dic1).union(set(dic2))}         
+
+        dic = reduce(merge_key_and_values,results) 
         # statistics
         df = pd.Series(data=dic).to_frame(name='samples')
         df['n_sample'] = df.apply(lambda x:len(set(x[0])),axis=1).values
         df.sort_values(by='n_sample',ascending=False,inplace=True)
-
         # subset
         if sample is not None:
             df = df.loc[df.apply(lambda x:sample in x['samples'], axis=1),:] 
@@ -351,14 +350,19 @@ class JunctionCountMatrixQuery():
         # write to fasta
         with open(os.path.join(outdir,name),'w') as f:
             for row in df.itertuples():
-                tmp = [str(item) for item in row.Index]
-                f.write('>{}|{}\n'.format('|'.join(tmp),row.n_sample))   
-                f.write('{}\n'.format(row.Index[0])) 
+                if not contain_uid:   # as the row.Index is a tuple
+                    tmp = [str(item) for item in row.Index]
+                    f.write('>{}|{}\n'.format('|'.join(tmp),row.n_sample)) 
+                    f.write('{}\n'.format(row.Index[0]))   
+                else:   # as the row.Index is a string delimited by comma
+                    f.write('>{}|{}\n'.format(row.Index.replace(',','|'),row.n_sample)) 
+                    f.write('{}\n'.format(row.Index.split(',')[0]))
+                
 
 
     # let's define an atomic function inside here
     @staticmethod
-    def show_neoantigen_burden_single_run(sub_array,sub_cond,hlas,stage,verbosity):
+    def show_neoantigen_burden_single_run(sub_array,sub_cond,hlas,stage,verbosity,contain_uid):
         nj_burden_2d = []
         for nj,index in zip(sub_array,range(sub_cond.shape[0])):
             nj_burden = []
@@ -369,7 +373,7 @@ class JunctionCountMatrixQuery():
                 else:
                     nj_copy = deepcopy(nj)
                     nj_copy.enhanced_peptides = nj_copy.enhanced_peptides.filter_based_on_hla(selected_hla=hla)
-                    nj_copy.derive_candidates(stage=stage,verbosity=verbosity)
+                    nj_copy.derive_candidates(stage=stage,verbosity=verbosity,contain_uid=contain_uid)
                     nj_burden.append(len(nj_copy.candidates))
             nj_burden_2d.append(nj_burden)  
         df = pd.DataFrame(data=nj_burden_2d)
@@ -377,7 +381,7 @@ class JunctionCountMatrixQuery():
 
     # let's define the single function to run in each subprocess
     @staticmethod
-    def show_neoantigen_frequency_single_run(sub_array,sub_cond,hlas,column_names,stage,verbosity):
+    def show_neoantigen_frequency_single_run(sub_array,sub_cond,hlas,column_names,stage,verbosity,contain_uid):
         dic = {}
         for nj,index in zip(sub_array,range(sub_cond.shape[0])):
             cond_row = sub_cond.iloc[index].values
@@ -385,7 +389,7 @@ class JunctionCountMatrixQuery():
                 if nj is not None and cond:
                     nj_copy = deepcopy(nj)
                     nj_copy.enhanced_peptides = nj_copy.enhanced_peptides.filter_based_on_hla(selected_hla=hla)
-                    nj_copy.derive_candidates(stage=stage,verbosity=verbosity)
+                    nj_copy.derive_candidates(stage=stage,verbosity=verbosity,contain_uid=contain_uid)
                     for cand in nj_copy.candidates:
                         try:
                             dic[cand].append(column_name)
@@ -438,7 +442,7 @@ class EnhancedPeptides():
             return False
 
     def simplify_to_list(self,verbosity):   # make sure to first filter and re-instantiate
-        if verbosity==1:  # only peptide
+        if verbosity==1:  # only peptide, result is also tuple
             result_list = []
             for mer in self.mers:
                 result_list.extend(list(self[mer].keys()))
@@ -695,7 +699,7 @@ class NeoJunction():
             self.enhanced_peptides.register_attr(df,attr_name='deepimmuno_immunogenicity')
 
 
-    def derive_candidates(self,stage,verbosity,contain_uid=False):
+    def derive_candidates(self,stage,verbosity,contain_uid=True):
         if stage == 1: # all translated peptides
             self.candidates = self.enhanced_peptides.simplify_to_list(verbosity=verbosity)
         elif stage == 2: # all bound peptides
@@ -705,9 +709,9 @@ class NeoJunction():
         if contain_uid:
             new = []
             for item in self.candidates:
-                tmp = list(item)
+                tmp = [str(i) for i in item]
                 tmp.append(self.uid)
-                new.append(tuple(tmp))
+                new.append(','.join(tmp))
             self.candidates = new
 
 
