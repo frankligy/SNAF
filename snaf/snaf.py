@@ -138,8 +138,8 @@ class JunctionCountMatrixQuery():
             nj_list = []
             for nj,index in tqdm(zip(input_,range(sub_cond_df.shape[0]))):
                 cond_row = sub_cond_df.iloc[index].tolist()
-                hlas_row = list(compress(hlas,cond_row))
-                combined_unique_hlas = reduce(lambda a,b:list(set(a+b)),hlas_row)
+                hlas = compress(hlas,cond_row)
+                combined_unique_hlas = reduce(lambda a,b:list(set(a+b)),hlas)
                 try:
                     nj.binding_prediction(hlas=combined_unique_hlas,binding_method=binding_method)
                 except Exception as e:
@@ -190,7 +190,7 @@ class JunctionCountMatrixQuery():
             self.translated = results
         elif kind == 3:
             sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.translated,self.cores)
-            sub_cond_dfs = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
+            sub_cond_dfs = JunctionCountMatrixQuery.split_df_to_chunks(self.sub_cond_dfs,self.cores)
             r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(sub_array,kind,hlas,sub_cond_df,binding_method,)) for sub_array,sub_cond_df in zip(sub_arrays,sub_cond_dfs)]
             pool.close()
             pool.join()
@@ -352,12 +352,10 @@ class JunctionCountMatrixQuery():
             for row in df.itertuples():
                 if not contain_uid:   # as the row.Index is a tuple
                     tmp = [str(item) for item in row.Index]
-                    f.write('>{}|{}\n'.format('|'.join(tmp),row.n_sample)) 
-                    f.write('{}\n'.format(row.Index[0]))   
+                    f.write('>{}|{}\n'.format('|'.join(tmp),row.n_sample))   
                 else:   # as the row.Index is a string delimited by comma
                     f.write('>{}|{}\n'.format(row.Index.replace(',','|'),row.n_sample)) 
-                    f.write('{}\n'.format(row.Index.split(',')[0]))
-                
+                f.write('{}\n'.format(row.Index[0])) 
 
 
     # let's define an atomic function inside here
@@ -709,7 +707,7 @@ class NeoJunction():
         if contain_uid:
             new = []
             for item in self.candidates:
-                tmp = [str(i) for i in item]
+                tmp = list(item)
                 tmp.append(self.uid)
                 new.append(','.join(tmp))
             self.candidates = new
