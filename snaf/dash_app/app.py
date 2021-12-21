@@ -9,14 +9,25 @@ from dash import dcc,html
 import plotly.graph_objects as go
 import plotly.express as px
 from dash.dependencies import Input,Output,State
+sys.path.insert(0,'.')
+from pweblogo import run_pweblogo
+from datetime import date,datetime
+import atexit
 
 
+@atexit.register
+def clear_assets():
+    imgs = os.listdir('assets')
+    for img in imgs:
+        os.remove(os.path.join('assets',img))
 
-def run_dash_app():
+
+def run_dash_app(intpath):
+    # since this module heavily relies on relative path
+    os.chdir(os.path.dirname(__file__))
     # global preprocessing
-
     ### df
-    df = pd.read_csv('/Users/ligk2e/Desktop/learn_dash/frequency_stage3.txt',sep='\t',index_col=0)
+    df = pd.read_csv(intpath,sep='\t',index_col=0)
     data = []
     for item in df.index:
         data.append(item.split(','))
@@ -33,7 +44,7 @@ def run_dash_app():
 
 
     ### umap
-    after_pca = np.loadtxt('/Users/ligk2e/Desktop/learn_dash/after_pca.txt')
+    after_pca = np.loadtxt(os.path.join('..','deepimmuno','data','after_pca.txt'))
     def aaindex(peptide,after_pca):
         amino = 'ARNDCQEGHILKMFPSTWYV-'
         matrix = np.transpose(after_pca)   # [12,21]
@@ -90,7 +101,11 @@ def run_dash_app():
         # table for display    
         html.Div([
             html.H2('Selected Neoantigen'),
-            dcc.Graph(id='display_table')]) 
+            dcc.Graph(id='display_table')]),
+        # weblogo
+        html.Div([html.H2('Selected Weblogo'),
+                  html.Img(alt='weblogo',id='display_weblogo')])
+        
 
     ])
 
@@ -120,14 +135,26 @@ def run_dash_app():
         Input('scatter_figure','selectedData'))
     def display_df(selectedData):
         nonlocal df
+        display_df = df.copy()
         selected_index = []
         for p in selectedData['points']:
             selected_index.append(p['text'])
-        df = df.loc[selected_index,:]
+        display_df = display_df.loc[selected_index,:]
         fig = go.Figure(data=[go.Table(header=dict(values=['neoantigen','uid'],fill_color='paleturquoise',align='left'),
-                                    cells=dict(values=[df.index,df.uid],fill_color='lavender',align='left'))])
+                                    cells=dict(values=[display_df.index,display_df.uid],fill_color='lavender',align='left'))])
         #fig.update_layout(width=600)
         return fig
+
+    @app.callback(
+        Output('display_weblogo','src'),
+        Input('scatter_figure','selectedData'))
+    def display_weblogo(selectedData):
+        selected_index = []
+        for p in selectedData['points']:
+            selected_index.append(p['text'])
+        suffix = str(date.today()) + datetime.now().strftime('%H-%M-%S-%f')
+        run_pweblogo(selected_index,'./assets/pweblogo_{}.png'.format(suffix))
+        return app.get_asset_url('pweblogo_{}.png'.format(suffix))
 
     # run app
     app.run_server()
