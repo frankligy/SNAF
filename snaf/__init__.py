@@ -3,6 +3,7 @@ from .gtex import gtex_configuration
 from .gtex_viewer import gtex_viewer_configuration
 from .binding import binding_configuration
 from .proteomics import *
+from .downstream import *
 from datetime import datetime,date
 from .dash_app import run_dash_app,run_pweblogo
 

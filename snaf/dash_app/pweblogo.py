@@ -7,7 +7,7 @@ from collections import Counter
 import seaborn as sns
 import numpy as np
 import argparse
-from schema import *
+from .schema import *
 import os,sys
 
 
