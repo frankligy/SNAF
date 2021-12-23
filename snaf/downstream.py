@@ -58,27 +58,46 @@ def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column
 
 
 
-def survival_analysis(burden,survival,stratification_plot,survival_plot,
+def survival_analysis(burden,survival,n,stratification_plot,survival_plot,
                       survival_duration='OS.time',survival_event='OS'): 
     # burden is a seires, survival is a df, make sure the index are the consistent
     # sample is in the index of survival
     burden = burden.loc[burden.index.isin(survival.index)]
-    quantiles = burden.quantile([0.25,0.5,0.75]).values
-    iqr = quantiles[2] - quantiles[0]
-    upper_bound = quantiles[2] + 1.5*iqr
-    lower_bound = quantiles[0] - 1.5*iqr
-    identity_col = []
-    for item in burden:
-        if item > upper_bound:
-            identity_col.append('outlier')
-        elif item > quantiles[2] and item <= upper_bound:
-            identity_col.append('high')
-        elif item > quantiles[0] and item <= quantiles[2]:
-            identity_col.append('medium')
-        elif item >= lower_bound and item <= quantiles[0]:
-            identity_col.append('low')
-        elif item < lower_bound:
-            identity_col.append('outlier')
+    if n == 4:
+        quantiles = burden.quantile([0.25,0.5,0.75]).values
+        iqr = quantiles[2] - quantiles[0]
+        upper_bound = quantiles[2] + 1.5*iqr
+        lower_bound = quantiles[0] - 1.5*iqr
+        identity_col = []
+        for item in burden:
+            if item > upper_bound:
+                identity_col.append('outlier')
+            elif item > quantiles[2] and item <= upper_bound:
+                identity_col.append('high')
+            elif item > quantiles[0] and item <= quantiles[2]:
+                identity_col.append('medium')
+            elif item >= lower_bound and item <= quantiles[0]:
+                identity_col.append('low')
+            elif item < lower_bound:
+                identity_col.append('outlier')
+    elif n == 3:
+        quantiles = burden.quantile([0.33,0.66]).values
+        identity_col = []
+        for item in burden:
+            if item > quantiles[1]:
+                identity_col.append('high')
+            elif item > quantiles[0] and item <= quantiles[1]:
+                identity_col.append('medium')
+            elif item <= quantiles[0]:
+                identity_col.append('low')
+    elif n == 2:
+        quantiles = burden.quantile([0.5]).values[0]  # a scalar
+        identity_col = []
+        for item in burden:
+            if item > quantiles:
+                identity_col.append('high')
+            else:
+                identity_col.append('low')
     burden_encode = pd.Series(index=burden.index,data=identity_col)
     be_vc = burden_encode.value_counts()
     # plot stratification

@@ -768,6 +768,8 @@ class NeoJunction():
 def hla_formatting(pre,pre_type,post_type):
     if pre_type == 'netMHCpan_output' and post_type == 'netMHCpan_input':  # HLA-A*01:01 to HLA-A01:01
         post = [hla.replace('*','') for hla in pre]
+    elif pre_type == 'netMHCpan_input' and post_type == 'netMHCpan_output':  # HLA-A01:01 to HLA-A*01:01
+        post = [hla[:5] + '*' + hla[5:] for hla in pre]
     elif pre_type == 'netMHCpan_output' and post_type == 'deepimmuno':  # HLA-A*01:01 to HLA-A*0101
         post = [hla.replace(':','') for hla in pre]
     elif pre_type == 'deepimmuno' and post_type == 'netMHCpan_output': # HLA-A*0101 to HLA-A*01:01
