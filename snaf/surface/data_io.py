@@ -9,8 +9,13 @@ def read_uniprot_seq(path):
     dict_fa = {}
     with open(path,'r') as in_handle:
         for title,seq in SimpleFastaParser(in_handle):
-            uniID = title.split('|')[1]
-            dict_fa[uniID] = seq
+            ensgid = title.split('|')[3]
+            accid = title.split('|')[1]
+            try:
+                dict_fa[ensgid][accid] = seq
+            except KeyError:
+                dict_fa[ensgid] = {}
+                dict_fa[ensgid][accid] = seq
     return dict_fa   
 
 def fasta_to_dict(path):
