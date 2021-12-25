@@ -12,16 +12,12 @@ def surface_initialize(transcript_db,exon_table,fasta,membrane_db,biotype_db,mem
     global df_exonlist
     global dict_exonCoords
     global dict_fa
-    global dictExonList_t
-    global dictExonList_p
     global dict_biotype
     global df_membrane_proteins
     global dict_uni_fa
     df_exonlist = pd.read_csv(transcript_db,sep='\t',header=None,names=['EnsGID','EnsTID','EnsPID','Exons'])  # index is number
     dict_exonCoords = exonCoords_to_dict(exon_table) 
     dict_fa = fasta_to_dict(fasta)
-    dictExonList_t = convertExonList_transcript(df_exonlist)
-    dictExonList_p = convertExonList_pep(df_exonlist)
     df_biotype = pd.read_csv(biotype_db,sep='\t')   # index is number
     dict_biotype = biotype(df_biotype)
     df_membrane_proteins = pd.read_csv(membrane_db,sep='\t',index_col=0)
@@ -106,29 +102,28 @@ class SurfaceAntigen(Object):
         orf_attr = []
         for sequence in self.full_length:
             if sequence != 'unrecoverble' and sequence != '':
-                orf = transcript2peptide(sequence)
-                orf_attr.append(orf)
+                candidate_orfs = transcript2peptide(sequence)
+                max_orf = prioritize_orf(candidate_orfs)
+                orf_attr.append(max_orf)
             else:
                 orf_attr.append(sequence)
         self.orf = orf_attr
 
-    def orf_check(self):
-        ensgid = self.uid.split(':')[0]
-        nmd_check = nmd(df_exonlist,ensgid,self.orf)
-        translatability_check = translatability(df_exonlist,ensgid,self.orf)
-        self.nmd = nmd_check
-        self.translatability = translatability_check
-    
+    def orf_check(self,n_stride):
+        nmd_check_result = nmd_check(df_exonlist,self.uid,self.full_length,self.orf,dict_exonCoords,n_stride)
+        translatability_check_result = translatability_check(df_exonlist,self.uid,self.orf)
+        self.nmd = nmd_check_result
+        self.translatability = translatability_check_result
+
+    def align_uniprot(self,tmhmm,software_path):
+        results = alignment_to_uniprot(self.orf,self.uid,dict_uni_fa,tmhmm,software_path)
+        self.alignment = results
 
 
     
 
 
-
-
-
-
-
+    
 # standalone functions
 def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
     '''
@@ -342,7 +337,7 @@ def first_round_match(ensgid,exons):
     return full_transcript_store
 
 
-def detech_mode(e1,e2):
+def detect_mode(e1,e2):
     if '_' in e1 and '_' not in e2:
         mode = 1
     elif '_' in e1 and '_' in e2:
@@ -368,7 +363,7 @@ def second_round_match(ensgid,exons):
     # second round mainly solve trailing issues for Alt3 Alt5, Alt3-Alt5
     full_transcript_store = []  # ['',full_transcript1_seq,...] 
     e1,e2 = exons.split('|')
-    mode = detech_mode(e1,e2)
+    mode = detect_mode(e1,e2)
     degenerated = degenerate_exons(mode,e1,e2)
     de1,de2 = degenerated.split('|')
     df_certain = df_exonlist[df_exonlist['EnsGID']=ensgid,:]

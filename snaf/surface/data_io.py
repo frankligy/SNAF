@@ -60,32 +60,6 @@ def exonCoords_to_dict(path):
                 dict_exonCoords[items[0]][items[1]] = coords
     return dict_exonCoords
 
-def convertExonList_transcript(df):  
-    # convert transcript_db as a dictionary to ease the query time, focusing on transcript ENST
-    dictExonList = {}
-    for i in range(df.shape[0]):
-        EnsGID = df.iat[i,0]
-        EnsTID = df.iat[i,1]
-        exonList = df.iat[i,3]
-        try: dictExonList[EnsGID][EnsTID] = exonList
-        except KeyError: dictExonList[EnsGID] = {EnsTID:exonList}
-        # {EnsGID:{EnsTID:exonlist,EnsTID:exonlist}}
-    return dictExonList
-
-
-def convertExonList_pep(df):
-    # convert transcript_db as a dictionary to ease the query time, focusing on peptide ENSP
-    dictExonList = {}
-    for i in range(df.shape[0]):
-        EnsGID = df.iat[i,0]
-        EnsPID = df.iat[i,2]
-        exonList = df.iat[i,3]
-        try: dictExonList[EnsGID][EnsPID] = exonList
-        except KeyError: dictExonList[EnsGID] = {EnsPID:exonList}
-        # {EnsGID:{EnsPID:exonList,EnsPID:exonList}}
-    return dictExonList
-
-
 def biotype(df):
     # make biotype df to a dictionary
     dic = {} # {EnsGID:{EnsPID:Anno,EnsPID:Anno}}
