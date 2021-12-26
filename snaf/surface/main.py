@@ -29,6 +29,18 @@ def initialization(transcript_db,exon_table,fasta,membrane_db,biotype_db,membran
     print('{} {} finished surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
 
 
+def get_all_transcripts(ensgid,outdir='.'):
+    df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
+    df_certain.to_csv(os.path.join(outdir,'{}_all_transcripts.txt'.format(ensgid)),sep='\t',index=None)
+
+
+def get_existing_isoforms(ensgid,outdir='.'):
+    with open(os.path.join(outdir,'{}_existing_isoforms.fasta'.format(ensgid)),'w') as f:
+        for k,v in dict_uni_fa[ensgid].items():
+            f.write('>{}\n{}\n'.format(k,v))
+
+
+
 class SurfaceAntigen(object):
 
     def __init__(self,uid,check_overlap=True):
