@@ -3,6 +3,9 @@ import numpy as np
 import os,sys
 import subprocess
 import multiprocessing
+from Bio.SeqIO.FastaIO import SimpleFastaParser
+from Bio.Seq import Seq
+
 
 
 def read_uniprot_seq(path):

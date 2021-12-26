@@ -7,7 +7,7 @@ import re
 
 def alignment_to_uniprot(orf,uid,dict_uni_fa,tmhmm=False,software_path=None):
     ensgid = uid.split(':')[0]
-    isoforms = dict_uid_fa[ensgid]  # {acc1:seq,acc1-2:seq}
+    isoforms = dict_uni_fa[ensgid]  # {acc1:seq,acc1-2:seq}
     results = []
     for o in orf:
         if o != 'unrecoverable' and o != '':
@@ -19,7 +19,7 @@ def alignment_to_uniprot(orf,uid,dict_uni_fa,tmhmm=False,software_path=None):
                         notes.append(True)  # here True means align
                     else:
                         notes.append(False)
-                conclusion = not all(notes)   # here True means not existing
+                conclusion = not all(notes)   # here True means not existing before
                 final_notes.append(conclusion)
             decision = all(final_notes)  # here True means this isoform is novel
             if tmhmm:
@@ -49,7 +49,8 @@ def TMHMM(aa,software_path):
     # in my use case, save those for convenience
     # perl: /usr/local/perl/5.20.1/bin/perl   # no need to load perl when running tmhmm
     # tmhmm: /data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin
-    int_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'scratch','{}.fasta'.format(os.getpid()))
+    name = os.getpid()
+    int_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'scratch','{}.fasta'.format(name))
     with open(int_file_path,'w') as f1:
         f1.write('>peptide_{}\n'.format(name))
         f1.write(aa)
@@ -64,6 +65,6 @@ def TMHMM(aa,software_path):
     sp|Q9NR97|TLR8_HUMAN	TMHMM2.0	inside	   849   942
     '''
     lines = subprocess.run('{} {}'.format(software_path,int_file_path),shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-    n_cross = int(lines[2].split('  ')[-1])
-    result = True if TMn > 0 else False
+    n_cross = int(lines[1].split('  ')[-1])
+    result = True if n_cross > 0 else False
     return result

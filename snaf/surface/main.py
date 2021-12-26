@@ -4,30 +4,109 @@ import os,sys
 import subprocess
 import multiprocessing
 import re
-from .data.io import *
+from datetime import datetime,date
+from .data_io import *
+from .orf_finder import *
+from .orf_check import *
+from .alignment import *
 
 
 
-def surface_initialize(transcript_db,exon_table,fasta,membrane_db,biotype_db,membrane_fasta_db):
+def initialization(transcript_db,exon_table,fasta,membrane_db,biotype_db,membrane_fasta_db):
     global df_exonlist
     global dict_exonCoords
     global dict_fa
     global dict_biotype
     global df_membrane_proteins
     global dict_uni_fa
+    print('{} {} starting surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
     df_exonlist = pd.read_csv(transcript_db,sep='\t',header=None,names=['EnsGID','EnsTID','EnsPID','Exons'])  # index is number
     dict_exonCoords = exonCoords_to_dict(exon_table) 
     dict_fa = fasta_to_dict(fasta)
-    df_biotype = pd.read_csv(biotype_db,sep='\t')   # index is number
-    dict_biotype = biotype(df_biotype)
+    dict_biotype = biotype(pd.read_csv(biotype_db,sep='\t'))  # index is number
     df_membrane_proteins = pd.read_csv(membrane_db,sep='\t',index_col=0)
     dict_uni_fa = read_uniprot_seq(membrane_fasta_db)
+    print('{} {} finished surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
 
 
-class SurfaceAntigen(Object):
+class SurfaceAntigen(object):
 
-    def __init__(uid):
+    def __init__(self,uid,check_overlap=True):
         self.uid = uid
+        if check_overlap:
+            if not self.is_membrane_protein():
+                raise Exception('This event will not encode a surface protein')
+
+    def is_membrane_protein(self):
+        ensgid = self.uid.split(':')[0]
+        if ensgid in set(df_membrane_proteins['Ens'].tolist()):
+            return True
+        else:
+            return False
+
+    def __str__(self):
+        print_str = 'uid:{}\n'.format(self.uid)
+        try:
+            print_event_type = self.event_type
+        except AttributeError:
+            print_event_type = None
+        print_str += 'event type:{}\n'.format(print_event_type)
+        try:
+            print_junction = self.junction[:5] + '...' + self.junction[-5:]
+        except AttributeError:
+            print_junction = None
+        print_str += 'Junction:{}\n'.format(print_junction)   
+        try:
+            if self.full_length == ['unrecoverable']:
+                print_full_length = (len(self.full_length),self.full_length)
+            else:
+                print_full_length = (len(self.full_length),[self.full_length.index(item) for item in self.full_length if item != ''])
+        except AttributeError:
+            print_full_length = None  
+        print_str += 'Full length transcripts: length {}, indices {}\n'.format(print_full_length[0],print_full_length[1])
+        try:
+            if self.orft == ['unrecoverable']:
+                print_orft = (len(self.orft),self.orft)
+            else:
+                print_orft = (len(self.orft),[self.orft.index(item) for item in self.orft if item != ''])
+        except AttributeError:
+            print_orft = None  
+        print_str += 'ORF transcripts: length {}, indices {}\n'.format(print_orft[0],print_orft[1])
+        try:
+            if self.orfp == ['unrecoverable']:
+                print_orfp = (len(self.orfp),self.orfp)
+            else:
+                print_orfp = (len(self.orfp),[self.orfp.index(item) for item in self.orfp if item != ''])
+        except AttributeError:
+            print_orfp = None  
+        print_str += 'ORF peptides: length {}, indices {}\n'.format(print_orfp[0],print_orfp[1])
+        try:
+            if self.nmd == ['unrecoverable']:
+                print_nmd = (len(self.nmd),self.nmd)
+            else:
+                print_nmd = (len(self.nmd),[item for item in self.nmd if item != ''])
+        except AttributeError:
+            print_nmd = None  
+        print_str += 'Full length peptides: length {}, indices {}\n'.format(print_nmd[0],print_nmd[1])      
+        try:
+            if self.translatability == ['unrecoverable']:
+                print_translatability = (len(self.translatability),self.translatability)
+            else:
+                print_translatability = (len(self.translatability),[item for item in self.translatability if item != ''])
+        except AttributeError:
+            print_translatability = None  
+        print_str += 'NMD check: length {}, indices {}\n'.format(print_translatability[0],print_translatability[1])    
+        try:
+            if self.alignment == ['unrecoverable']:
+                print_alignment = (len(self.alignment),self.alignment)
+            else:
+                print_alignment = (len(self.alignment),[item for item in self.alignment if item != ''])
+        except AttributeError:
+            print_alignment = None  
+        print_str += 'Alignment: length {}, indices {}\n'.format(print_alignment[0],print_alignment[1])   
+        return print_str
+
+
 
     def detect_type(self):
         '''
@@ -72,21 +151,22 @@ class SurfaceAntigen(Object):
     def retrieve_junction_seq(self):
         if self.event_type != 'invalid':
             ensid = self.uid.split(':')[0]
-            subexon1,subexon2 = self.uid.split(':')[1].split('-')
+            subexon1,subexon2 = ':'.join(self.uid.split(':')[1:]).split('-')
             seq1 = subexon_tran(subexon1,ensid,'site1')
             seq2 = subexon_tran(subexon2,ensid,'site2')
             junction = ','.join([seq1,seq2])
             self.junction = junction
         else:
             self.junction = '$' * 10   # indicating invalid uid
-        return junction   
+
 
     def recovery_full_length_protein(self):
         if '$' not in self.junction and '*' not in self.junction and '#' not in self.junction:
-            ensgid,exons = self.uid.split(':')
+            ensgid = self.uid.split(':')[0]
+            exons = ':'.join(self.uid.split(':')[1:])
             if self.event_type == 'ordinary':
                 full_transcript_store = first_round_match(ensgid,exons)
-            elif self.event_type == 'alt3' or self.event_type == 'alt5' or self.event_type = 'alt3_alt5':
+            elif self.event_type == 'alt3' or self.event_type == 'alt5' or self.event_type == 'alt3_alt5':
                 full_transcript_store = second_round_match(ensgid,exons)
             elif self.event_type == 'intron_retention':
                 full_transcript_store = third_round_match(ensgid,exons)
@@ -99,25 +179,35 @@ class SurfaceAntigen(Object):
         self.full_length = full_transcript_store
 
     def find_orf(self):
-        orf_attr = []
+        orft_list = []
+        orfp_list = []
         for sequence in self.full_length:
             if sequence != 'unrecoverble' and sequence != '':
-                candidate_orfs = transcript2peptide(sequence)
+                candidate_orfs = transcript2orf(sequence)
                 max_orf = prioritize_orf(candidate_orfs)
-                orf_attr.append(max_orf)
+                max_pep = orf2pep(max_orf)
+                orft_list.append(max_orf)
+                orfp_list.append(max_pep)
             else:
-                orf_attr.append(sequence)
-        self.orf = orf_attr
+                orft_list.append(sequence)
+                orfp_list.append(sequence)
+        self.orft = orft_list
+        self.orfp = orfp_list
 
     def orf_check(self,n_stride):
-        nmd_check_result = nmd_check(df_exonlist,self.uid,self.full_length,self.orf,dict_exonCoords,n_stride)
-        translatability_check_result = translatability_check(df_exonlist,self.uid,self.orf)
+        set_global_env(df_exonlist,dict_exonCoords,dict_fa,dict_biotype)
+        nmd_check_result = nmd_check(self.uid,self.full_length,self.orft,n_stride)
+        translatability_check_result = translatability_check(self.uid,self.orft)
         self.nmd = nmd_check_result
         self.translatability = translatability_check_result
 
-    def align_uniprot(self,tmhmm,software_path):
-        results = alignment_to_uniprot(self.orf,self.uid,dict_uni_fa,tmhmm,software_path)
+    def align_uniprot(self,tmhmm,software_path=None):
+        results = alignment_to_uniprot(self.orfp,self.uid,dict_uni_fa,tmhmm,software_path)
         self.alignment = results
+
+    def pretty_html_output(self):
+        pass
+
 
 
     
@@ -139,12 +229,12 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
         attrs = dict_exonCoords[EnsID][subexon]  # [chr,strand,start,end,suffer]
         if attrs[1] == '+':  
             if attrs[4] == 'True':  # remedy by substract the end by 1
-                exon_seq = query_from_dict_fa(attrs[2],str(int(attrs[3])-1),EnsID,attrs[1]) 
+                exon_seq = query_from_dict_fa(attrs[2],int(attrs[3])-1,EnsID,attrs[1]) 
             else:
                 exon_seq = query_from_dict_fa(attrs[2],attrs[3],EnsID,attrs[1]) 
         else:   
             if attrs[4] == 'True': # remedy by adding the start by 1
-                exon_seq = query_from_dict_fa(str(int(attrs[2])+1),attrs[3],EnsID,attrs[1]) 
+                exon_seq = query_from_dict_fa(int(attrs[2])+1,attrs[3],EnsID,attrs[1]) 
             else:
                 exon_seq = query_from_dict_fa(attrs[2],attrs[3],EnsID,attrs[1]) 
     except KeyError:
@@ -173,12 +263,12 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
                 else:
                     if attrs[1] == '+':  
                         if attrs[4] == 'True':  # remedy by substract the end by 1
-                            exon_seq = query_from_dict_fa(attrs[2],str(int(attrs[3])-1),fusionGeneEnsID,attrs[1]) 
+                            exon_seq = query_from_dict_fa(attrs[2],int(attrs[3])-1,fusionGeneEnsID,attrs[1]) 
                         else:
                             exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
                     else:   
                         if attrs[4] == 'True': # remedy by adding the start by 1
-                            exon_seq = query_from_dict_fa(str(int(attrs[2])+1),attrs[3],fusionGeneEnsID,attrs[1]) 
+                            exon_seq = query_from_dict_fa(int(attrs[2])+1,attrs[3],fusionGeneEnsID,attrs[1]) 
                         else:
                             exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
 
@@ -198,12 +288,12 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
                     if flag == 'site2':
                         if attrs[1] == '+':  
                             if attrs[4] == 'True': # remedy by substracting the end by 1
-                                exon_seq = query_from_dict_fa(suffix,str(int(attrs[3])-1),EnsID,attrs[1]) 
+                                exon_seq = query_from_dict_fa(suffix,int(attrs[3])-1,EnsID,attrs[1]) 
                             else:
                                 exon_seq = query_from_dict_fa(suffix,attrs[3],EnsID,attrs[1]) 
                         else:  
                             if attrs[4] == 'True':  # remedy by adding the start by 1
-                                exon_seq = query_from_dict_fa(str(int(attrs[2])+1),suffix,EnsID,attrs[1])
+                                exon_seq = query_from_dict_fa(int(attrs[2])+1,suffix,EnsID,attrs[1])
                             else:
                                 exon_seq = query_from_dict_fa(attrs[2],suffix,EnsID,attrs[1])
                     elif flag == 'site1':  # not affected by overhang since it is site1
@@ -276,38 +366,46 @@ def query_from_dict_fa(abs_start,abs_end,EnsID,strand):
 
 
 def get_exon_seq(exon,ensgid):
-    attrs = dict_exonCoords[ensgid][exon]
-    strand = attrs[1]
-    suffer = attrs[4]
-    if strand == '+' and not suffer:
-        frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
-    elif strand == '+' and suffer:
-        frag = query_from_dict_fa(attrs[2],int(attrs[3]-1),ensgid,attrs[1])
-    elif strand == '-' and not suffer:
-        frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
-    elif strand == '-' and suffer:
-        frag = query_from_dict_fa(int(attrs[2]+1),attrs[3],ensgid,attrs[1])
+    try:
+        attrs = dict_exonCoords[ensgid][exon]
+    except KeyError:   # indicator for error on MultiPath-PSI itself
+        frag = '*' * 10
+    else:
+        strand = attrs[1]
+        suffer = attrs[4]
+        if strand == '+' and suffer == 'False':
+            frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
+        elif strand == '+' and suffer == 'True':
+            frag = query_from_dict_fa(attrs[2],int(attrs[3])-1,ensgid,attrs[1])
+        elif strand == '-' and suffer == 'False':
+            frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
+        elif strand == '-' and suffer == 'True':
+            frag = query_from_dict_fa(int(attrs[2])+1,attrs[3],ensgid,attrs[1])
     return frag
 
 def get_trailing_exon_seq(exon,ensgid,flag):
     e,suffix = exon.split('_')
-    attrs = dict_exonCoords[ensgid][e]
-    if flag == 'site2':
-        if attrs[1] == '+':  
-            if attrs[4] == 'True': # remedy by substracting the end by 1
-                exon_seq = query_from_dict_fa(suffix,str(int(attrs[3])-1),EnsID,attrs[1]) 
+    try:
+        attrs = dict_exonCoords[ensgid][e]
+    except KeyError:
+        exon_seq = '*' * 10
+    else:
+        if flag == 'site2':
+            if attrs[1] == '+':  
+                if attrs[4] == 'True': # remedy by substracting the end by 1
+                    exon_seq = query_from_dict_fa(suffix,int(attrs[3])-1,ensgid,attrs[1]) 
+                else:
+                    exon_seq = query_from_dict_fa(suffix,attrs[3],ensgid,attrs[1]) 
+            else:  
+                if attrs[4] == 'True':  # remedy by adding the start by 1
+                    exon_seq = query_from_dict_fa(int(attrs[2])+1,suffix,ensgid,attrs[1])
+                else:
+                    exon_seq = query_from_dict_fa(attrs[2],suffix,ensgid,attrs[1])
+        elif flag == 'site1':  # not affected by overhang since it is site1
+            if attrs[1] == '+': 
+                exon_seq = query_from_dict_fa(attrs[2],suffix,ensgid,attrs[1])
             else:
-                exon_seq = query_from_dict_fa(suffix,attrs[3],EnsID,attrs[1]) 
-        else:  
-            if attrs[4] == 'True':  # remedy by adding the start by 1
-                exon_seq = query_from_dict_fa(str(int(attrs[2])+1),suffix,EnsID,attrs[1])
-            else:
-                exon_seq = query_from_dict_fa(attrs[2],suffix,EnsID,attrs[1])
-    elif flag == 'site1':  # not affected by overhang since it is site1
-        if attrs[1] == '+': 
-            exon_seq = query_from_dict_fa(attrs[2],suffix,EnsID,attrs[1])
-        else:
-            exon_seq = query_from_dict_fa(suffix,attrs[3],EnsID,attrs[1])
+                exon_seq = query_from_dict_fa(suffix,attrs[3],ensgid,attrs[1])
     return exon_seq
 
 
@@ -318,19 +416,18 @@ def first_round_match(ensgid,exons):
     # first round mainly solve ordinary event
     exons = exons.replace('-','|')
     full_transcript_store = []  # ['',full_transcript1_seq,...] 
-    df_certain = df_exonlist[df_exonlist['EnsGID']=ensgid,:]
-    for item in list(df_certain['Exon']):
+    df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
+    for item in list(df_certain['Exons']):
         full_transcript = ''
-        pattern1 = re.compile(r'\|{}\|'.format(exons))  # |E3.4|E4.5|
-        pattern2 = re.compile(r'^{}\|'.format(exons))    # E1.1|E4.5|  first one
-        pattern3 = re.compile(r'\|{}$'.format(exons))     # |E6.9|E7.1  last one 
-        pattern4 = re.compile(r'^{}$'.format(exons))     # E4.5|E5.6   just it
+        pattern1 = re.compile(r'\|{}\|'.format(exons.replace('|','\|')))  # |E3.4|E4.5|
+        pattern2 = re.compile(r'^{}\|'.format(exons.replace('|','\|')))    # E1.1|E4.5|  first one
+        pattern3 = re.compile(r'\|{}$'.format(exons.replace('|','\|')))     # |E6.9|E7.1  last one 
+        pattern4 = re.compile(r'^{}$'.format(exons.replace('|','\|')))     # E4.5|E5.6   just it
         if re.search(pattern1,item) or re.search(pattern2,item) or re.search(pattern3,item) or re.search(pattern4,item):
             exonlist = item.split('|')
             for exon in exonlist:
                 frag = get_exon_seq(exon,ensgid)
                 full_transcript += frag
-            full_transcript = full_transcript.replace('\n','')
             full_transcript_store.append(full_transcript)   
         else:
             full_transcript_store.append('')
@@ -362,16 +459,16 @@ def second_round_match(ensgid,exons):
     # exons is E4.1_45454-E5.6_44442
     # second round mainly solve trailing issues for Alt3 Alt5, Alt3-Alt5
     full_transcript_store = []  # ['',full_transcript1_seq,...] 
-    e1,e2 = exons.split('|')
+    e1,e2 = exons.split('-')
     mode = detect_mode(e1,e2)
     degenerated = degenerate_exons(mode,e1,e2)
     de1,de2 = degenerated.split('|')
-    df_certain = df_exonlist[df_exonlist['EnsGID']=ensgid,:]
-    for item in list(df_certain['Exon']):
-        pattern1 = re.compile(r'\|{}\|'.format(degenerated))  # |E3.4|E4.5|
-        pattern2 = re.compile(r'^{}\|'.format(degenerated))    # E1.1|E4.5|  first one
-        pattern3 = re.compile(r'\|{}$'.format(degenerated))     # |E6.9|E7.1  last one 
-        pattern4 = re.compile(r'^{}$'.format(degenerated))     # E4.5|E5.6   just it       
+    df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
+    for item in list(df_certain['Exons']):
+        pattern1 = re.compile(r'\|{}\|'.format(degenerated.replace('|','\|')))  # |E3.4|E4.5|
+        pattern2 = re.compile(r'^{}\|'.format(degenerated.replace('|','\|')))   # E1.1|E4.5|  first one
+        pattern3 = re.compile(r'\|{}$'.format(degenerated.replace('|','\|')))  # |E6.9|E7.1  last one 
+        pattern4 = re.compile(r'^{}$'.format(degenerated.replace('|','\|')))     # E4.5|E5.6   just it   
         if re.search(pattern1,item) or re.search(pattern2,item) or re.search(pattern3,item) or re.search(pattern4,item):
             exonlist = item.split('|')
             if mode == 1:
@@ -410,7 +507,7 @@ def second_round_match(ensgid,exons):
                         transcript_left += frag
                     else:
                         transcript_middle += get_trailing_exon_seq(e1,ensgid,'site1')
-                        transcript_middle += get_trailing_exon_seq(e2,ensgid,'site1')
+                        transcript_middle += get_trailing_exon_seq(e2,ensgid,'site2')
                         i += 2
                         for remain_exon in exonlist[i:]:
                             frag = get_exon_seq(remain_exon,ensgid)
@@ -424,16 +521,16 @@ def second_round_match(ensgid,exons):
 
 
 def third_round_match(ensgid,exons):
-    # exons should be E4.5_I4.1 or I4.5_E5.6
+    # exons should be E4.5-I4.1 or I4.5-E5.6
     # this round is for intron retention
     full_transcript_store = []  # ['',full_transcript1_seq,...] 
-    e1,e2 = exons.split('|')    
+    e1,e2 = exons.split('-')   
     if 'I' in e1:
         i = e1; e = e2; m = 2   # m means mode, 1 means the exon is the first, 2 means the exon is the second
     elif 'I' in e2:
         i = e2; e = e1; m = 1
-    df_certain = df_exonlist[df_exonlist['EnsGID']=ensgid,:]
-    for item in list(df_certain['Exon']):
+    df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
+    for item in list(df_certain['Exons']):
         pattern1 = re.compile(r'\|{}\|'.format(e))  # |E4.5|
         pattern2 = re.compile(r'^{}\|'.format(e))  # E4.5|
         pattern3 = re.compile(r'\|{}$'.format(e))   # |E4.5
@@ -442,26 +539,26 @@ def third_round_match(ensgid,exons):
             exonlist = item.split('|')  
             if m == 1:
                 transcript = ''      
-                for i,exon in enumerate(exonlist):
+                for i_,exon in enumerate(exonlist):
                     if exon != e:
                         frag = get_exon_seq(exon,ensgid)
                         transcript += frag
                     else:
-                        frag = get_exon_seq(exon,ensgid)
+                        frag = get_exon_seq(e,ensgid)
                         transcript += frag
                         frag = get_exon_seq(i,ensgid)
                         transcript += frag
                         continue
             elif m == 2:
                 transcript = ''      
-                for i,exon in enumerate(exonlist):
+                for i_,exon in enumerate(exonlist):
                     if exon != e:
                         frag = get_exon_seq(exon,ensgid)
                         transcript += frag
                     else:
                         frag = get_exon_seq(i,ensgid)   # fisrt add intron
                         transcript += frag
-                        frag = get_exon_seq(exon,ensgid)
+                        frag = get_exon_seq(e,ensgid)
                         transcript += frag
                         continue  
             full_transcript_store.append(transcript)      
@@ -474,37 +571,37 @@ def fourth_round_match(ensgid,exons):
     # exons should be E4.5-ENSG:E4.3 or E4.5-ENSG:E4.5_4384839
     # this round is for trailing events
     full_transcript_store = []  # ['',full_transcript1_seq,...] 
-    e1,e2 = exons.split('|')   
-    ensgid2 = e2.split(':')[0]
+    e1 = exons.split('-')[0]
+    ensgid2 = exons.split('-')[1].split(':')[0]
+    e2 = exons.split('-')[1].split(':')[1]
     if '_' in e2:
-        full_e2 = e2
         e2,suffix = e2.split('_')
     else:
-        full_e2 = None
         suffix = None
-    df_certain1 = df_exonlist[df_exonlist['EnsGID']=ensgid,:]
-    df_certain2 = df_exonlist[df_exonlist['EnsGID']=ensgid2,:]
-    for item1 in list(df_certain1['Exon']):
-        for item2 in list(df_certain2['Exon']):
+    df_certain1 = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
+    df_certain2 = df_exonlist.loc[df_exonlist['EnsGID']==ensgid2,:]
+    for item1 in list(df_certain1['Exons']):
+        for item2 in list(df_certain2['Exons']):
             pattern1_1 = re.compile(r'\|{}\|'.format(e1))  # |E4.5|
             pattern1_2 = re.compile(r'^{}\|'.format(e1))  # E4.5|
             pattern1_3 = re.compile(r'\|{}$'.format(e1))   # |E4.5
-            pattern1_4 = re.compile(r'^{}$'.format(e1))   # E4.5    
+            pattern1_4 = re.compile(r'^{}$'.format(e1))   # E4.5   
             pattern2_1 = re.compile(r'\|{}\|'.format(e2))  
             pattern2_2 = re.compile(r'^{}\|'.format(e2))  # E4.5|
             pattern2_3 = re.compile(r'\|{}$'.format(e2))   # |E4.5
             pattern2_4 = re.compile(r'^{}$'.format(e2))   # E4.5  
-            if (re.search(pattern1_1,item1) or re.search(pattern1_2,item1) or re.search(pattern1_3,item1) or re.search(pattern1_4,item1)) and \
-               (re.search(pattern2_1,item2) or re.search(pattern2_2,item2) or re.search(pattern2_3,item2) or re.search(pattern2_4,item2)):
+            match_to_item1 = (re.search(pattern1_1,item1) or re.search(pattern1_2,item1) or re.search(pattern1_3,item1) or re.search(pattern1_4,item1))
+            match_to_item2 = (re.search(pattern2_1,item2) or re.search(pattern2_2,item2) or re.search(pattern2_3,item2) or re.search(pattern2_4,item2))
+            if match_to_item1 and match_to_item2:
                 transcript = ''
                 exonlist1 = item1.split('|')  
                 exonlist2 = item2.split('|')
                 for i1,exon1 in enumerate(exonlist1):
                     if exon1 != e1:
-                        frag = get_exon_seq(exon,ensgid)
+                        frag = get_exon_seq(exon1,ensgid)
                         transcript += frag
                     else:
-                        frag = get_exon_seq(exon,ensgid)
+                        frag = get_exon_seq(e1,ensgid)
                         for i2,exon2 in enumerate(exonlist2):
                             if exon2 == e2:
                                 if suffix is not None:
