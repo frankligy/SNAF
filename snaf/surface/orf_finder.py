@@ -55,18 +55,18 @@ def transcript2orf(cdna):
     p_start = re.compile(r'ATG')
     p_end = re.compile(r'(TAA|TGA|TAG)')
     ms = list(re.finditer(p_start,cdna))   
-    if len(ms) > 1:
+    if len(ms) > 0:
         for s in ms:
             s_pos = int(s.start())
             me = list(re.finditer(p_end,cdna))
-            if len(me) > 1:
+            if len(me) > 0:
                 for e in me:
                     e_pos = int(e.start())
                     if s_pos < e_pos and s_pos % 3 == e_pos % 3:
                         orf = cdna[s_pos:e_pos]
                         valid = True
                         mo = list(re.finditer(p_end,orf))   # still need to check whether there is stop codon in the orf
-                        if len(mo) > 1:
+                        if len(mo) > 0:
                             for o in mo:
                                 o_pos = int(o.start())
                                 if o_pos % 3 == 0:
@@ -80,7 +80,7 @@ def transcript2orf(cdna):
                 if len(orf) % 3 != 0:
                     valid = not valid
                 mo = list(re.finditer(p_end,orf))
-                if len(mo) > 1:
+                if len(mo) > 0:
                     for o in mo:
                         o_pos = int(o.start())
                         if o_pos % 3 == 0:
@@ -108,7 +108,7 @@ def prioritize_orf(candidate_orfs,min_len=30*3,tol_len=8*3):
             if len(orf) > max_length and score > max_score:
                 max_length = len(orf)
                 max_score = score
-                max_orf = orf    
+                max_orf = orf  
     return max_orf            
 
 

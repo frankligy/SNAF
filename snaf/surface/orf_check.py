@@ -77,6 +77,7 @@ def back_traverse_exonlist(exonlist,ensgid,n_stride):
         if n_traversed_exon >= n_stride:
             break
         subexon = next(exon_iterator,'end')
+        current_subexon = subexon
         if subexon == 'end':
             break
         else:
@@ -84,11 +85,10 @@ def back_traverse_exonlist(exonlist,ensgid,n_stride):
             exon,index = int(exon),int(index)
             subexon_seq = get_exon_seq(subexon,ensgid)
             traversed_bases += len(subexon_seq)
-            if exon < current_exon:   # from E15.1 to E14.2
+            if exon < current_exon or index < current_index - 1:   # from E15.1 to E14.2 or from E14.5 to E14.3
                 n_traversed_exon += 1
-            else:
-                if index < current_index - 1:     # from E14.5 to E14.3
-                    n_traversed_exon += 1
+                current_exon = exon
+                current_index = index
     return traversed_bases,n_traversed_exon
 
 def nmd_check(uid,full_length,orf,n_stride):
