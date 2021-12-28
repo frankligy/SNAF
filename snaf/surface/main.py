@@ -47,7 +47,7 @@ def split_array_to_chunks(array,cores=None):
         sub_arrays.append(item_in_group)
     return sub_arrays
 
-def single_run(uids,n_stride,tmhmm,software_path):
+def single_run(uids,n_stride,tmhmm,software_path,serialize):
     results = []
     for uid in tqdm(uids):
         sa = SurfaceAntigen(uid,False)
@@ -58,12 +58,15 @@ def single_run(uids,n_stride,tmhmm,software_path):
         sa.orf_check(n_stride=n_stride)
         sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
         results.append(sa)
+    if serialize:
+        with open('single_run_surface_antigen.p','wb') as f:
+            pickle.dump(results,f)        
     return results
 
-def batch_run(uid_list,cores,n_stride,tmhmm=False,software_path=None,outdir='.',name=None):
+def batch_run(uid_list,cores,n_stride,tmhmm=False,software_path=None,serialize=False,outdir='.',name=None):
     sub_uid_lists = split_array_to_chunks(uid_list,cores=cores)
     pool = pool = mp.Pool(processes=cores)
-    r = [pool.apply_async(func=single_run,args=(sub_uid_list,n_stride,tmhmm,software_path,)) for sub_uid_list in sub_uid_lists]
+    r = [pool.apply_async(func=single_run,args=(sub_uid_list,n_stride,tmhmm,software_path,serialize,)) for sub_uid_list in sub_uid_lists]
     pool.close()
     pool.join()
     results = []

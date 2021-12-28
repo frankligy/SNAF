@@ -136,7 +136,8 @@ class JunctionCountMatrixQuery():
                 nj_list.append(nj)  
         elif kind == 3:  # currently recommended
             nj_list = []
-            for nj,index in tqdm(zip(input_,range(sub_cond_df.shape[0]))):
+            assert len(input_) == sub_cond_df.shape[0]
+            for nj,index in tqdm(zip(input_,range(sub_cond_df.shape[0])),total=len(input_)):
                 cond_row = sub_cond_df.iloc[index].tolist()
                 hlas_row = list(compress(hlas,cond_row))
                 combined_unique_hlas = reduce(lambda a,b:list(set(a+b)),hlas_row)
@@ -626,7 +627,20 @@ class NeoJunction():
             elif 'I' in self.uid:
                 event_type = 'intron_retention'
             elif re.search(r'^ENSG\d+:E\d+\.\d+-E\d+\.\d+$',self.uid):
-                event_type = 'ordinary'
+                e = self.uid.split(':')[1]
+                e1 = e.split('-')[0]
+                e2 = e.split('-')[1]
+                e1_int = int(e1.split('.')[0][1:])
+                e1_frac = int(e1.split('.')[1])
+                e2_int = int(e2.split('.')[0][1:])
+                e2_frac = int(e2.split('.')[1])                
+                if e1 == e2:   # E5.1-E5.1
+                    event_type = 'invalid'
+                else:
+                    if e1_int > e2_int or (e1_int==e2_int and e1_frac>e2_frac):   # E13.1-E12.4   or E12.10-E12.9
+                        event_type = 'invalid'
+                    else:
+                        event_type = 'ordinary'
             else:
                 event_type = 'invalid'
         else:
@@ -637,14 +651,13 @@ class NeoJunction():
     def retrieve_junction_seq(self):
         if self.event_type != 'invalid':
             ensid = self.uid.split(':')[0]
-            subexon1,subexon2 = self.uid.split(':')[1].split('-')
+            subexon1,subexon2 = ':'.join(self.uid.split(':')[1:]).split('-')
             seq1 = subexon_tran(subexon1,ensid,'site1')
             seq2 = subexon_tran(subexon2,ensid,'site2')
             junction = ','.join([seq1,seq2])
             self.junction = junction
         else:
             self.junction = '$' * 10   # indicating invalid uid
-        return junction
 
     def in_silico_translation(self,ks=[9,10]):
         peptides = {k:[] for k in ks}
@@ -848,37 +861,6 @@ def query_from_dict_fa(abs_start,abs_end,EnsID,strand):
         exon_seq = str(s.reverse_complement())
     return exon_seq
 
-
-'''
-Let's just pre-generate the exonCoords with added col for other uses
-'''
-def is_suffer_from_overhang(path):
-    df = pd.read_csv(path,sep='\t')
-    store_chunk = []
-    for gene,sub_df in df.groupby(by='gene'):
-        exonlist = sub_df['exon-id'].tolist()
-        dic = {} # {E14 : 1,2,4,5}, the values are stored in str
-        for subexon in exonlist:  # this traversal is to build the dict
-            exon_num = subexon.split('.')[0]
-            subexon_num = subexon.split('.')[1]
-            if exon_num in dic:
-                dic[exon_num].append(subexon_num)
-            else:
-                dic[exon_num] = []
-                dic[exon_num].append(subexon_num)  
-        added_col = []
-        for subexon in exonlist:  # this traversal is to figure out whether they are middle subexon or not
-            exon_num = subexon.split('.')[0]
-            subexon_num = subexon.split('.')[1]
-            if str(int(subexon_num) + 1) in dic[exon_num]:
-                is_suffer = True
-            else:
-                is_suffer = False
-            added_col.append(is_suffer)
-        sub_df['is_suffer'] = added_col
-        store_chunk.append(sub_df)
-    df = pd.concat(store_chunk,axis=0).sort_index()
-    return df
             
 
 
@@ -925,23 +907,12 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
     E6.2_67996641 or I40.1_13076665, also depending on whether they are subexon1 or subexon2
     ENSG00000213934:E3.1 or ENSG00000213934:E2.1_473843893894
     U0.1_49689185
-
     2. everything with trailing suffix will depend on the subexon1 or subexon2, but sometimes, it is fixed (trans-splicing can only be in subexon2)
     3. to be clear, the exon_seq returned is always 5'-3' sequence, not forward anymore.
-
     '''
     try:   # E1.2 or I3.4
-        attrs = dict_exonCoords[EnsID][subexon]  # [chr,strand,start,end,suffer]
-        if attrs[1] == '+':  
-            if attrs[4] == 'True':  # remedy by substract the end by 1
-                exon_seq = query_from_dict_fa(attrs[2],str(int(attrs[3])-1),EnsID,attrs[1]) 
-            else:
-                exon_seq = query_from_dict_fa(attrs[2],attrs[3],EnsID,attrs[1]) 
-        else:   
-            if attrs[4] == 'True': # remedy by adding the start by 1
-                exon_seq = query_from_dict_fa(str(int(attrs[2])+1),attrs[3],EnsID,attrs[1]) 
-            else:
-                exon_seq = query_from_dict_fa(attrs[2],attrs[3],EnsID,attrs[1]) 
+        attrs = dict_exonCoords[EnsID][subexon]  # [chr,strand,start,end,suffer] 
+        exon_seq = query_from_dict_fa(attrs[2],attrs[3],EnsID,attrs[1])  
     except KeyError:
         if ':' in subexon: # ENSG00000213934:E3.1
             fusionGeneEnsID = subexon.split(':')[0] 
@@ -951,31 +922,16 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
                 subexon = fusionGeneExon.split('_')[0]
                 attrs = dict_exonCoords[fusionGeneEnsID][subexon]
                 if attrs[1] == '+':  
-                    if attrs[4] == 'True': # remedy by substracting the end by 1
-                        exon_seq = query_from_dict_fa(suffix,str(int(attrs[3])-1),fusionGeneEnsID,attrs[1]) 
-                    else:
-                        exon_seq = query_from_dict_fa(suffix,attrs[3],fusionGeneEnsID,attrs[1]) 
+                    exon_seq = query_from_dict_fa(suffix,attrs[3],fusionGeneEnsID,attrs[1]) 
                 else:  
-                    if attrs[4] == 'True':  # remedy by adding the start by 1
-                        exon_seq = query_from_dict_fa(str(int(attrs[2])+1),suffix,fusionGeneEnsID,attrs[1])
-                    else:
-                        exon_seq = query_from_dict_fa(attrs[2],suffix,fusionGeneEnsID,attrs[1])
+                    exon_seq = query_from_dict_fa(attrs[2],suffix,fusionGeneEnsID,attrs[1])
             else:  # ENSG:E2.1
                 try:
                     attrs = dict_exonCoords[fusionGeneEnsID][fusionGeneExon]
                 except KeyError:
                     exon_seq = '*' * 10  # indicator for error on MultiPath-PSI itself
                 else:
-                    if attrs[1] == '+':  
-                        if attrs[4] == 'True':  # remedy by substract the end by 1
-                            exon_seq = query_from_dict_fa(attrs[2],str(int(attrs[3])-1),fusionGeneEnsID,attrs[1]) 
-                        else:
-                            exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
-                    else:   
-                        if attrs[4] == 'True': # remedy by adding the start by 1
-                            exon_seq = query_from_dict_fa(str(int(attrs[2])+1),attrs[3],fusionGeneEnsID,attrs[1]) 
-                        else:
-                            exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
+                    exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
 
         else:  # could be trailing or utr, or non-existing ordinary subexon
             try:
@@ -992,15 +948,9 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
                 else:   # must be trailing
                     if flag == 'site2':
                         if attrs[1] == '+':  
-                            if attrs[4] == 'True': # remedy by substracting the end by 1
-                                exon_seq = query_from_dict_fa(suffix,str(int(attrs[3])-1),EnsID,attrs[1]) 
-                            else:
-                                exon_seq = query_from_dict_fa(suffix,attrs[3],EnsID,attrs[1]) 
+                            exon_seq = query_from_dict_fa(suffix,attrs[3],EnsID,attrs[1]) 
                         else:  
-                            if attrs[4] == 'True':  # remedy by adding the start by 1
-                                exon_seq = query_from_dict_fa(str(int(attrs[2])+1),suffix,EnsID,attrs[1])
-                            else:
-                                exon_seq = query_from_dict_fa(attrs[2],suffix,EnsID,attrs[1])
+                            exon_seq = query_from_dict_fa(attrs[2],suffix,EnsID,attrs[1])
                     elif flag == 'site1':  # not affected by overhang since it is site1
                         if attrs[1] == '+': 
                             exon_seq = query_from_dict_fa(attrs[2],suffix,EnsID,attrs[1])
@@ -1010,77 +960,6 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
 
 
 
-
-
-
-
-## Old testing codes
-# # two files the program need
-# dict_exonCoords = exonCoords_to_dict('../data/Hs_Ensembl_exon_add_col.txt')
-# dict_fa = fasta_to_dict('../data/Hs_gene-seq-2000_flank.fa')
-# # install netMHCpan, and optitype will connect to hlas
-# software_path = '../external/netMHCpan-4.1/netMHCpan'
-# hlas = ['HLA-A*01:01','HLA-A*02:01','HLA-A*24:02','HLA-A*68:01','HLA-B*08:01','HLA-B*08:02']
-# # start to query
-# nj = NeoJunction(uid='ENSG00000229859:E1.5_61204253-E7.1_61211419',count=25,check_gtex=True)
-# nj.gtex_viewer(kind=1)
-# # nj.infer_tumor_specificity(method='bayesian')
-# nj.detect_type()
-# nj.retrieve_junction_seq()
-# nj.in_silico_translation()
-# nj.binding_prediction(hlas=hlas)
-# nj.immunogenicity_prediction()
-# nj.visualize()
-
-
-
-
-
-
-
-
-
-
-
-# sys.exit('stop')
-# df = is_suffer_from_overhang('../data/Hs_Ensembl_exon.txt')
-# df.to_csv('../data/Hs_Ensembl_exon_add_col.txt',sep='\t',index=None)
-
-
-
-
-
-# # testing case 
-# # some quick tips
-# '''
-# when xth, the direct subtraction means from one end, how many to count to arrive the another end
-# 0 based index, always means how many base before it.
-# '''
-
-# # ordinary + 
-# subexon_tran('E15.1','ENSG00000223572','site1')
-# subexon_tran('E15.2','ENSG00000223572','site1')
-
-# # ordinary -
-# subexon_tran('E1.1','ENSG00000149806','site1')
-# subexon_tran('E1.2','ENSG00000149806','site1')
-# subexon_tran('E1.3','ENSG00000149806','site1')
-
-# # trans with trailing
-# subexon_tran('ENSG00000253755:E3.1_105668978','ENSG00000211896','site2')
-
-# # trans without trailing
-# subexon_tran('ENSG00000211896:E4.1','ENSG00000211897','site2')
-
-# # utr
-# subexon_tran('U0.1_105857815','ENSG00000211895','site1')
-
-# # alt3
-# subexon_tran('E11.1_91157640','ENSG00000133943','site2')
-
-# # alt5
-# subexon_tran('E2.1_105625354','ENSG00000211892','site1')
-    
 
 
 
