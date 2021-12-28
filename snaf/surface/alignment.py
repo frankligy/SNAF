@@ -13,13 +13,16 @@ def alignment_to_uniprot(orf,uid,dict_uni_fa,tmhmm=False,software_path=None):
         if o != 'unrecoverable' and o != '':
             final_notes = []
             for iso,iso_seq in isoforms.items():
-                notes = []
-                for i, mer in enumerate(chop_sequence(o,10)):
-                    if mer in iso_seq:
-                        notes.append(True)  # here True means align
-                    else:
-                        notes.append(False)
-                conclusion = not all(notes)   # here True means not existing before
+                if len(iso_seq) != len(o):
+                    conclusion = True
+                else:
+                    notes = []                    
+                    for i, mer in enumerate(chop_sequence(o,10)):
+                        if mer in iso_seq:
+                            notes.append(True)  # here True means align
+                        else:
+                            notes.append(False)
+                    conclusion = not all(notes)   # here True means not existing before
                 final_notes.append(conclusion)
             decision = all(final_notes)  # here True means this isoform is novel
             if tmhmm:

@@ -45,23 +45,9 @@ def query_from_dict_fa(abs_start,abs_end,EnsID,strand):
     return exon_seq
 
 
-def get_exon_seq(exon,ensgid):
-    try:
-        attrs = dict_exonCoords[ensgid][exon]
-    except KeyError:   # indicator for error on MultiPath-PSI itself
-        frag = '*' * 10
-    else:
-        strand = attrs[1]
-        suffer = attrs[4]
-        if strand == '+' and suffer == 'False':
-            frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
-        elif strand == '+' and suffer == 'True':
-            frag = query_from_dict_fa(attrs[2],int(attrs[3])-1,ensgid,attrs[1])
-        elif strand == '-' and suffer == 'False':
-            frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
-        elif strand == '-' and suffer == 'True':
-            frag = query_from_dict_fa(int(attrs[2])+1,attrs[3],ensgid,attrs[1])
-    return frag
+def get_exon_sequence(exon,ensgid):
+    attrs = dict_exonCoords[ensgid][exon]
+    return query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
 
 
 def back_traverse_exonlist(exonlist,ensgid,n_stride):
@@ -70,7 +56,7 @@ def back_traverse_exonlist(exonlist,ensgid,n_stride):
     current_subexon = next(exon_iterator,'end')  # arrive the last one
     current_exon,current_index = current_subexon[1:].split('.')   # str(15)  # str(1)
     current_exon,current_index = int(current_exon),int(current_index) # int(15)  # int(1)
-    current_subexon_seq = get_exon_seq(current_subexon,ensgid)
+    current_subexon_seq = get_exon_sequence(current_subexon,ensgid)
     n_traversed_exon = 0
     traversed_bases = len(current_subexon_seq)
     while True:
@@ -83,7 +69,7 @@ def back_traverse_exonlist(exonlist,ensgid,n_stride):
         else:
             exon,index = subexon[1:].split('.')
             exon,index = int(exon),int(index)
-            subexon_seq = get_exon_seq(subexon,ensgid)
+            subexon_seq = get_exon_sequence(subexon,ensgid)
             traversed_bases += len(subexon_seq)
             if exon < current_exon or index < current_index - 1:   # from E15.1 to E14.2 or from E14.5 to E14.3
                 n_traversed_exon += 1

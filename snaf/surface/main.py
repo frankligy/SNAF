@@ -74,6 +74,14 @@ def batch_run(uid_list,cores,n_stride,tmhmm=False,software_path=None,outdir='.',
         pickle.dump(results,f)
 
 
+def get_exon_table(ensgid,outdir='.'):
+    values = dict_exonCoords[ensgid]
+    with open(os.path.join(outdir,'{}_exon_table.txt'.format(ensgid)),'w') as f:
+        f.write('subexon\tchrom\tstrand\tstart\tend\tsuffer\n')
+        for k,v in values.items():
+            f.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format(k,v[0],v[1],v[2],v[3],v[4]))
+
+
 def get_all_transcripts(ensgid,outdir='.'):
     df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
     df_certain.to_csv(os.path.join(outdir,'{}_all_transcripts.txt'.format(ensgid)),sep='\t',index=None)
@@ -83,6 +91,10 @@ def get_existing_isoforms(ensgid,outdir='.'):
     with open(os.path.join(outdir,'{}_existing_isoforms.fasta'.format(ensgid)),'w') as f:
         for k,v in dict_uni_fa[ensgid].items():
             f.write('>{}\n{}\n'.format(k,v))
+
+def get_exon_sequence(exon,ensgid):
+    attrs = dict_exonCoords[ensgid][exon]
+    return query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
 
 def filter_to_membrane_protein(lis):
     filtered_lis = []
@@ -231,13 +243,7 @@ class SurfaceAntigen(object):
             ensgid = self.uid.split(':')[0]
             exons = ':'.join(self.uid.split(':')[1:])
             if self.event_type == 'ordinary':
-                full_transcript_store = first_round_match_novel(ensgid,exons)
-            elif self.event_type == 'alt3' or self.event_type == 'alt5' or self.event_type == 'alt3_alt5':
-                full_transcript_store = second_round_match(ensgid,exons)
-            elif self.event_type == 'intron_retention':
-                full_transcript_store = third_round_match(ensgid,exons)
-            elif self.event_type == 'trans_splicing':
-                full_transcript_store = fourth_round_match(ensgid,exons)
+                full_transcript_store = first_round_match(ensgid,exons)
             else:   # novel_exon and utr_event
                 full_transcript_store = ['unrecoverable']
         else:
@@ -275,7 +281,6 @@ class SurfaceAntigen(object):
 
     def visualize(self,index,outdir='.',name=None,fragment=None):
         full_length = self.full_length[index]
-        junction = self.junction.replace(',','')
         orft = self.orft[index]
         ensgid = self.uid.split(':')[0]
         exonlist = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]['Exons'].iloc[index].split('|')
@@ -285,8 +290,6 @@ class SurfaceAntigen(object):
             import matplotlib.pyplot as plt
             from matplotlib.patches import Rectangle,Patch
             l = len(full_length)
-            start_j = full_length.index(junction)
-            end_j = start_j + (len(junction)-1)
             start_o = full_length.index(orft)
             end_o = start_o + (len(orft)-1)
             fig,ax = plt.subplots()
@@ -298,12 +301,16 @@ class SurfaceAntigen(object):
             # draw orft
             rect_orft = Rectangle((start_o/l,0.6),(end_o-start_o)/l,0.1,linewidth=0.5,facecolor='orange',edgecolor='k')
             ax.add_patch(rect_orft)
-            # draw junction
+            # draw junction            
+            junction = ''.join([self.junction.split(',')[0][1:],self.junction.split(',')[1][:-1]])
+            start_j = full_length.index(junction)
+            end_j = start_j + (len(junction)-1)
             rect_junction = Rectangle((start_j/l,0.4),(end_j-start_j)/l,0.1,linewidth=0.5,facecolor='r',edgecolor='k')
             ax.add_patch(rect_junction)
             # draw exonlist
             for i,exon in enumerate(exonlist):
-                seq = get_exon_seq(exon,ensgid)
+                attrs = dict_exonCoords[ensgid][exon]
+                seq = query_from_dict_fa(int(attrs[2])+1,int(attrs[3])-1,ensgid,attrs[1])
                 try:
                     start_s = full_length.index(seq)
                 except ValueError:   # say E9.2-E13.1 is the novel splicing event, skip the E11.1 in the list, so E11.1 won't align
@@ -350,21 +357,30 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
     3. to be clear, the exon_seq returned is always 5'-3' sequence, not forward anymore.
     '''
     try:   # E1.2 or I3.4
-        attrs = dict_exonCoords[EnsID][subexon]  # [chr,strand,start,end,suffer]
-        exon_seq = get_exon_seq(subexon,EnsID,check=False,attrs=attrs)
+        attrs = dict_exonCoords[EnsID][subexon]  # [chr,strand,start,end,suffer] 
+        exon_seq = query_from_dict_fa(attrs[2],attrs[3],EnsID,attrs[1])  
     except KeyError:
         if ':' in subexon: # ENSG00000213934:E3.1
             fusionGeneEnsID = subexon.split(':')[0] 
             fusionGeneExon = subexon.split(':')[1]        
-            if '_' in fusionGeneExon:   # ENSG:E2.1_473843893894
-                exon_seq = get_trailing_exon_seq(fusionGeneExon,fusionGeneEnsID,'site2',check=False)
+            if  '_' in fusionGeneExon:   # ENSG:E2.1_473843893894
+                suffix = fusionGeneExon.split('_')[1]
+                subexon = fusionGeneExon.split('_')[0]
+                attrs = dict_exonCoords[fusionGeneEnsID][subexon]
+                if attrs[1] == '+':  
+                    exon_seq = query_from_dict_fa(suffix,attrs[3],fusionGeneEnsID,attrs[1]) 
+                else:  
+                    exon_seq = query_from_dict_fa(attrs[2],suffix,fusionGeneEnsID,attrs[1])
             else:  # ENSG:E2.1
                 try:
                     attrs = dict_exonCoords[fusionGeneEnsID][fusionGeneExon]
                 except KeyError:
                     exon_seq = '*' * 10  # indicator for error on MultiPath-PSI itself
                 else:
-                    exon_seq = get_exon_seq(fusionGeneExon,fusionGeneEnsID,check=False,attrs=attrs)
+                    if attrs[1] == '+':  
+                        exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
+                    else:   
+                        exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
 
         else:  # could be trailing or utr, or non-existing ordinary subexon
             try:
@@ -379,7 +395,16 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
                     chrUTR,strandUTR = utrAttrs(EnsID) # this is get from a random subexon under that EnsID
                     exon_seq = utrJunction(suffix,EnsID,strandUTR,chrUTR,flag)  
                 else:   # must be trailing
-                    exon_seq = get_trailing_exon_seq('_'.join([subexon,suffix]),EnsID,flag=flag,check=False)
+                    if flag == 'site2':
+                        if attrs[1] == '+':  
+                            exon_seq = query_from_dict_fa(suffix,attrs[3],EnsID,attrs[1]) 
+                        else:  
+                            exon_seq = query_from_dict_fa(attrs[2],suffix,EnsID,attrs[1])
+                    elif flag == 'site1':  # not affected by overhang since it is site1
+                        if attrs[1] == '+': 
+                            exon_seq = query_from_dict_fa(attrs[2],suffix,EnsID,attrs[1])
+                        else:
+                            exon_seq = query_from_dict_fa(suffix,attrs[3],EnsID,attrs[1])
     return exon_seq
 
 def retrieveSeqFromUCSCapi(chr_,start,end):
@@ -444,117 +469,11 @@ def query_from_dict_fa(abs_start,abs_end,EnsID,strand):
     return exon_seq
 
 
-def get_exon_seq(exon,ensgid,check=True,attrs=None):
-    if check:
-        try:
-            attrs = dict_exonCoords[ensgid][exon]
-        except KeyError:   # indicator for error on MultiPath-PSI itself
-            frag = '*' * 10
-        else:
-            strand = attrs[1]
-            suffer = attrs[4]
-            if strand == '+' and suffer == 'False':
-                frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
-            elif strand == '+' and suffer == 'True':
-                frag = query_from_dict_fa(int(attrs[2])-1,attrs[3],ensgid,attrs[1])
-            elif strand == '-' and suffer == 'False':
-                frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
-            elif strand == '-' and suffer == 'True':
-                frag = query_from_dict_fa(attrs[2],int(attrs[3])-1,ensgid,attrs[1])
-    else:
-        strand = attrs[1]
-        suffer = attrs[4]
-        if strand == '+' and suffer == 'False':
-            frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
-        elif strand == '+' and suffer == 'True':
-            frag = query_from_dict_fa(int(attrs[2])-1,attrs[3],ensgid,attrs[1])
-        elif strand == '-' and suffer == 'False':
-            frag = query_from_dict_fa(attrs[2],attrs[3],ensgid,attrs[1])
-        elif strand == '-' and suffer == 'True':
-            frag = query_from_dict_fa(attrs[2],int(attrs[3])-1,ensgid,attrs[1])
-    return frag
-
-def get_trailing_exon_seq(exon,ensgid,flag,check=True):
-    e,suffix = exon.split('_')
-    if check:
-        try:
-            attrs = dict_exonCoords[ensgid][e]
-        except KeyError:
-            exon_seq = '*' * 10
-        else:
-            if flag == 'site2':
-                if attrs[1] == '+':  
-                    if attrs[4] == 'True': 
-                        exon_seq = query_from_dict_fa(suffix,attrs[3],ensgid,attrs[1]) 
-                    else:
-                        exon_seq = query_from_dict_fa(suffix,attrs[3],ensgid,attrs[1]) 
-                else:  
-                    if attrs[4] == 'True': 
-                        exon_seq = query_from_dict_fa(attrs[2],suffix,ensgid,attrs[1])
-                    else:
-                        exon_seq = query_from_dict_fa(attrs[2],suffix,ensgid,attrs[1])
-            elif flag == 'site1':  
-                if attrs[1] == '+': 
-                    if attrs[4] == 'True':
-                        exon_seq = query_from_dict_fa(int(attrs[2])-1,suffix,ensgid,attrs[1])
-                    else:
-                        exon_seq = query_from_dict_fa(attrs[2],suffix,ensgid,attrs[1])
-                else:
-                    if attrs[4] == 'True':
-                        exon_seq = query_from_dict_fa(suffix,int(attrs[3])-1,ensgid,attrs[1])
-    else:
-        attrs = dict_exonCoords[ensgid][e]
-        if flag == 'site2':
-            if attrs[1] == '+':  
-                if attrs[4] == 'True': 
-                    exon_seq = query_from_dict_fa(suffix,attrs[3],ensgid,attrs[1]) 
-                else:
-                    exon_seq = query_from_dict_fa(suffix,attrs[3],ensgid,attrs[1]) 
-            else:  
-                if attrs[4] == 'True': 
-                    exon_seq = query_from_dict_fa(attrs[2],suffix,ensgid,attrs[1])
-                else:
-                    exon_seq = query_from_dict_fa(attrs[2],suffix,ensgid,attrs[1])
-        elif flag == 'site1':  
-            if attrs[1] == '+': 
-                if attrs[4] == 'True':
-                    exon_seq = query_from_dict_fa(int(attrs[2])-1,suffix,ensgid,attrs[1])
-                else:
-                    exon_seq = query_from_dict_fa(attrs[2],suffix,ensgid,attrs[1])
-            else:
-                if attrs[4] == 'True':
-                    exon_seq = query_from_dict_fa(suffix,int(attrs[3])-1,ensgid,attrs[1])
-    return exon_seq
-
-
-
-
-def first_round_match_existing(ensgid,exons):
-    # exons is E4.1-E5.6
-    # first round mainly solve ordinary event
-    exons = exons.replace('-','|')
-    full_transcript_store = []  # ['',full_transcript1_seq,...] 
-    df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
-    for item in list(df_certain['Exons']):
-        full_transcript = ''
-        pattern1 = re.compile(r'\|{}\|'.format(exons.replace('|','\|')))  # |E3.4|E4.5|
-        pattern2 = re.compile(r'^{}\|'.format(exons.replace('|','\|')))    # E1.1|E4.5|  first one
-        pattern3 = re.compile(r'\|{}$'.format(exons.replace('|','\|')))     # |E6.9|E7.1  last one 
-        pattern4 = re.compile(r'^{}$'.format(exons.replace('|','\|')))     # E4.5|E5.6   just it
-        if re.search(pattern1,item) or re.search(pattern2,item) or re.search(pattern3,item) or re.search(pattern4,item):
-            exonlist = item.split('|')
-            for exon in exonlist:
-                frag = get_exon_seq(exon,ensgid)
-                full_transcript += frag
-            full_transcript_store.append(full_transcript)   
-        else:
-            full_transcript_store.append('')
-    return full_transcript_store
-
-def first_round_match_novel(ensgid,exons):
+def first_round_match(ensgid,exons):
     # exons is E4.1-E5.6
     # match E4.1 and E5.6 separately
     e1,e2 = exons.split('-')
+    strand = dict_exonCoords[ensgid][e1][1]
     full_transcript_store = []  # ['',full_transcript1_seq,...] 
     df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
     pattern1_1 = re.compile(r'{}\|'.format(e1))
@@ -566,206 +485,57 @@ def first_round_match_novel(ensgid,exons):
         match2 = re.search(pattern2_1,item) or re.search(pattern2_2,item)
         if match1 and match2:
             full_transcript = ''
-            exonlist = item.split('|')
-            index1 = exonlist.index(e1)
-            index2 = exonlist.index(e2)
-            for i in range(index1):
-                full_transcript += get_exon_seq(exonlist[i],ensgid)
-            full_transcript += get_exon_seq(exonlist[index1],ensgid)
-            full_transcript += get_exon_seq(exonlist[index2],ensgid)
-            for i in range(index2+1,len(exonlist)):
-                full_transcript += get_exon_seq(exonlist[i],ensgid)
+            exonlist = iter(item.split('|'))
+            l_exon = next(exonlist,'end')
+            l_exon_int = int(l_exon.split('.')[0][1:])
+            l_exon_frac = int(l_exon.split('.')[1])
+            pointer_up = dict_exonCoords[ensgid][l_exon][2] if strand == '+' else dict_exonCoords[ensgid][l_exon][3]
+            while True:
+                n_exon = next(exonlist,'end')
+                if n_exon == 'end':
+                    pointer_down = dict_exonCoords[ensgid][l_exon][3] if strand == '+' else dict_exonCoords[ensgid][l_exon][2]
+                    frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
+                    full_transcript += frag_seq
+                    break
+                if n_exon == e1:
+                    pointer_down = dict_exonCoords[ensgid][n_exon][3] if strand == '+' else dict_exonCoords[ensgid][n_exon][2]
+                    frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
+                    full_transcript += frag_seq
+                    while True:   # skip till e2
+                        n_exon = next(exonlist,'end')
+                        if n_exon == e2:
+                            l_exon = n_exon
+                            l_exon_int = int(l_exon.split('.')[0][1:])
+                            l_exon_frac = int(l_exon.split('.')[1])
+                            pointer_up = dict_exonCoords[ensgid][l_exon][2] if strand == '+' else dict_exonCoords[ensgid][l_exon][3]
+                            break
+                    continue
+                else:
+                    n_exon_int = int(n_exon.split('.')[0][1:])
+                    n_exon_frac = int(n_exon.split('.')[1])
+                    if n_exon_int > l_exon_int or n_exon_frac > l_exon_frac + 1:
+                        pointer_down = dict_exonCoords[ensgid][l_exon][3] if strand == '+' else dict_exonCoords[ensgid][l_exon][2]
+                        frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
+                        full_transcript += frag_seq
+                        pointer_up = dict_exonCoords[ensgid][n_exon][2] if strand == '+' else dict_exonCoords[ensgid][n_exon][3]
+                        l_exon = n_exon
+                        l_exon_int = n_exon_int
+                        l_exon_frac = n_exon_frac                        
+                    else:
+                        l_exon = n_exon
+                        l_exon_frac = n_exon_frac
             full_transcript_store.append(full_transcript)
         else:
             full_transcript_store.append('')
     return full_transcript_store
-
-
-
-
-
-def detect_mode(e1,e2):
-    if '_' in e1 and '_' not in e2:
-        mode = 1
-    elif '_' in e1 and '_' in e2:
-        mode = 3
-    elif '_' not in e1 and '_' in e2:
-        mode = 2
-    else:
-        raise Exception('Can not detect mode, exons passed in second_round_match function is not Alt event type')
-    return mode
-
-def degenerate_exons(mode,e1,e2):
-    if mode == 1:
-        degenerated = e1.split('_')[0] + '|' + e2
-    elif mode == 2:
-        degenerated = e1 + '|' + e2.split('_')[0]
-    elif mode == 3:
-        degenerated = e1.split('_')[0] + '|' + e2.split('_')[0]
-    return degenerated
-
-
-def second_round_match(ensgid,exons):
-    # exons is E4.1_45454-E5.6_44442
-    # second round mainly solve trailing issues for Alt3 Alt5, Alt3-Alt5
-    full_transcript_store = []  # ['',full_transcript1_seq,...] 
-    e1,e2 = exons.split('-')
-    mode = detect_mode(e1,e2)
-    degenerated = degenerate_exons(mode,e1,e2)
-    de1,de2 = degenerated.split('|')
-    df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
-    pattern1 = re.compile(r'\|{}\|'.format(degenerated.replace('|','\|')))  # |E3.4|E4.5|
-    pattern2 = re.compile(r'^{}\|'.format(degenerated.replace('|','\|')))   # E1.1|E4.5|  first one
-    pattern3 = re.compile(r'\|{}$'.format(degenerated.replace('|','\|')))  # |E6.9|E7.1  last one 
-    pattern4 = re.compile(r'^{}$'.format(degenerated.replace('|','\|')))     # E4.5|E5.6   just it  
-    for item in list(df_certain['Exons']): 
-        if re.search(pattern1,item) or re.search(pattern2,item) or re.search(pattern3,item) or re.search(pattern4,item):
-            exonlist = item.split('|')
-            if mode == 1:
-                transcript_left, transcript_middle, transcript_right= '', '' ,''
-                for i,exon in enumerate(exonlist):
-                    if exon != de1:
-                        frag = get_exon_seq(exon,ensgid)
-                        transcript_left += frag
-                    else:
-                        transcript_middle += get_trailing_exon_seq(e1,ensgid,'site1')
-                        i += 1
-                        for remain_exon in exonlist[i:]:
-                            frag = get_exon_seq(remain_exon,ensgid)
-                            transcript_right += frag
-                        break
-                full_transcript = transcript_left + transcript_middle + transcript_right
-            elif mode == 2:
-                transcript_left, transcript_middle, transcript_right= '', '' ,''
-                for i,exon in enumerate(exonlist):
-                    if exon != de2:
-                        frag = get_exon_seq(exon,ensgid)
-                        transcript_left += frag
-                    else:
-                        transcript_middle += get_trailing_exon_seq(e2,ensgid,'site2')
-                        i += 1
-                        for remain_exon in exonlist[i:]:
-                            frag = get_exon_seq(remain_exon,ensgid)
-                            transcript_right += frag
-                        break
-                full_transcript = transcript_left + transcript_middle + transcript_right    
-            elif mode == 3:
-                transcript_left, transcript_middle, transcript_right= '', '' ,''
-                for i,exon in enumerate(exonlist):
-                    if exon != de1:
-                        frag = get_exon_seq(exon,ensgid)
-                        transcript_left += frag
-                    else:
-                        transcript_middle += get_trailing_exon_seq(e1,ensgid,'site1')
-                        transcript_middle += get_trailing_exon_seq(e2,ensgid,'site2')
-                        i += 2
-                        for remain_exon in exonlist[i:]:
-                            frag = get_exon_seq(remain_exon,ensgid)
-                            transcript_right += frag
-                        break
-                full_transcript = transcript_left + transcript_middle + transcript_right   
-            full_transcript_store.append(full_transcript)
-        else:
-            full_transcript_store.append('')
-    return full_transcript_store
-
-
-def third_round_match(ensgid,exons):
-    # exons should be E4.5-I4.1 or I4.5-E5.6
-    # this round is for intron retention
-    full_transcript_store = []  # ['',full_transcript1_seq,...] 
-    e1,e2 = exons.split('-')   
-    if 'I' in e1:
-        i = e1; e = e2; m = 2   # m means mode, 1 means the exon is the first, 2 means the exon is the second
-    elif 'I' in e2:
-        i = e2; e = e1; m = 1
-    df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
-    for item in list(df_certain['Exons']):
-        pattern1 = re.compile(r'{}\|'.format(e))  # E4.5|
-        pattern2 = re.compile(r'^{}$'.format(e))  # E4.5$
-        if re.search(pattern1,item) or re.search(pattern2,item):
-            exonlist = item.split('|')  
-            if m == 1:
-                transcript = ''      
-                for i_,exon in enumerate(exonlist):
-                    if exon != e:
-                        frag = get_exon_seq(exon,ensgid)
-                        transcript += frag
-                    else:
-                        frag = get_exon_seq(e,ensgid)
-                        transcript += frag
-                        frag = get_exon_seq(i,ensgid)
-                        transcript += frag
-                        continue
-            elif m == 2:
-                transcript = ''      
-                for i_,exon in enumerate(exonlist):
-                    if exon != e:
-                        frag = get_exon_seq(exon,ensgid)
-                        transcript += frag
-                    else:
-                        frag = get_exon_seq(i,ensgid)   # fisrt add intron
-                        transcript += frag
-                        frag = get_exon_seq(e,ensgid)
-                        transcript += frag
-                        continue  
-            full_transcript_store.append(transcript)      
-        else:
-            full_transcript_store.append('')
-    return full_transcript_store
-
-
-def fourth_round_match(ensgid,exons):
-    # exons should be E4.5-ENSG:E4.3 or E4.5-ENSG:E4.5_4384839
-    # this round is for trailing events
-    full_transcript_store = []  # ['',full_transcript1_seq,...] 
-    e1 = exons.split('-')[0]
-    ensgid2 = exons.split('-')[1].split(':')[0]
-    e2 = exons.split('-')[1].split(':')[1]
-    if '_' in e2:
-        e2,suffix = e2.split('_')
-    else:
-        suffix = None
-    df_certain1 = df_exonlist.loc[df_exonlist['EnsGID']==ensgid,:]
-    df_certain2 = df_exonlist.loc[df_exonlist['EnsGID']==ensgid2,:]
-    for item1 in list(df_certain1['Exons']):
-        for item2 in list(df_certain2['Exons']):
-            pattern1_1 = re.compile(r'{}\|'.format(e1))  # E4.5|
-            pattern1_2 = re.compile(r'^{}$'.format(e1))  # E4.5$
-            pattern2_1 = re.compile(r'\|{}\|'.format(e2))  
-            pattern2_2 = re.compile(r'^{}\|'.format(e2))  
-            match_to_item1 = re.search(pattern1_1,item1) or re.search(pattern1_2,item1) 
-            match_to_item2 = re.search(pattern2_1,item2) or re.search(pattern2_2,item2) 
-            if match_to_item1 and match_to_item2:
-                transcript = ''
-                exonlist1 = item1.split('|')  
-                exonlist2 = item2.split('|')
-                for i1,exon1 in enumerate(exonlist1):
-                    if exon1 != e1:
-                        frag = get_exon_seq(exon1,ensgid)
-                        transcript += frag
-                    else:
-                        frag = get_exon_seq(e1,ensgid)
-                        for i2,exon2 in enumerate(exonlist2):
-                            if exon2 == e2:
-                                if suffix is not None:
-                                    frag = get_trailing_exon_seq(full_e2,ensgid2,'site2')
-                                else:
-                                    frag = get_exon_seq(e2,ensgid2)
-                                transcript += frag
-                                i2 += 1
-                                for remain_exon in exonlist2[i2:]:
-                                    frag = get_exon_seq(remain_exon,ensgid)
-                                    transcript += frag
-                            else:
-                                continue
-                full_transcript_store.append(transcript)
-            else:
-                full_transcript_store.append('')
-    return full_transcript_store
-
-
                 
+
+
+
+
+
+
+
 
 
 
