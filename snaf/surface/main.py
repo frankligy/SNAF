@@ -6,6 +6,8 @@ import multiprocessing as mp
 import re
 import pickle
 from datetime import datetime,date
+import requests
+import xmltodict
 from tqdm import tqdm
 from .data_io import *
 from .orf_finder import *
@@ -67,12 +69,64 @@ def batch_run(uid_list,cores,n_stride,tmhmm=False,software_path=None,outdir='.',
     results = []
     for collect in r:
         result = collect.get()
-        resutls.extend(result)
+        results.extend(result)
     if name is None:
         name = 'batch_run_surface_antigen.p'
     with open(os.path.join(outdir,name),'wb') as f:
         pickle.dump(results,f)
 
+def individual_check(uid,n_stride=2,tmhmm=False,software_path=None,exons=None,indices=None):
+    uid = uid
+    sa = surface.SurfaceAntigen(uid,False)
+    surface.get_exon_table(uid.split(':')[0])
+    surface.get_all_transcripts(uid.split(':')[0])
+    surface.get_existing_isoforms(uid.split(':')[0])
+    if exons is not None:
+        for exon in exon:
+            print(surface.main.get_exon_sequence(exon,uid.split(':')[0]))
+    sa.detect_type()
+    sa.retrieve_junction_seq()
+    sa.recovery_full_length_protein()
+    sa.find_orf()
+    sa.orf_check(n_stride=n_stride)
+    sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
+    print(sa)
+    for index in indices:
+        sa.visualize(index=indices,fragment=None)
+
+def process_results(pickle_path,strigency,outdir='.'):
+    with open(pickle_path,'rb') as f:
+        results = pickle.load(f)
+    count_candidates = 0
+    count_further = 0
+    with open(os.path.join(outdir,'candidates.txt'),'w') as f1, open(os.path.join(outdir,'further.txt'),'w') as f2:
+        for sa in results:
+            if len(sa.comments) > 0:
+                print(sa,file=f2)
+                count_further += 1
+            else:
+                send = False
+                for n,t,a in zip(sa.nmd,sa.translatability,sa.alignment):
+                    if strigency == 3:
+                        if n == '#' and t == '#' and a:
+                            send = not send
+                            break
+                    elif strigency == 2:
+                        if t == '#' and a:
+                            send = not send
+                            break
+                    elif strigency == 1:
+                        if a:
+                            send = not send
+                            break
+                if send:
+                    print(sa,file=f1)
+                    count_candidates += 1
+    return count_candidates,count_further
+
+
+    
+    
 
 def get_exon_table(ensgid,outdir='.'):
     values = dict_exonCoords[ensgid]
@@ -111,6 +165,7 @@ class SurfaceAntigen(object):
 
     def __init__(self,uid,check_overlap=True):
         self.uid = uid
+        self.comments = []
         if check_overlap:
             if not self.is_membrane_protein():
                 raise Exception('This event will not encode a surface protein')
@@ -124,6 +179,7 @@ class SurfaceAntigen(object):
 
     def __str__(self):
         print_str = 'uid:{}\n'.format(self.uid)
+        print_str += 'comments:{}\n'.format(self.comments)
         try:
             print_event_type = self.event_type
         except AttributeError:
@@ -186,6 +242,7 @@ class SurfaceAntigen(object):
 
 
 
+
     def detect_type(self):
         '''
         Ordinary: ENSG00000107902:E10.1-E12.1
@@ -218,7 +275,20 @@ class SurfaceAntigen(object):
             elif 'I' in self.uid:
                 event_type = 'intron_retention'
             elif re.search(r'^ENSG\d+:E\d+\.\d+-E\d+\.\d+$',self.uid):
-                event_type = 'ordinary'
+                e = self.uid.split(':')[1]
+                e1 = e.split('-')[0]
+                e2 = e.split('-')[1]
+                e1_int = int(e1.split('.')[0][1:])
+                e1_frac = int(e1.split('.')[1])
+                e2_int = int(e2.split('.')[0][1:])
+                e2_frac = int(e2.split('.')[1])                
+                if e1 == e2:   # E5.1-E5.1
+                    event_type = 'invalid'
+                else:
+                    if e1_int > e2_int or (e1_int==e2_int and e1_frac>e2_frac):   # E13.1-E12.4   or E12.10-E12.9
+                        event_type = 'invalid'
+                    else:
+                        event_type = 'ordinary'
             else:
                 event_type = 'invalid'
         else:
@@ -243,7 +313,8 @@ class SurfaceAntigen(object):
             ensgid = self.uid.split(':')[0]
             exons = ':'.join(self.uid.split(':')[1:])
             if self.event_type == 'ordinary':
-                full_transcript_store = first_round_match(ensgid,exons)
+                full_transcript_store,comments = first_round_match(ensgid,exons)
+                self.comments.extend(comments)
             else:   # novel_exon and utr_event
                 full_transcript_store = ['unrecoverable']
         else:
@@ -254,12 +325,17 @@ class SurfaceAntigen(object):
         orft_list = []
         orfp_list = []
         for sequence in self.full_length:
-            if sequence != 'unrecoverble' and sequence != '':
-                candidate_orfs = transcript2orf(sequence)
-                max_orf = prioritize_orf(candidate_orfs)
-                max_pep = orf2pep(max_orf)
-                orft_list.append(max_orf)
-                orfp_list.append(max_pep)
+            if sequence != 'unrecoverable' and sequence != '':
+                if len(sequence) > 10000:
+                    orft_list.append('')
+                    orfp_list.append('')
+                    self.comments.append('full_transcript > 10000')
+                else:
+                    candidate_orfs = transcript2orf(sequence)
+                    max_orf = prioritize_orf(candidate_orfs)
+                    max_pep = orf2pep(max_orf)
+                    orft_list.append(max_orf)
+                    orfp_list.append(max_pep)
             else:
                 orft_list.append(sequence)
                 orfp_list.append(sequence)
@@ -377,10 +453,7 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
                 except KeyError:
                     exon_seq = '*' * 10  # indicator for error on MultiPath-PSI itself
                 else:
-                    if attrs[1] == '+':  
-                        exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
-                    else:   
-                        exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
+                    exon_seq = query_from_dict_fa(attrs[2],attrs[3],fusionGeneEnsID,attrs[1]) 
 
         else:  # could be trailing or utr, or non-existing ordinary subexon
             try:
@@ -472,6 +545,7 @@ def query_from_dict_fa(abs_start,abs_end,EnsID,strand):
 def first_round_match(ensgid,exons):
     # exons is E4.1-E5.6
     # match E4.1 and E5.6 separately
+    comments = []
     e1,e2 = exons.split('-')
     strand = dict_exonCoords[ensgid][e1][1]
     full_transcript_store = []  # ['',full_transcript1_seq,...] 
@@ -484,50 +558,54 @@ def first_round_match(ensgid,exons):
         match1 = re.search(pattern1_1,item) or re.search(pattern1_2,item)
         match2 = re.search(pattern2_1,item) or re.search(pattern2_2,item)
         if match1 and match2:
-            full_transcript = ''
-            exonlist = iter(item.split('|'))
-            l_exon = next(exonlist,'end')
-            l_exon_int = int(l_exon.split('.')[0][1:])
-            l_exon_frac = int(l_exon.split('.')[1])
-            pointer_up = dict_exonCoords[ensgid][l_exon][2] if strand == '+' else dict_exonCoords[ensgid][l_exon][3]
-            while True:
-                n_exon = next(exonlist,'end')
-                if n_exon == 'end':
-                    pointer_down = dict_exonCoords[ensgid][l_exon][3] if strand == '+' else dict_exonCoords[ensgid][l_exon][2]
-                    frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
-                    full_transcript += frag_seq
-                    break
-                if n_exon == e1:
-                    pointer_down = dict_exonCoords[ensgid][n_exon][3] if strand == '+' else dict_exonCoords[ensgid][n_exon][2]
-                    frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
-                    full_transcript += frag_seq
-                    while True:   # skip till e2
-                        n_exon = next(exonlist,'end')
-                        if n_exon == e2:
-                            l_exon = n_exon
-                            l_exon_int = int(l_exon.split('.')[0][1:])
-                            l_exon_frac = int(l_exon.split('.')[1])
-                            pointer_up = dict_exonCoords[ensgid][l_exon][2] if strand == '+' else dict_exonCoords[ensgid][l_exon][3]
-                            break
-                    continue
-                else:
-                    n_exon_int = int(n_exon.split('.')[0][1:])
-                    n_exon_frac = int(n_exon.split('.')[1])
-                    if n_exon_int > l_exon_int or n_exon_frac > l_exon_frac + 1:
+            if match1.start() >= match2.start():    # E16.2|E16.3|E23.1|E35.10|E35.11|E36.1|E37.1|E38.1|E39.1|E40.1|E41.1|E42.2|E43.1|E43.2|E43.4|E43.5|E2.4|E5.1|E5.2|E5.3|E5.4|E5.5 
+                full_transcript_store.append('')
+                comments.append('wonky ordered database')
+            else:
+                full_transcript = ''
+                exonlist = iter(item.split('|'))
+                l_exon = next(exonlist,'end')
+                l_exon_int = int(l_exon.split('.')[0][1:])
+                l_exon_frac = int(l_exon.split('.')[1])
+                pointer_up = dict_exonCoords[ensgid][l_exon][2] if strand == '+' else dict_exonCoords[ensgid][l_exon][3]
+                while True:
+                    n_exon = next(exonlist,'end')
+                    if n_exon == 'end':
                         pointer_down = dict_exonCoords[ensgid][l_exon][3] if strand == '+' else dict_exonCoords[ensgid][l_exon][2]
                         frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
                         full_transcript += frag_seq
-                        pointer_up = dict_exonCoords[ensgid][n_exon][2] if strand == '+' else dict_exonCoords[ensgid][n_exon][3]
-                        l_exon = n_exon
-                        l_exon_int = n_exon_int
-                        l_exon_frac = n_exon_frac                        
+                        break
+                    if n_exon == e1:
+                        pointer_down = dict_exonCoords[ensgid][n_exon][3] if strand == '+' else dict_exonCoords[ensgid][n_exon][2]
+                        frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
+                        full_transcript += frag_seq
+                        while True:   # skip till e2
+                            n_exon = next(exonlist,'end')
+                            if n_exon == e2:
+                                l_exon = n_exon
+                                l_exon_int = int(l_exon.split('.')[0][1:])
+                                l_exon_frac = int(l_exon.split('.')[1])
+                                pointer_up = dict_exonCoords[ensgid][l_exon][2] if strand == '+' else dict_exonCoords[ensgid][l_exon][3]
+                                break
+                        continue
                     else:
-                        l_exon = n_exon
-                        l_exon_frac = n_exon_frac
-            full_transcript_store.append(full_transcript)
+                        n_exon_int = int(n_exon.split('.')[0][1:])
+                        n_exon_frac = int(n_exon.split('.')[1])
+                        if n_exon_int > l_exon_int or n_exon_frac > l_exon_frac + 1:
+                            pointer_down = dict_exonCoords[ensgid][l_exon][3] if strand == '+' else dict_exonCoords[ensgid][l_exon][2]
+                            frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
+                            full_transcript += frag_seq
+                            pointer_up = dict_exonCoords[ensgid][n_exon][2] if strand == '+' else dict_exonCoords[ensgid][n_exon][3]
+                            l_exon = n_exon
+                            l_exon_int = n_exon_int
+                            l_exon_frac = n_exon_frac                        
+                        else:
+                            l_exon = n_exon
+                            l_exon_frac = n_exon_frac
+                full_transcript_store.append(full_transcript)
         else:
             full_transcript_store.append('')
-    return full_transcript_store
+    return full_transcript_store,comments
                 
 
 
