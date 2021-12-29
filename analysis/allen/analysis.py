@@ -42,22 +42,22 @@ for p,f in patient_dict.items():
 
 
 
-# # preprocess the dataframe
-# df = pd.read_csv('./counts.original.txt',sep='\t',index_col=0)
-# df.index = [item.split('=')[0] for item in df.index]
-# df = df.loc[np.logical_not(df.index.duplicated()).tolist(),:]  # 668986 rows x 39 columns
+# preprocess the dataframe
+df = pd.read_csv('./counts.original.txt',sep='\t',index_col=0)
+df.index = [item.split('=')[0] for item in df.index]
+df = df.loc[np.logical_not(df.index.duplicated()).tolist(),:]  # 668986 rows x 39 columns
 
 
-# # filter to EventAnnotation file
-# ee = [':'.join(item.split('|')[0].split(':')[1:]) for item in pd.read_csv('Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',sep='\t')['UID']]
-# df = df.loc[df.index.isin(set(ee)),:]   # 49114 rows x 39 columns
+# filter to EventAnnotation file
+ee = [':'.join(item.split('|')[0].split(':')[1:]) for item in pd.read_csv('Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',sep='\t')['UID']]
+df = df.loc[df.index.isin(set(ee)),:]   # 49114 rows x 39 columns
 
 
-# # run SNAF
-# exon_table = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/Hs_Ensembl_exon_add_col.txt'
-# fasta = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/Hs_gene-seq-2000_flank.fa'
-# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-# gtex_db = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/GTEx_junction_counts.h5ad'
+# run SNAF
+exon_table = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/Hs_Ensembl_exon_add_col.txt'
+fasta = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/Hs_gene-seq-2000_flank.fa'
+netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+gtex_db = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/GTEx_junction_counts.h5ad'
 
 # snaf.initialize(exon_table=exon_table,fasta=fasta,software_path=netMHCpan_path,gtex_db=gtex_db,binding_method='netMHCpan')
 # jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=50)
@@ -77,15 +77,25 @@ for p,f in patient_dict.items():
 
 
 '''patient analysis'''
-# # 1. survival analysis
-# survival = pd.read_csv('all_patients_hla.txt',sep='\t',index_col=0)  
-# burden = pd.read_csv('burden_stage0.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1] 
-# survival = survival.loc[survival.index.isin(patient_dict.keys()),:]
-# reverse_patient_dict = {v:k for k,v in patient_dict.items()}
-# burden.index = burden.index.map(reverse_patient_dict).values
-# # burden,burden_encode,burden_vc = snaf.survival_analysis(burden,survival,n=2,stratification_plot='patient_analysis/stage0_stratify.pdf',survival_plot='patient_analysis/stage0_survival.pdf',survival_duration='overall_survival',survival_event='dead')
+# 1. survival analysis
+survival = pd.read_csv('all_patients_hla.txt',sep='\t',index_col=0)  
+burden = pd.read_csv('burden_stage2.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1] 
+survival = survival.loc[survival.index.isin(patient_dict.keys()),:]
+reverse_patient_dict = {v:k for k,v in patient_dict.items()}
+burden.index = burden.index.map(reverse_patient_dict).values
+# burden,burden_encode,burden_vc = snaf.survival_analysis(burden,survival,n=2,stratification_plot='patient_analysis/stage2_stratify.pdf',survival_plot='patient_analysis/stage2_survival.pdf',survival_duration='overall_survival',survival_event='dead')
 # burden,burden_encode,burden_vc = snaf.survival_analysis(burden,survival,n=2,stratification_plot='patient_analysis/stage0_stratify.pdf',survival_plot='patient_analysis/stage0_progression.pdf',survival_duration='progression_free',survival_event='progression')
 
+
+# 2. all burden
+burden0 = pd.read_csv('burden_stage0.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]
+burden1 = pd.read_csv('burden_stage1.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]
+burden2 = pd.read_csv('burden_stage2.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]
+burden3 = pd.read_csv('burden_stage3.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]
+burden = pd.concat([burden0,burden1,burden2,burden3],axis=1)
+burden.columns = ['burden0','burden1','burden2','burden3']
+burden.to_csv('patient_analysis/burden_dynamics.txt',sep='\t')
+sys.exit('stop')
 
 '''neoantigen analysis'''
 # 1. physicalchemical properties relate to occurence?
@@ -112,7 +122,7 @@ for p,f in patient_dict.items():
 # sns.regplot(freq3['burden0'].values,freq3['n_sample'])
 # plt.savefig('neoantigen_analysis/freq3_correlation_filter.pdf',bbox_inches='tight');plt.close()
 
-snaf.run_dash_app(intpath='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/neoantigen_analysis/df_test_app.txt',
+snaf.run_dash_app(intpath='/data/salomonis2/LabFiles/Frank-Li/neoantigen/immunotherapy/allen/neoantigen_analysis/df_test_app.txt',
                   remove_cols=['uid'],host='bmi-460g9-20.chmcres.cchmc.org')
 
 
