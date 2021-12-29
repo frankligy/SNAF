@@ -58,6 +58,7 @@ class JunctionCountMatrixQuery():
             cores = mp.cpu_count()
         self.cores = cores
         self.get_neojunctions()
+        
 
     def __str__(self):
         try:

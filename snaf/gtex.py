@@ -19,16 +19,32 @@ this script is to query the tumor specificity of the junction
 '''
 
 
-def gtex_configuration(gtex_db,t_min_arg,n_max_arg):
+def gtex_configuration(gtex_db,t_min_arg,n_max_arg,add_control=None):
     global adata
     global t_min
     global n_max
     adata = anndata.read_h5ad(gtex_db)
+    if add_control is not None:
+        print('adding additional control samples {} to the database'.format(add_control.shape))
+        tissue_dict = adata.var['tissue'].to_dict()
+        tissue_dict_right = {k:'additional_control' for k in add_control.columns}
+        tissue_dict.update(tissue_dict_right)
+        df_left = adata.to_df()
+        df_right = add_control
+        df_combine = df_left.join(other=df_right,how='outer').fillna(0)
+        adata = anndata.AnnData(X=df_combine.values,obs=pd.DataFrame(index=df_combine.index),var=pd.DataFrame(index=df_combine.columns))
+        print('now the shape of control db is {}'.format(adata.shape))
+        adata.var['tissue'] = adata.var_names.map(tissue_dict).values
+        adata.obs['mean'] = np.array(adata.X.mean(axis=1)).squeeze()
+        total_count = np.array(adata.X.sum(axis=0)).squeeze() / 1e6
+        adata.var['total_count'] = total_count
     t_min = t_min_arg
     n_max = n_max_arg
 
 
-def multiple_crude_sifting(junction_count_matrix):   # for JunctionCountMatrixQuery class
+
+
+def multiple_crude_sifting(junction_count_matrix,add_control=None):   # for JunctionCountMatrixQuery class
     df = pd.DataFrame(index=junction_count_matrix.index,
                       data = {'max':junction_count_matrix.max(axis=1).values})
     junction_to_mean = adata.obs.loc[adata.obs_names.isin(junction_count_matrix.index),'mean'].to_dict()

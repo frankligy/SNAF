@@ -78,24 +78,27 @@ def batch_run(uid_list,cores,n_stride,tmhmm=False,software_path=None,serialize=F
     with open(os.path.join(outdir,name),'wb') as f:
         pickle.dump(results,f)
 
-def individual_check(uid,n_stride=2,tmhmm=False,software_path=None,exons=None,indices=None):
+def individual_check(uid,n_stride=2,tmhmm=False,software_path=None,exons=None,indices=[None]):
     uid = uid
-    sa = surface.SurfaceAntigen(uid,False)
-    surface.get_exon_table(uid.split(':')[0])
-    surface.get_all_transcripts(uid.split(':')[0])
-    surface.get_existing_isoforms(uid.split(':')[0])
+    sa = SurfaceAntigen(uid,False)
+    get_exon_table(uid.split(':')[0])
+    get_all_transcripts(uid.split(':')[0])
+    get_existing_isoforms(uid.split(':')[0])
     if exons is not None:
-        for exon in exon:
-            print(surface.main.get_exon_sequence(exon,uid.split(':')[0]))
+        for exon in exons:
+            print(exon,get_exon_sequence(exon,uid.split(':')[0]))
     sa.detect_type()
     sa.retrieve_junction_seq()
     sa.recovery_full_length_protein()
     sa.find_orf()
     sa.orf_check(n_stride=n_stride)
     sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
-    print(sa)
     for index in indices:
-        sa.visualize(index=indices,fragment=None)
+        if index is None:
+            continue
+        else:
+            sa.visualize(index=index,fragment=None)
+    return sa
 
 def process_results(pickle_path,strigency,outdir='.'):
     with open(pickle_path,'rb') as f:
@@ -557,7 +560,7 @@ def first_round_match(ensgid,exons):
     pattern1_2 = re.compile(r'{}$'.format(e1))
     pattern2_1 = re.compile(r'{}\|'.format(e2))
     pattern2_2 = re.compile(r'{}$'.format(e2))
-    for item in list(df_certain['Exons']):
+    for i,item in enumerate(df_certain['Exons']):
         match1 = re.search(pattern1_1,item) or re.search(pattern1_2,item)
         match2 = re.search(pattern2_1,item) or re.search(pattern2_2,item)
         if match1 and match2:
@@ -566,6 +569,7 @@ def first_round_match(ensgid,exons):
                 comments.append('wonky ordered database')
             else:
                 full_transcript = ''
+                pointer_up_status = 'released'
                 exonlist = iter(item.split('|'))
                 l_exon = next(exonlist,'end')
                 l_exon_int = int(l_exon.split('.')[0][1:])
@@ -579,6 +583,12 @@ def first_round_match(ensgid,exons):
                         full_transcript += frag_seq
                         break
                     if n_exon == e1:
+                        # solve the one before the e1
+                        pointer_down = dict_exonCoords[ensgid][l_exon][3] if strand == '+' else dict_exonCoords[ensgid][l_exon][2]
+                        frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
+                        full_transcript += frag_seq
+                        pointer_up = dict_exonCoords[ensgid][n_exon][2] if strand == '+' else dict_exonCoords[ensgid][n_exon][3]
+                        # now solve e1 itself
                         pointer_down = dict_exonCoords[ensgid][n_exon][3] if strand == '+' else dict_exonCoords[ensgid][n_exon][2]
                         frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
                         full_transcript += frag_seq
@@ -594,7 +604,7 @@ def first_round_match(ensgid,exons):
                     else:
                         n_exon_int = int(n_exon.split('.')[0][1:])
                         n_exon_frac = int(n_exon.split('.')[1])
-                        if n_exon_int > l_exon_int or n_exon_frac > l_exon_frac + 1:
+                        if n_exon_int > l_exon_int or (n_exon_int == l_exon_int and n_exon_frac > l_exon_frac + 1):
                             pointer_down = dict_exonCoords[ensgid][l_exon][3] if strand == '+' else dict_exonCoords[ensgid][l_exon][2]
                             frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
                             full_transcript += frag_seq
