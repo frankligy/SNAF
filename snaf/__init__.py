@@ -7,7 +7,7 @@ from .downstream import *
 from datetime import datetime,date
 from .dash_app import run_dash_app,run_pweblogo
 
-def initialize(exon_table,fasta,gtex_db,software_path=None,binding_method=None,t_min=20,n_max=3,add_control=None):
+def initialize(exon_table,fasta,gtex_db,software_path=None,binding_method=None,t_min=0.1,n_max=0.05,add_control=None):
     print('{} {} starting initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
     snaf_configuration(exon_table,fasta,software_path,binding_method)
     binding_configuration(binding_method)

@@ -21,15 +21,16 @@ this script is to query the tumor specificity of the junction
 
 def gtex_configuration(gtex_db,t_min_arg,n_max_arg,add_control=None):
     global adata
+    global adata_gtex
     global t_min
     global n_max
-    adata = anndata.read_h5ad(gtex_db)
+    adata_gtex = anndata.read_h5ad(gtex_db)
     if add_control is not None:
         print('adding additional control samples {} to the database'.format(add_control.shape))
-        tissue_dict = adata.var['tissue'].to_dict()
+        tissue_dict = adata_gtex.var['tissue'].to_dict()
         tissue_dict_right = {k:'additional_control' for k in add_control.columns}
         tissue_dict.update(tissue_dict_right)
-        df_left = adata.to_df()
+        df_left = adata_gtex.to_df()
         df_right = add_control
         df_combine = df_left.join(other=df_right,how='outer').fillna(0)
         adata = anndata.AnnData(X=df_combine.values,obs=pd.DataFrame(index=df_combine.index),var=pd.DataFrame(index=df_combine.columns))
@@ -44,29 +45,42 @@ def gtex_configuration(gtex_db,t_min_arg,n_max_arg,add_control=None):
 
 
 
-def multiple_crude_sifting(junction_count_matrix,add_control=None):   # for JunctionCountMatrixQuery class
-    df = pd.DataFrame(index=junction_count_matrix.index,
-                      data = {'max':junction_count_matrix.max(axis=1).values})
-    junction_to_mean = adata.obs.loc[adata.obs_names.isin(junction_count_matrix.index),'mean'].to_dict()
+def multiple_crude_sifting(junction_count_matrix,add_control=None):   # for JunctionCountMatrixQuery class, only consider gtex
+    df = pd.DataFrame(index=junction_count_matrix.index,data = {'max':junction_count_matrix.max(axis=1).values})
+    # consider gtex
+    junction_to_mean = adata_gtex.obs.loc[adata_gtex.obs_names.isin(junction_count_matrix.index),'mean'].to_dict()
     df['mean'] = df.index.map(junction_to_mean).fillna(value=0)
     df['diff'] = df['max'] - df['mean']
     df['cond'] = (df['mean'] < n_max) & (df['diff'] > t_min)
     valid = df.loc[df['cond']].index.tolist()
-    invalid = df.loc[~df['cond']].index.tolist()
-
+    # consider add_control
+    if add_control is not None:
+        junction_to_mean = add_control.mean(axis=1).to_dict()
+        df['mean_add'] = df.index.map(junction_to_mean).fillna(value=0)
+        df['diff_add'] = df['max'] - df['mean_add']
+        df['cond_add'] = (df['mean_add'] < n_max) & (df['diff_add'] > t_min)
+        valid_add = df.loc[df['cond_add']].index.tolist()
+        valid = list(set(valid).intersection(set(valid_add)))
+    invalid = list(set(junction_count_matrix.index).difference(set(valid)))
+    # now, consider each entry
     gtex_df = pd.concat([df['mean']]*junction_count_matrix.shape[1],axis=1)
     gtex_df.columns = junction_count_matrix.columns
-    diff_df = junction_count_matrix - gtex_df
-    cond_df = (gtex_df < n_max) & (diff_df > t_min)
+    diff_df_gtex = junction_count_matrix - gtex_df
+    cond_df = (gtex_df < n_max) & (diff_df_gtex > t_min)
+    if add_control is not None:
+        add_df = pd.concat([df['mean_add']]*junction_count_matrix.shape[1],axis=1)    
+        add_df.columns = junction_count_matrix.columns
+        diff_df_add = junction_count_matrix - add_df
+        cond_df = cond_df & (add_df < n_max) & (diff_df_add > t_min)
     return valid,invalid,cond_df
 
 
 def crude_tumor_specificity(uid,count):    # for NeoJunction class
     detail = ''
-    if uid not in set(adata.obs_names):
+    if uid not in set(adata_gtex.obs_names):
         mean_value = 0
     else:
-        mean_value = adata.obs.loc[uid,'mean']
+        mean_value = adata_gtex.obs.loc[uid,'mean']
     diff = count - mean_value
     if mean_value < n_max and diff >= t_min:
         identity = True

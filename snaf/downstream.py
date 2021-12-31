@@ -42,8 +42,10 @@ def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column
             asso.to_csv(output,sep='\t')
             os.remove('snaf_mutation_tmp')
     elif mode == 'plot':
+        burden = burden.loc[burden.index.isin(mutation.index)]
         for gene in genes_to_plot:
             yes_samples = mutation.loc[mutation[gene_column] == gene,:].index.unique().tolist()
+            print('{} has {} samples'.format(gene,len(yes_samples)))
             burden_df = burden.to_frame()
             burden_df.columns = ['burden']
             burden_df['mutation_{}'.format(gene)] = [True if sample in set(yes_samples) else False for sample in burden_df.index]
@@ -53,7 +55,7 @@ def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column
             fig,ax = plt.subplots()
             sns.boxplot(data=burden_df,x='mutation_{}'.format(gene),y='burden',ax=ax,width=0.5)
             ax.text(x=0.5,y=0.5,s='mannwhitney p={}'.format(round(p,4)),weight='bold')
-            plt.savefig(output.format(gene),bbox_inches='tight')
+            plt.savefig('{}_{}.{}'.format(output.split('.')[0],gene,output.split('.')[1]),bbox_inches='tight')
             plt.close()
 
 

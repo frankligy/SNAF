@@ -52,12 +52,12 @@ def snaf_configuration(exon_table,fasta,software_path_arg=None,binding_method_ar
 
 
 class JunctionCountMatrixQuery():
-    def __init__(self,junction_count_matrix,cores=None):
+    def __init__(self,junction_count_matrix,cores=None,add_control=None):
         self.junction_count_matrix = junction_count_matrix
         if cores is None:
             cores = mp.cpu_count()
         self.cores = cores
-        self.get_neojunctions()
+        self.get_neojunctions(add_control=add_control)
         
 
     def __str__(self):
@@ -84,8 +84,8 @@ class JunctionCountMatrixQuery():
                'results: list of length {}'.format(self.junction_count_matrix.shape,self.cores,len(self.valid),len(self.invalid),
                                                self.cond_df.shape,self.subset.shape,len_translated,shape_cond_subset_df,len_results)
     
-    def get_neojunctions(self):
-        self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix)
+    def get_neojunctions(self,add_control):
+        self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix,add_control)
         self.subset = self.junction_count_matrix.loc[self.valid,:]
         self.cond_subset_df = self.cond_df.loc[self.valid,:]
 
