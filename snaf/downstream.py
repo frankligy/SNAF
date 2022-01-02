@@ -42,10 +42,8 @@ def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column
             asso.to_csv(output,sep='\t')
             os.remove('snaf_mutation_tmp')
     elif mode == 'plot':
-        burden = burden.loc[burden.index.isin(mutation.index)]
         for gene in genes_to_plot:
             yes_samples = mutation.loc[mutation[gene_column] == gene,:].index.unique().tolist()
-            print('{} has {} samples'.format(gene,len(yes_samples)))
             burden_df = burden.to_frame()
             burden_df.columns = ['burden']
             burden_df['mutation_{}'.format(gene)] = [True if sample in set(yes_samples) else False for sample in burden_df.index]
@@ -55,7 +53,7 @@ def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column
             fig,ax = plt.subplots()
             sns.boxplot(data=burden_df,x='mutation_{}'.format(gene),y='burden',ax=ax,width=0.5)
             ax.text(x=0.5,y=0.5,s='mannwhitney p={}'.format(round(p,4)),weight='bold')
-            plt.savefig('{}_{}.{}'.format(output.split('.')[0],gene,output.split('.')[1]),bbox_inches='tight')
+            plt.savefig(output.format(gene),bbox_inches='tight')
             plt.close()
 
 
@@ -122,4 +120,37 @@ def survival_analysis(burden,survival,n,stratification_plot,survival_plot,
     ax.text(x=1000,y=0.05,s='Log-rank test: p-value is {:.2f}'.format(results.p_value),weight='bold')
     plt.savefig(survival_plot,bbox_inches='tight');plt.close()
     return burden,burden_encode,be_vc
+
+def stage0_compatible_results(jcmq,outdir='.',name_burden='burden_stage0.txt',name_frequency='frequency_stage0.txt'):
+    # for burden
+    burden_stage0 = jcmq.cond_df.astype('int8')
+    burden_stage0.loc['burden'] = burden_stage0.sum(axis=0).values
+    burden_stage0['mean'] = burden_stage0.mean(axis=1).values
+    burden_stage0.to_csv(os.path.join(outdir,name_burden),sep='\t')
+    # for frequency
+    tuple_list = []
+    for index,series in jcmq.cond_df.iterrows():
+        samples = series.loc[series].index.tolist()
+        tuple_ = (index,samples,len(samples))
+        tuple_list.append(tuple_)
+    df = pd.DataFrame.from_records(tuple_list,columns=['junction','samples','n_sample']).set_index(keys='junction').sort_values(by='n_sample',ascending=False)
+    df.to_csv(os.path.join(outdir,name_frequency),sep='\t')
+
+
+
+
+
+def reformat_frequency_table(df):
+    # the index has to be comma separated string
+    from ast import literal_eval
+    df['samples'] = [literal_eval(item) for item in df['samples']]
+    sequence_io = []
+    for row in df.itertuples():
+        for item in row.samples:
+            sequence_io.append((row.Index,item,1))
+    result = pd.DataFrame.from_records(sequence_io,columns=['id','sample','value'])
+    result = result.groupby(by=['id','sample'])['value'].mean().unstack(fill_value=0)
+    return result
+        
+
     
