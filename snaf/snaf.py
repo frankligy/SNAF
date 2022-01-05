@@ -278,7 +278,7 @@ class JunctionCountMatrixQuery():
         burden = burden.loc[i_list,c_list]
         burden.to_csv(os.path.join(outdir,name),sep='\t')    
 
-    def show_neoantigen_frequency(self,outdir,name,stage,verbosity,contain_uid,plot,plot_name=None):
+    def show_neoantigen_frequency(self,outdir,name,stage,verbosity,contain_uid,plot,plot_name=None,yscale='linear'):
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
         sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
         hlas = self.results[1]
@@ -313,8 +313,9 @@ class JunctionCountMatrixQuery():
             ax.set_title('Neoantigen Occurence')
             plt.savefig(os.path.join(outdir,'x_neoantigen_{}'.format(plot_name)),bbox_inches='tight')
             plt.close()
-
-            sns.histplot(df['n_sample'].values,binwidth=1,kde=True)
+            fig,ax = plt.subplots()
+            sns.histplot(df['n_sample'].values,binwidth=1,kde=True,ax=ax)
+            ax.set_yscale(yscale)
             plt.savefig(os.path.join(outdir,'x_occurence_{}'.format(plot_name)),bbox_inches='tight')
             plt.close()
 
