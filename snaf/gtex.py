@@ -39,6 +39,8 @@ def gtex_configuration(gtex_db,t_min_arg,n_max_arg,add_control=None):
         adata.obs['mean'] = np.array(adata.X.mean(axis=1)).squeeze()
         total_count = np.array(adata.X.sum(axis=0)).squeeze() / 1e6
         adata.var['total_count'] = total_count
+    else:
+        adata = adata_gtex
     t_min = t_min_arg
     n_max = n_max_arg
 
