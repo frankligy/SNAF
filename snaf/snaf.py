@@ -237,6 +237,16 @@ class JunctionCountMatrixQuery():
             jcmq = pickle.load(f)
         return jcmq
 
+    def visualize(self,uid,sample,outdir):
+        row_index = self.subset.index.tolist().index(uid)
+        col_index = self.subset.columns.tolist().index(sample)
+        results = self.results[0]
+        hlas = self.results[1]
+        nj = deepcopy(results[row_index])
+        nj.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=hlas[col_index])
+        nj.visualize(outdir,'{}.pdf'.format(uid))
+
+
 
 
     def show_neoantigen_burden(self,outdir,name,stage,verbosity,contain_uid):
