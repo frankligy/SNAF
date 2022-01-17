@@ -53,7 +53,7 @@ def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column
             fig,ax = plt.subplots()
             sns.boxplot(data=burden_df,x='mutation_{}'.format(gene),y='burden',ax=ax,width=0.5)
             ax.text(x=0.5,y=0.5,s='mannwhitney p={}'.format(round(p,4)),weight='bold')
-            plt.savefig(output.format(gene),bbox_inches='tight')
+            plt.savefig('{}_{}.pdf'.format(output,gene),bbox_inches='tight')
             plt.close()
 
 
