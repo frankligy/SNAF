@@ -98,7 +98,13 @@ def mle_func(parameters,y):
     return neg_ll
 
 def accurate_tumor_specificity(uid,method):
-    if method == 'mle':
+    if method == 'mean':
+        try:
+            sigma = adata.obs.loc[uid,'mean']
+        except KeyError:
+            sigma = 0
+        return sigma
+    elif method == 'mle':
         try:
             y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
         except KeyError:
@@ -120,6 +126,7 @@ def accurate_tumor_specificity(uid,method):
                 sigma = mle_model.x[0]
             else:   # usually means too many zero, so true expression is near zero
                 sigma = 0
+        return 1-sigma
     elif method == 'bayesian':
         try:
             y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
@@ -142,7 +149,7 @@ def accurate_tumor_specificity(uid,method):
                 trace = pm.sample(100,step=step,return_inferencedata=False,cores=1)
             df = az.summary(trace,round_to=2)
             sigma = df.iloc[0]['mean']
-    return 1-sigma
+        return 1-sigma
             
 
 

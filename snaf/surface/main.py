@@ -49,8 +49,8 @@ def split_array_to_chunks(array,cores=None):
 
 def single_run(uids,n_stride,tmhmm,software_path,serialize):
     results = []
-    for uid in tqdm(uids):
-        sa = SurfaceAntigen(uid,False)
+    for uid,score in tqdm(uids,total=len(uids)):
+        sa = SurfaceAntigen(uid,score,False)
         sa.detect_type()
         sa.retrieve_junction_seq()
         sa.recovery_full_length_protein()
@@ -100,13 +100,17 @@ def individual_check(uid,n_stride=2,tmhmm=False,software_path=None,exons=None,in
             sa.visualize(index=index,fragment=None)
     return sa
 
+
+
 def process_results(pickle_path,strigency,outdir='.'):
     with open(pickle_path,'rb') as f:
         results = pickle.load(f)
     count_candidates = 0
     count_further = 0
-    with open(os.path.join(outdir,'candidates.txt'),'w') as f1, open(os.path.join(outdir,'further.txt'),'w') as f2:
+    candidates = []
+    with open(os.path.join(outdir,'further.txt'),'w') as f2:
         for sa in results:
+            n_hit = 0
             if len(sa.comments) > 0:
                 print(sa,file=f2)
                 count_further += 1
@@ -115,19 +119,23 @@ def process_results(pickle_path,strigency,outdir='.'):
                 for n,t,a in zip(sa.nmd,sa.translatability,sa.alignment):
                     if strigency == 3:
                         if n == '#' and t == '#' and a:
-                            send = not send
-                            break
+                            send = True
+                            n_hit += 1
                     elif strigency == 2:
                         if t == '#' and a:
-                            send = not send
-                            break
+                            send = True
+                            n_hit += 1
                     elif strigency == 1:
                         if a:
                             send = not send
-                            break
+                            n_hit += 1
                 if send:
-                    print(sa,file=f1)
+                    candidates.append((sa,sa.score,n_hit))
                     count_candidates += 1
+    sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2]),reverse=False)
+    with open(os.path.join(outdir,'candidates.txt'),'w') as f1:
+        for sa,score,hit in sorted_candidates:
+            print(sa,'n_hits:{}'.format(hit),'\n',file=f1,sep='')
     return count_candidates,count_further
 
 
@@ -169,8 +177,9 @@ def filter_to_membrane_protein(lis):
 
 class SurfaceAntigen(object):
 
-    def __init__(self,uid,check_overlap=True):
+    def __init__(self,uid,score,check_overlap=True):
         self.uid = uid
+        self.score = score
         self.comments = []
         if check_overlap:
             if not self.is_membrane_protein():
@@ -185,6 +194,7 @@ class SurfaceAntigen(object):
 
     def __str__(self):
         print_str = 'uid:{}\n'.format(self.uid)
+        print_str += 'scores:{}\n'.format(self.score)
         print_str += 'comments:{}\n'.format(self.comments)
         try:
             print_event_type = self.event_type
