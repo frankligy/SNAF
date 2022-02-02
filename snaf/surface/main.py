@@ -6,6 +6,7 @@ import multiprocessing as mp
 import re
 import pickle
 from datetime import datetime,date
+from ast import literal_eval
 import requests
 import xmltodict
 from tqdm import tqdm
@@ -13,6 +14,9 @@ from .data_io import *
 from .orf_finder import *
 from .orf_check import *
 from .alignment import *
+
+
+
 
 
 
@@ -31,6 +35,109 @@ def initialize(transcript_db,exon_table,fasta,membrane_db,biotype_db,membrane_fa
     df_membrane_proteins = pd.read_csv(membrane_db,sep='\t',index_col=0)
     dict_uni_fa = read_uniprot_seq(membrane_fasta_db)
     print('{} {} finished surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
+
+def _run_dash_prioritizer_return_events(candidates):
+    # candidates is a list of each lines, containing the newline symbol
+    collect = []
+    for i,line in enumerate(candidates):
+        if i % 13 == 0:
+            collect.append(line.rstrip('\n')[4:])
+    return collect
+
+def _run_dash_prioritizer_return_valid_indices(candidates,collect,event):
+    valid_indices = []
+    index = collect.index(event)
+    indices_to_retrive = [index*13+5, index*13+8, index*13+9, index*13+10]
+    store = []
+    for i,line in enumerate(candidates):
+        if i < index*13+5:
+            continue
+        elif i > index*13+10:
+            break
+        else:
+            if i in indices_to_retrive:
+                store.append(literal_eval('['+line.rstrip('\n').split('[')[-1]))
+    for i,n,t,a in zip(store[0],store[1],store[2],store[3]):
+        if n == '#' and t == '#' and a == True:
+            valid_indices.append(int(i))
+    return valid_indices
+
+def _run_dash_prioritizer_return_sa(results,gene):
+    for sa in results:
+        if sa.uid == gene:
+            return sa
+
+
+def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
+    import dash
+    from dash import dcc,html,dash_table
+    from dash.dependencies import Input,Output,State
+    with open(pkl,'rb') as f1:
+        results = pickle.load(f1)   # a list of sa object
+    sa = None          # a binding for further nonlocal declaration for sa
+    with open(candidates,'r') as f2:
+        candidates = f2.readlines()   # a list of each lines, containing the newline symbol
+    collect = _run_dash_prioritizer_return_events(candidates)  # a list of all uid
+    app = dash.Dash(__name__)
+    app.layout = html.Div([
+        html.Div([html.Label('Splicing Event UID:'),html.Br(),dcc.Input(id='event_selection',value=collect[0],type='text')]),
+        html.Div([html.H2(id='exon_h2'),dash_table.DataTable(id='exon',columns=[{'name':column,'id':column} for column in ['subexon','chromosome','strand','start','end']],page_size=10)]),
+        html.Div([html.H2('All related existing transcripts'),dash_table.DataTable(id='transcript',columns=[{'name':column,'id':column} for column in ['index','EnsGID','EnsTID','EnsPID','Exons']])]),
+        html.Br(),
+        html.Div([html.Label('Transcript index'),dcc.Dropdown(id='valid_indices')]),
+        html.Div([html.Label('cDNA or peptide'),dcc.RadioItems(id='display',options=[
+            {'label':'cDNA','value':'cDNA'},{'label':'peptide','value':'peptide'}],value='peptide')]),
+        html.Div([html.Button(id='submit',n_clicks=0,children='Submit')]),
+        html.Div([html.H2('Sequence'),html.Br(),html.Div(id='sequence')]),
+        html.Div([html.H2('downstream link'),
+                  html.A(id='ensembl',href='http://useast.ensembl.org/Homo_sapiens/Info/Index',children='Ensembl Human'),
+                  html.Br(),
+                  html.A(id='Emboss',href='https://www.ebi.ac.uk/Tools/psa/emboss_needle/',children='Emboss Peptide Global Alignment'),
+                  html.Br(),
+                  html.A(id='TMHMM',href='https://services.healthtech.dtu.dk/service.php?TMHMM-2.0',children='TMHMM: predicting transmembrane domain'),
+                  html.Br(),
+                  html.A(id='SABLE',href='https://sable.cchmc.org/',children='SABLE: predicting solvebility and secondary structure'),
+                  html.Br(),
+                  html.A(id='alphafold2',href='https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb',children='Colab version of alphafold2')])
+
+    ])
+
+
+    # function we need to define for running the app
+    @app.callback(Output('exon_h2','children'),Output('exon','data'),Output('transcript','data'),Output('valid_indices','options'),Input('event_selection','value'))
+    def select_event_show_table(value):
+        nonlocal sa
+        sa = _run_dash_prioritizer_return_sa(results,value)  # the sa object that will be used for displaying sequence
+        gene = value.split(':')[0]        
+        values = dict_exonCoords[gene]    # {E1.1:[attrs]}
+        valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect,value)   # list of valid indices
+        data_exon = []
+        for k,v in values.items():
+            data_exon.append({'subexon':k,'chromosome':v[0],'strand':v[1],'start':v[2],'end':v[3]})
+        df_certain = df_exonlist.loc[df_exonlist['EnsGID']==gene,:]
+        df_certain = df_certain.iloc[valid_indices,:]
+        df_certain.insert(loc=0,column='index',value=valid_indices)
+        data_transcript = df_certain.to_dict(orient='records')
+        dropdown_options = [{'label':item,'value':item} for item in valid_indices]
+        exon_h2_value = 'All exons of: {}'.format(value)
+        return exon_h2_value,data_exon,data_transcript,dropdown_options
+
+    @app.callback(Output('sequence','children'),Input('submit','n_clicks'),State('valid_indices','value'),State('display','value'),)
+    def select_sequence_to_display(n_clicks,value_index,value_display):
+        if value_display == 'cDNA':
+            sequence = sa.full_length[value_index]
+        elif value_display == 'peptide':
+            sequence =  sa.orfp[value_index]
+        return sequence
+
+    if host is None:
+        host = subprocess.run(['hostname'],stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[0]
+    app.run_server(host=host,port=port)
+        
+
+
+
+
 
 def split_array_to_chunks(array,cores=None):
     if not isinstance(array,list):
