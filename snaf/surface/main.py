@@ -86,7 +86,7 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
         html.Br(),
         html.Div([html.Label('Transcript index'),dcc.Dropdown(id='valid_indices')]),
         html.Div([html.Label('cDNA or peptide'),dcc.RadioItems(id='display',options=[
-            {'label':'cDNA','value':'cDNA'},{'label':'peptide','value':'peptide'}],value='peptide')]),
+            {'label':item,'value':item} for item in ['full_length','orft','orfp','junction','score']],value='peptide')]),
         html.Div([html.Button(id='submit',n_clicks=0,children='Submit')]),
         html.Div([html.H2('Sequence'),html.Br(),html.Div(id='sequence')]),
         html.Div([html.H2('downstream link'),
@@ -124,10 +124,16 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
 
     @app.callback(Output('sequence','children'),Input('submit','n_clicks'),State('valid_indices','value'),State('display','value'),)
     def select_sequence_to_display(n_clicks,value_index,value_display):
-        if value_display == 'cDNA':
+        if value_display == 'full_length':
             sequence = sa.full_length[value_index]
-        elif value_display == 'peptide':
+        elif value_display == 'orft':
+            sequence = sa.orft[value_index]
+        elif value_display == 'orfp':
             sequence =  sa.orfp[value_index]
+        elif value_display == 'junction':
+            sequence = sa.junction
+        elif value_display == 'score':
+            sequence = sa.score
         return sequence
 
     if host is None:
