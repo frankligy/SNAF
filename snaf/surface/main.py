@@ -47,19 +47,22 @@ def _run_dash_prioritizer_return_events(candidates):
 def _run_dash_prioritizer_return_valid_indices(candidates,collect,event):
     valid_indices = []
     index = collect.index(event)
-    indices_to_retrive = [index*13+5, index*13+8, index*13+9, index*13+10]
+    indices_to_retrive = [index*13+6, index*13+8, index*13+9, index*13+10]
     store = []
     for i,line in enumerate(candidates):
-        if i < index*13+5:
+        if i < index*13+6:
             continue
         elif i > index*13+10:
             break
         else:
             if i in indices_to_retrive:
                 store.append(literal_eval('['+line.rstrip('\n').split('[')[-1]))
+    print(store)
     for i,n,t,a in zip(store[0],store[1],store[2],store[3]):
+        print(i,n,t,a)
         if n == '#' and t == '#' and a == True:
             valid_indices.append(int(i))
+    print(valid_indices)
     return valid_indices
 
 def _run_dash_prioritizer_return_sa(results,gene):
@@ -100,7 +103,9 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
                   html.Br(),
                   html.A(id='SABLE',href='https://sable.cchmc.org/',children='SABLE: predicting solvebility and secondary structure'),
                   html.Br(),
-                  html.A(id='alphafold2',href='https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb',children='Colab version of alphafold2')])
+                  html.A(id='alphafold2',href='https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb',children='Colab version of alphafold2')]),
+                  html.Br(),
+                  html.A(id='uniprot',href='https://www.uniprot.org/',children='Uniprot for protein')
 
     ])
 
@@ -256,7 +261,7 @@ def process_results(pickle_path,strigency,outdir='.'):
                     count_candidates += 1
     sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2],-x[3]),reverse=False)
     with open(os.path.join(outdir,'candidates.txt'),'w') as f1:
-        for sa,score,hit in sorted_candidates:
+        for sa,score,freq,hit in sorted_candidates:
             print(sa,'n_hits:{}'.format(hit),'\n',file=f1,sep='')
     return count_candidates,count_further
 
@@ -318,7 +323,7 @@ class SurfaceAntigen(object):
 
     def __str__(self):
         print_str = 'uid:{}\n'.format(self.uid)
-        print_str += 'scores and freqs:{}\n'.format(','.join(self.score,self.freq))
+        print_str += 'scores and freqs:{}\n'.format(','.join([str(self.score),str(self.freq)]))
         print_str += 'comments:{}\n'.format(self.comments)
         try:
             print_event_type = self.event_type
@@ -334,7 +339,7 @@ class SurfaceAntigen(object):
             if self.full_length == ['unrecoverable']:
                 print_full_length = (len(self.full_length),self.full_length)
             else:
-                print_full_length = (len(self.full_length),[self.full_length.index(item) for item in self.full_length if item != ''])
+                print_full_length = (len(self.full_length),[i for i,item in enumerate(self.full_length) if item != ''])
         except AttributeError:
             print_full_length = (None,None)
         print_str += 'Full length transcripts: length {}, indices {}\n'.format(print_full_length[0],print_full_length[1])
@@ -342,7 +347,7 @@ class SurfaceAntigen(object):
             if self.orft == ['unrecoverable']:
                 print_orft = (len(self.orft),self.orft)
             else:
-                print_orft = (len(self.orft),[self.orft.index(item) for item in self.orft if item != ''])
+                print_orft = (len(self.orft),[i for i,item in enumerate(self.orft) if item != ''])
         except AttributeError:
             print_orft = (None,None)
         print_str += 'ORF transcripts: length {}, indices {}\n'.format(print_orft[0],print_orft[1])
@@ -350,7 +355,7 @@ class SurfaceAntigen(object):
             if self.orfp == ['unrecoverable']:
                 print_orfp = (len(self.orfp),self.orfp)
             else:
-                print_orfp = (len(self.orfp),[self.orfp.index(item) for item in self.orfp if item != ''])
+                print_orfp = (len(self.orfp),[i for i,item in enumerate(self.orfp) if item != ''])
         except AttributeError:
             print_orfp = (None,None)
         print_str += 'ORF peptides: length {}, indices {}\n'.format(print_orfp[0],print_orfp[1])
