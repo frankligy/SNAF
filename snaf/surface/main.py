@@ -72,6 +72,7 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
     import dash
     from dash import dcc,html,dash_table
     from dash.dependencies import Input,Output,State
+    import plotly.graph_objects as go
     with open(pkl,'rb') as f1:
         results = pickle.load(f1)   # a list of sa object
     sa = None          # a binding for further nonlocal declaration for sa
@@ -81,6 +82,7 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
     app = dash.Dash(__name__)
     app.layout = html.Div([
         html.Div([html.Label('Splicing Event UID:'),html.Br(),dcc.Input(id='event_selection',value=collect[0],type='text')]),
+        html.Div([html.Label('Expression graph'),html.Br(),dcc.Graph(id='expression')]),
         html.Div([html.H2(id='exon_h2'),dash_table.DataTable(id='exon',columns=[{'name':column,'id':column} for column in ['subexon','chromosome','strand','start','end']],page_size=10)]),
         html.Div([html.H2('All related existing transcripts'),dash_table.DataTable(id='transcript',columns=[{'name':column,'id':column} for column in ['index','EnsGID','EnsTID','EnsPID','Exons']])]),
         html.Br(),
@@ -104,7 +106,7 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
 
 
     # function we need to define for running the app
-    @app.callback(Output('exon_h2','children'),Output('exon','data'),Output('transcript','data'),Output('valid_indices','options'),Input('event_selection','value'))
+    @app.callback(Output('expression','figure'),Output('exon_h2','children'),Output('exon','data'),Output('transcript','data'),Output('valid_indices','options'),Input('event_selection','value'))
     def select_event_show_table(value):
         nonlocal sa
         sa = _run_dash_prioritizer_return_sa(results,value)  # the sa object that will be used for displaying sequence
@@ -120,7 +122,14 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
         data_transcript = df_certain.to_dict(orient='records')
         dropdown_options = [{'label':item,'value':item} for item in valid_indices]
         exon_h2_value = 'All exons of: {}'.format(value)
-        return exon_h2_value,data_exon,data_transcript,dropdown_options
+        # expression plot
+        expr_dict = sa.ed   # {sample:value}
+        expr = list(expr_dict.values())
+        sample = list(expr_dict.keys())
+        edge_trace = go.Scatter(x=np.arange(len(expr)),y=expr,mode='lines',line={'width':0.1,'color':'black'})
+        node_trace = go.Scatter(x=np.arange(len(expr)),y=expr,mode='markers',marker={'color':'red','size':5},text=sample,hoverinfo='text')
+        fig = go.Figure(data=[edge_trace,node_trace],layout=go.Layout(showlegend=False))
+        return fig,exon_h2_value,data_exon,data_transcript,dropdown_options
 
     @app.callback(Output('sequence','children'),Input('submit','n_clicks'),State('valid_indices','value'),State('display','value'),)
     def select_sequence_to_display(n_clicks,value_index,value_display):
@@ -162,8 +171,8 @@ def split_array_to_chunks(array,cores=None):
 
 def single_run(uids,n_stride,tmhmm,software_path,serialize):
     results = []
-    for uid,score in tqdm(uids,total=len(uids)):
-        sa = SurfaceAntigen(uid,score,False)
+    for uid,score,ed,freq in tqdm(uids,total=len(uids)):
+        sa = SurfaceAntigen(uid,score,ed,freq,False)
         sa.detect_type()
         sa.retrieve_junction_seq()
         sa.recovery_full_length_protein()
@@ -243,9 +252,9 @@ def process_results(pickle_path,strigency,outdir='.'):
                             send = not send
                             n_hit += 1
                 if send:
-                    candidates.append((sa,sa.score,n_hit))
+                    candidates.append((sa,sa.score,sa.freq,n_hit))
                     count_candidates += 1
-    sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2]),reverse=False)
+    sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2],-x[3]),reverse=False)
     with open(os.path.join(outdir,'candidates.txt'),'w') as f1:
         for sa,score,hit in sorted_candidates:
             print(sa,'n_hits:{}'.format(hit),'\n',file=f1,sep='')
@@ -290,9 +299,11 @@ def filter_to_membrane_protein(lis):
 
 class SurfaceAntigen(object):
 
-    def __init__(self,uid,score,check_overlap=True):
+    def __init__(self,uid,score,ed,freq,check_overlap=True):
         self.uid = uid
         self.score = score
+        self.ed = ed
+        self.freq = freq
         self.comments = []
         if check_overlap:
             if not self.is_membrane_protein():
@@ -307,7 +318,7 @@ class SurfaceAntigen(object):
 
     def __str__(self):
         print_str = 'uid:{}\n'.format(self.uid)
-        print_str += 'scores:{}\n'.format(self.score)
+        print_str += 'scores and freqs:{}\n'.format(','.join(self.score,self.freq))
         print_str += 'comments:{}\n'.format(self.comments)
         try:
             print_event_type = self.event_type

@@ -89,6 +89,12 @@ class JunctionCountMatrixQuery():
         self.subset = self.junction_count_matrix.loc[self.valid,:]
         self.cond_subset_df = self.cond_df.loc[self.valid,:]
 
+    def get_neojunction_info(self,event):
+        ed = self.subset.loc[event,:].to_dict()
+        freq = np.count_nonzero(np.array(list(ed.values())))/len(ed)
+        return ed,freq
+
+
     @staticmethod    
     def split_df_to_chunks(df,cores=None):
         df_index = np.arange(df.shape[0])
@@ -238,13 +244,14 @@ class JunctionCountMatrixQuery():
         return jcmq
 
     def visualize(self,uid,sample,outdir):
-        row_index = self.subset.index.tolist().index(uid)
-        col_index = self.subset.columns.tolist().index(sample)
-        results = self.results[0]
-        hlas = self.results[1]
-        nj = deepcopy(results[row_index])
-        nj.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=hlas[col_index])
-        nj.visualize(outdir,'{}.pdf'.format(uid.replace(':','_')))
+        if sample is not None:
+            row_index = self.subset.index.tolist().index(uid)
+            col_index = self.subset.columns.tolist().index(sample)
+            results = self.results[0]
+            hlas = self.results[1]
+            nj = deepcopy(results[row_index])
+            nj.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=hlas[col_index])
+            nj.visualize(outdir,'{}.pdf'.format(uid.replace(':','_')))
         # in tumor sample
         fig,ax = plt.subplots()
         counts = self.junction_count_matrix.loc[uid,:]
