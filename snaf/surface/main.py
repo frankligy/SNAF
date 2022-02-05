@@ -103,7 +103,9 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
                   html.Br(),
                   html.A(id='alphafold2',href='https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb',children='Colab version of alphafold2'),
                   html.Br(),
-                  html.A(id='uniprot',href='https://www.uniprot.org/',children='Uniprot for protein')])
+                  html.A(id='uniprot',href='https://www.uniprot.org/',children='Uniprot for protein'),
+                  html.Br(),
+                  html.A(id='ModFold',href='https://www.reading.ac.uk/bioinf/ModFOLD/',children='ModFold: 3D model assesser')])
 
     ])
 
