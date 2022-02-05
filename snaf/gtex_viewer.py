@@ -58,13 +58,20 @@ def gtex_visual(query,norm=True,out_folder='.'):
             ax.set_xticks(np.arange(len(psi)))
             ax.set_xticklabels(['s{}'.format(i) for i in np.arange(len(psi))],fontsize=4,rotation=60)
             ax.set_title(tissue,fontsize=8)
-            ax.set_ylim(bottom=-0.05)
-            ax.set_ylabel('counts')
+            ax.set_ylim(bottom=-0.001)
+            if norm:
+                ax.set_ylabel('normalized counts')
+            else:
+                ax.set_ylabel('counts')
         else:
             ax.axis('off')
             break
     fig.suptitle(title,fontsize=10)
-    plt.savefig(os.path.join(out_folder,'gtex_visual_count_{}.pdf'.format(identifier)),bbox_inches='tight')
+    if norm:
+        name = 'gtex_visual_norm_count_{}.pdf'.format(identifier)
+    else:
+        name = 'gtex_visual_count_{}.pdf'.format(identifier)
+    plt.savefig(os.path.join(out_folder,name),bbox_inches='tight')
     plt.close()
 
 
