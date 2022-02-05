@@ -57,12 +57,10 @@ def _run_dash_prioritizer_return_valid_indices(candidates,collect,event):
         else:
             if i in indices_to_retrive:
                 store.append(literal_eval('['+line.rstrip('\n').split('[')[-1]))
-    print(store)
     for i,n,t,a in zip(store[0],store[1],store[2],store[3]):
         print(i,n,t,a)
         if n == '#' and t == '#' and a == True:
             valid_indices.append(int(i))
-    print(valid_indices)
     return valid_indices
 
 def _run_dash_prioritizer_return_sa(results,gene):
@@ -103,9 +101,9 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
                   html.Br(),
                   html.A(id='SABLE',href='https://sable.cchmc.org/',children='SABLE: predicting solvebility and secondary structure'),
                   html.Br(),
-                  html.A(id='alphafold2',href='https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb',children='Colab version of alphafold2')]),
+                  html.A(id='alphafold2',href='https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb',children='Colab version of alphafold2'),
                   html.Br(),
-                  html.A(id='uniprot',href='https://www.uniprot.org/',children='Uniprot for protein')
+                  html.A(id='uniprot',href='https://www.uniprot.org/',children='Uniprot for protein')])
 
     ])
 
@@ -121,6 +119,11 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
         data_exon = []
         for k,v in values.items():
             data_exon.append({'subexon':k,'chromosome':v[0],'strand':v[1],'start':v[2],'end':v[3]})
+        # sort based on coordinate
+        if data_exon[0]['strand'] == '+':
+            data_exon.sort(reverse=False,key=lambda x:x['start'])
+        elif data_exon[0]['strand'] == '-':
+            data_exon.sort(reverse=True,key=lambda x:x['end'])
         df_certain = df_exonlist.loc[df_exonlist['EnsGID']==gene,:]
         df_certain = df_certain.iloc[valid_indices,:]
         df_certain.insert(loc=0,column='index',value=valid_indices)
@@ -147,7 +150,7 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
         elif value_display == 'junction':
             sequence = sa.junction
         elif value_display == 'score':
-            sequence = sa.score
+            sequence = 'Mean expression across GTEx: {}\nExpression frequency in cancer cohort: {}'.format(sa.score,sa.freq)
         return sequence
 
     if host is None:
@@ -205,9 +208,9 @@ def batch_run(uid_list,cores,n_stride,tmhmm=False,software_path=None,serialize=F
     with open(os.path.join(outdir,name),'wb') as f:
         pickle.dump(results,f)
 
-def individual_check(uid,n_stride=2,tmhmm=False,software_path=None,exons=None,indices=[None]):
+def individual_check(uid,n_stride=2,tmhmm=False,software_path=None,exons=None,indices=[None],fragments=[None]):
     uid = uid
-    sa = SurfaceAntigen(uid,False)
+    sa = SurfaceAntigen(uid,0,1,False)
     get_exon_table(uid.split(':')[0])
     get_all_transcripts(uid.split(':')[0])
     get_existing_isoforms(uid.split(':')[0])
@@ -220,11 +223,11 @@ def individual_check(uid,n_stride=2,tmhmm=False,software_path=None,exons=None,in
     sa.find_orf()
     sa.orf_check(n_stride=n_stride)
     sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
-    for index in indices:
+    for index,fragment in zip(indices,fragments):
         if index is None:
             continue
         else:
-            sa.visualize(index=index,fragment=None)
+            sa.visualize(index=index,fragment=fragment)
     return sa
 
 
@@ -690,6 +693,7 @@ def query_from_dict_fa(abs_start,abs_end,EnsID,strand):
 def first_round_match(ensgid,exons):
     # exons is E4.1-E5.6
     # match E4.1 and E5.6 separately
+    # if you want to debug, just print out each exon right after pointer_down
     comments = []
     e1,e2 = exons.split('-')
     strand = dict_exonCoords[ensgid][e1][1]
@@ -708,7 +712,6 @@ def first_round_match(ensgid,exons):
                 comments.append('wonky ordered database')
             else:
                 full_transcript = ''
-                pointer_up_status = 'released'
                 exonlist = iter(item.split('|'))
                 l_exon = next(exonlist,'end')
                 l_exon_int = int(l_exon.split('.')[0][1:])
@@ -722,15 +725,23 @@ def first_round_match(ensgid,exons):
                         full_transcript += frag_seq
                         break
                     if n_exon == e1:
-                        # solve the one before the e1
-                        pointer_down = dict_exonCoords[ensgid][l_exon][3] if strand == '+' else dict_exonCoords[ensgid][l_exon][2]
-                        frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
-                        full_transcript += frag_seq
-                        pointer_up = dict_exonCoords[ensgid][n_exon][2] if strand == '+' else dict_exonCoords[ensgid][n_exon][3]
-                        # now solve e1 itself
-                        pointer_down = dict_exonCoords[ensgid][n_exon][3] if strand == '+' else dict_exonCoords[ensgid][n_exon][2]
-                        frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
-                        full_transcript += frag_seq
+                        n_exon_int = int(n_exon.split('.')[0][1:])
+                        n_exon_frac = int(n_exon.split('.')[1])
+                        if n_exon_int > l_exon_int or (n_exon_int == l_exon_int and n_exon_frac > l_exon_frac + 1):
+                            # solve the one before the e1
+                            pointer_down = dict_exonCoords[ensgid][l_exon][3] if strand == '+' else dict_exonCoords[ensgid][l_exon][2]
+                            frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
+                            full_transcript += frag_seq
+                            pointer_up = dict_exonCoords[ensgid][n_exon][2] if strand == '+' else dict_exonCoords[ensgid][n_exon][3]
+                            # now solve e1 itself
+                            pointer_down = dict_exonCoords[ensgid][n_exon][3] if strand == '+' else dict_exonCoords[ensgid][n_exon][2]
+                            frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
+                            full_transcript += frag_seq
+                        else:   # E3.4|E3.5|E4.1|E4.2|E5.1|E5.2|E6.1|E6.2, e1 is E5.2, e2 is E6.2
+                            # solve the one before e1 and e1 together
+                            pointer_down = dict_exonCoords[ensgid][n_exon][3] if strand == '+' else dict_exonCoords[ensgid][n_exon][2]
+                            frag_seq = query_from_dict_fa(pointer_up,pointer_down,ensgid,strand) if strand == '+' else query_from_dict_fa(pointer_down,pointer_up,ensgid,strand)
+                            full_transcript += frag_seq
                         while True:   # skip till e2
                             n_exon = next(exonlist,'end')
                             if n_exon == e2:
@@ -757,6 +768,7 @@ def first_round_match(ensgid,exons):
                 full_transcript_store.append(full_transcript)
         else:
             full_transcript_store.append('')
+
     return full_transcript_store,comments
                 
 
