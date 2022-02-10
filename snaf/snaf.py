@@ -268,6 +268,9 @@ class JunctionCountMatrixQuery():
 
 
     def show_neoantigen_burden(self,outdir,name,stage,verbosity,contain_uid):
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
         sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
         hlas = self.results[1]
@@ -307,6 +310,9 @@ class JunctionCountMatrixQuery():
         burden.to_csv(os.path.join(outdir,name),sep='\t')    
 
     def show_neoantigen_frequency(self,outdir,name,stage,verbosity,contain_uid,plot,plot_name=None,yscale='linear'):
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
         sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
         hlas = self.results[1]
@@ -351,6 +357,9 @@ class JunctionCountMatrixQuery():
 
 
     def show_neoantigen_as_fasta(self,outdir,name,stage,verbosity,contain_uid,sample=None):
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+            
         sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.results[0],self.cores)
         sub_conds = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
         hlas = self.results[1]
