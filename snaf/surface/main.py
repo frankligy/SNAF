@@ -14,8 +14,7 @@ from .data_io import *
 from .orf_finder import *
 from .orf_check import *
 from .alignment import *
-
-
+from .api import *
 
 
 
@@ -58,7 +57,6 @@ def _run_dash_prioritizer_return_valid_indices(candidates,collect,event):
             if i in indices_to_retrive:
                 store.append(literal_eval('['+line.rstrip('\n').split('[')[-1]))
     for i,n,t,a in zip(store[0],store[1],store[2],store[3]):
-        print(i,n,t,a)
         if n == '#' and t == '#' and a == True:
             valid_indices.append(int(i))
     return valid_indices
@@ -69,43 +67,50 @@ def _run_dash_prioritizer_return_sa(results,gene):
             return sa
 
 
-def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
+def run_dash_prioritizer(pkl,candidates,python_executable,host=None,port='8050'):
     import dash
     from dash import dcc,html,dash_table
     from dash.dependencies import Input,Output,State
+    import dash_dangerously_set_inner_html
     import plotly.graph_objects as go
     with open(pkl,'rb') as f1:
         results = pickle.load(f1)   # a list of sa object
-    sa = None          # a binding for further nonlocal declaration for sa
+    sa, df_certain = None, None       # a binding for further nonlocal declaration 
     with open(candidates,'r') as f2:
         candidates = f2.readlines()   # a list of each lines, containing the newline symbol
     collect = _run_dash_prioritizer_return_events(candidates)  # a list of all uid
     app = dash.Dash(__name__)
     app.layout = html.Div([
-        html.Div([html.Label('Splicing Event UID:'),html.Br(),dcc.Input(id='event_selection',value=collect[0],type='text')]),
-        html.Div([html.Label('Expression graph'),html.Br(),dcc.Graph(id='expression')]),
+        html.Div([html.H2('Splicing Event UID:'),html.Br(),dcc.Input(id='event_selection',value=collect[0],type='text',style={'width':'40%'})],style={'text-align':'center'}),
+        html.Div([html.H2('Expression graph in tumor cohort'),html.Br(),dcc.Graph(id='expression')],style={'text-align':'center'}),
         html.Div([html.H2(id='exon_h2'),dash_table.DataTable(id='exon',columns=[{'name':column,'id':column} for column in ['subexon','chromosome','strand','start','end']],page_size=10)]),
         html.Div([html.H2('All related existing transcripts'),dash_table.DataTable(id='transcript',columns=[{'name':column,'id':column} for column in ['index','EnsGID','EnsTID','EnsPID','Exons']])]),
         html.Br(),
-        html.Div([html.Label('Transcript index'),dcc.Dropdown(id='valid_indices')]),
-        html.Div([html.Label('cDNA or peptide'),dcc.RadioItems(id='display',options=[
-            {'label':item,'value':item} for item in ['full_length','orft','orfp','junction','score']],value='peptide')]),
-        html.Div([html.Button(id='submit',n_clicks=0,children='Submit')]),
-        html.Div([html.H2('Sequence'),html.Br(),html.Div(id='sequence')]),
-        html.Div([html.H2('downstream link'),
-                  html.A(id='ensembl',href='http://useast.ensembl.org/Homo_sapiens/Info/Index',children='Ensembl Human'),
+        html.Hr(),
+        html.Div([html.H2('Transcript index'),dcc.Dropdown(id='valid_indices')],style={'text-align':'center'}),
+        html.Div([html.H2('cDNA or peptide'),dcc.RadioItems(id='display',options=[
+            {'label':item,'value':item} for item in ['full_length','orft','orfp','junction','score']],value='peptide')],style={'text-align':'center'}),
+        html.Br(),
+        html.Div([html.Button(id='submit',n_clicks=0,children='Submit',style={'width':'10%'})],style={'text-align':'center'}),
+        html.Div([html.H2('Sequence'),html.Br(),html.P(id='sequence')]),
+        html.Div([html.H2('Ensembl Reference'),html.Br(),html.P(id='ensembl')]),
+        html.Div([html.H2('Emboss Needle Alignment (peptide)'),html.Br(),html.P(id='alignment',style={'white-space':'pre','font-family':'monospace'})]),
+        html.Br(),
+        html.Hr(),
+        html.Div([html.H2('Downstream link'),
+                  html.A(id='ensembl_link',href='http://useast.ensembl.org/Homo_sapiens/Info/Index',children='Ensembl Human'),
                   html.Br(),
-                  html.A(id='Emboss',href='https://www.ebi.ac.uk/Tools/psa/emboss_needle/',children='Emboss Peptide Global Alignment'),
+                  html.A(id='Emboss_link',href='https://www.ebi.ac.uk/Tools/psa/emboss_needle/',children='Emboss Peptide Global Alignment'),
                   html.Br(),
-                  html.A(id='TMHMM',href='https://services.healthtech.dtu.dk/service.php?TMHMM-2.0',children='TMHMM: predicting transmembrane domain'),
+                  html.A(id='TMHMM_link',href='https://services.healthtech.dtu.dk/service.php?TMHMM-2.0',children='TMHMM: predicting transmembrane domain'),
                   html.Br(),
-                  html.A(id='SABLE',href='https://sable.cchmc.org/',children='SABLE: predicting solvebility and secondary structure'),
+                  html.A(id='SABLE_link',href='https://sable.cchmc.org/',children='SABLE: predicting solvebility and secondary structure'),
                   html.Br(),
-                  html.A(id='alphafold2',href='https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb',children='Colab version of alphafold2'),
+                  html.A(id='alphafold2_link',href='https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb',children='Colab version of alphafold2'),
                   html.Br(),
-                  html.A(id='uniprot',href='https://www.uniprot.org/',children='Uniprot for protein'),
+                  html.A(id='uniprot_link',href='https://www.uniprot.org/',children='Uniprot for protein'),
                   html.Br(),
-                  html.A(id='ModFold',href='https://www.reading.ac.uk/bioinf/ModFOLD/',children='ModFold: 3D model assesser')])
+                  html.A(id='ModFold_link',href='https://www.reading.ac.uk/bioinf/ModFOLD/',children='ModFold: 3D model assesser')])
 
     ])
 
@@ -114,6 +119,7 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
     @app.callback(Output('expression','figure'),Output('exon_h2','children'),Output('exon','data'),Output('transcript','data'),Output('valid_indices','options'),Input('event_selection','value'))
     def select_event_show_table(value):
         nonlocal sa
+        nonlocal df_certain
         sa = _run_dash_prioritizer_return_sa(results,value)  # the sa object that will be used for displaying sequence
         gene = value.split(':')[0]        
         values = dict_exonCoords[gene]    # {E1.1:[attrs]}
@@ -139,21 +145,39 @@ def run_dash_prioritizer(pkl,candidates,host=None,port='8050'):
         edge_trace = go.Scatter(x=np.arange(len(expr)),y=expr,mode='lines',line={'width':0.1,'color':'black'})
         node_trace = go.Scatter(x=np.arange(len(expr)),y=expr,mode='markers',marker={'color':'red','size':5},text=sample,hoverinfo='text')
         fig = go.Figure(data=[edge_trace,node_trace],layout=go.Layout(showlegend=False))
+        fig.update_xaxes(title_text='Patients')
+        fig.update_yaxes(title_text='Read Count')
         return fig,exon_h2_value,data_exon,data_transcript,dropdown_options
 
-    @app.callback(Output('sequence','children'),Input('submit','n_clicks'),State('valid_indices','value'),State('display','value'),)
+    @app.callback(Output('sequence','children'),Output('ensembl','children'),Output('alignment','children'),Input('submit','n_clicks'),State('valid_indices','value'),State('display','value'),)
     def select_sequence_to_display(n_clicks,value_index,value_display):
         if value_display == 'full_length':
             sequence = sa.full_length[value_index]
+            enst = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
+            ensembl_sequence = run_ensembl(ens=enst)
+            emboss_alignment = 'only support peptide now'
         elif value_display == 'orft':
             sequence = sa.orft[value_index]
+            enst = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
+            ensembl_sequence = run_ensembl(ens=enst)
+            emboss_alignment = 'only support peptide now'
         elif value_display == 'orfp':
             sequence =  sa.orfp[value_index]
+            ensp = df_certain.loc[df_certain['index']==value_index,:]['EnsPID'].values[0]
+            ensembl_sequence = run_ensembl(ens=ensp)
+            emboss_alignment = run_emboss(asequence=ensembl_sequence,bsequence=sequence,python_executable=python_executable)
+            emboss_alignment = emboss_alignment.replace('\n','<br/>')
         elif value_display == 'junction':
             sequence = sa.junction
+            enst = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
+            ensembl_sequence = run_ensembl(ens=enst)
+            emboss_alignment = 'only support peptide now'
         elif value_display == 'score':
-            sequence = 'Mean expression across GTEx: {}\nExpression frequency in cancer cohort: {}'.format(sa.score,sa.freq)
-        return sequence
+            sequence = 'Mean expression across GTEx: {} Expression frequency in cancer cohort: {}'.format(sa.score,sa.freq)
+            ensp = df_certain.loc[df_certain['index']==value_index,:]['EnsPID'].values[0]
+            ensembl_sequence = run_ensembl(ens=ensp)
+            emboss_alignment = 'only support peptide now'
+        return sequence,ensembl_sequence,dash_dangerously_set_inner_html.DangerouslySetInnerHTML(emboss_alignment)
 
     if host is None:
         host = subprocess.run(['hostname'],stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[0]

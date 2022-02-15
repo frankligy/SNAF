@@ -10,4 +10,5 @@ pip install h5py anndata matplotlib seaborn requests xmltodict tqdm
 conda install -c conda-forge pymc3 mkl-service   # numpy will be updated to 1.21.3 (seems not, still 1.18.5)
 pip install mhcflurry==2.0.5 # for now version seems to not matter
 pip install statsmodels lifelines umap plotly   # numba needs to be 0.53
+pip install requests xmltramp2 dash-dangerously-set-inner-html
 ```
