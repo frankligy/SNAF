@@ -89,7 +89,7 @@ class JunctionCountMatrixQuery():
         self.subset = self.junction_count_matrix.loc[self.valid,:]
         self.cond_subset_df = self.cond_df.loc[self.valid,:]
 
-    def get_neojunction_info(self,event):
+    def get_neojunction_info(self,event):  # more for B cell antigen, since we design it in a way that B cell pipeline completely rely on T pipeline for GTEx check
         ed = self.subset.loc[event,:].to_dict()
         freq = np.count_nonzero(np.array(list(ed.values())))/len(ed)
         return ed,freq
@@ -184,6 +184,11 @@ class JunctionCountMatrixQuery():
                 nj_list.append(nj)                 
         return nj_list
 
+    def run(self,kind,hlas,outdir='.',name='after_prediction.p'):
+        self.parallelize_run(kind=1)
+        self.parallelize_run(kind=3,hlas=hlas)
+        self.serialize(outdir=outdir,name=name)
+
     def parallelize_run(self,kind,hlas=None):
         pool = mp.Pool(processes=self.cores)
         if kind == 1 or kind == 2:
@@ -234,6 +239,8 @@ class JunctionCountMatrixQuery():
             self.results = results 
 
     def serialize(self,outdir,name):
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
         with open(os.path.join(outdir,name),'wb') as f:
             pickle.dump(self,f,protocol=pickle.HIGHEST_PROTOCOL)  
 

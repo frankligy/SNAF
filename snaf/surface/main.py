@@ -19,7 +19,7 @@ from .api import *
 
 
 
-def initialize(transcript_db,exon_table,fasta,membrane_db,biotype_db,membrane_fasta_db):
+def initialize(db_dir):
     global df_exonlist
     global dict_exonCoords
     global dict_fa
@@ -27,6 +27,12 @@ def initialize(transcript_db,exon_table,fasta,membrane_db,biotype_db,membrane_fa
     global df_membrane_proteins
     global dict_uni_fa
     print('{} {} starting surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
+    transcript_db = os.path.join(db_dir,'mRNA-ExonIDs.txt')
+    exon_table = os.path.join(db_dir,'Hs_Ensembl_exon_add_col.txt')
+    fasta = os.path.join(db_dir,'Hs_gene-seq-2000_flank.fa')
+    biotype_db = os.path.join(db_dir,'Hs_Ensembl_transcript-biotypes.txt')
+    membrane_db = os.path.join(db_dir,'human_membrane_proteins.txt')
+    membrane_fasta_db = os.path.join(db_dir,'uniprot_isoform_enhance.fasta')
     df_exonlist = pd.read_csv(transcript_db,sep='\t',header=None,names=['EnsGID','EnsTID','EnsPID','Exons'])  # index is number
     dict_exonCoords = exonCoords_to_dict(exon_table) 
     dict_fa = fasta_to_dict(fasta)

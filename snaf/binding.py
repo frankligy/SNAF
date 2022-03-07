@@ -17,8 +17,6 @@ def binding_configuration(binding_method):
         global predictor
         from mhcflurry import Class1PresentationPredictor
 
-
-
 '''
 this script is to query the binding affinity of a peptide (9-10)
 '''

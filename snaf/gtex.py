@@ -77,7 +77,7 @@ def multiple_crude_sifting(junction_count_matrix,add_control=None):   # for Junc
     return valid,invalid,cond_df
 
 
-def crude_tumor_specificity(uid,count):    # for NeoJunction class
+def crude_tumor_specificity(uid,count):    # for NeoJunction class, since we normally start from Jcmq with check_gtex=False, rarely being called.
     detail = ''
     if uid not in set(adata_gtex.obs_names):
         mean_value = 0
