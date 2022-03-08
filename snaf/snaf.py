@@ -184,10 +184,19 @@ class JunctionCountMatrixQuery():
                 nj_list.append(nj)                 
         return nj_list
 
-    def run(self,kind,hlas,outdir='.',name='after_prediction.p'):
+    def run(self,hlas,outdir='.',name='after_prediction.p'):
         self.parallelize_run(kind=1)
         self.parallelize_run(kind=3,hlas=hlas)
         self.serialize(outdir=outdir,name=name)
+
+    @staticmethod
+    def generate_results(self,path,outdir):
+        jcmq = snaf.JunctionCountMatrixQuery.deserialize(name=path)
+        snaf.downstream.stage0_compatible_results(jcmq,outdir=outdir)
+        for stage in [3,2,1]:
+            jcmq.show_neoantigen_burden(outdir=outdir,name='burden_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False)
+            jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False,plot=True,plot_name='frequency_stage{}.pdf'.format(stage))
+            jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}_verbosity1_uid.txt'.format(stage),stage=stage,verbosity=1,contain_uid=True,plot=False)
 
     def parallelize_run(self,kind,hlas=None):
         pool = mp.Pool(processes=self.cores)
@@ -251,6 +260,8 @@ class JunctionCountMatrixQuery():
         return jcmq
 
     def visualize(self,uid,sample,outdir):
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
         if sample is not None:
             row_index = self.subset.index.tolist().index(uid)
             col_index = self.subset.columns.tolist().index(sample)
@@ -258,7 +269,7 @@ class JunctionCountMatrixQuery():
             hlas = self.results[1]
             nj = deepcopy(results[row_index])
             nj.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=hlas[col_index])
-            nj.visualize(outdir,'{}.pdf'.format(uid.replace(':','_')))
+            nj.visualize(outdir,'{}_{}.pdf'.format(uid.replace(':','_'),sample))
         # in tumor sample
         fig,ax = plt.subplots()
         counts = self.junction_count_matrix.loc[uid,:]
@@ -447,7 +458,8 @@ class JunctionCountMatrixQuery():
 
 class EnhancedPeptides():
     def __init__(self,peptides,hlas,kind):
-        if kind == 2:  # hla-reduced enhanced peptide.
+        # kind means how to instantiate the EnhancedPeptides object
+        if kind == 2:  # hla-reduced enhanced peptide
             self.mers = peptides
             self.info = hlas
         else:
@@ -492,7 +504,7 @@ class EnhancedPeptides():
         if verbosity==1:  # only peptide, result is also tuple
             result_list = []
             for mer in self.mers:
-                result_list.extend(list(self[mer].keys()))
+                result_list.extend(list(self[mer].keys()))   # utlize __getitem__ method, so self[9] instead of self[0]
             result_list = [(item,) for item in result_list]
         elif verbosity==2:  # peptide and hla
             result_list = []
@@ -843,7 +855,7 @@ def get_peptides(de_facto_first,second,ks):
     peptides = {k:[] for k in ks}
     extra = len(de_facto_first) % 3  # how many base left in first assuming no stop condon in front of it.
     num = len(de_facto_first) // 3   # how many set of codons in the first.
-    aa_first = str(Seq(de_facto_first).translate(to_stop=True))
+    aa_first = str(Seq(de_facto_first).translate(to_stop=True))  # if not the multiple of 3, only translate the part that are divisible by 3, it will be a warning for BioPython
     if len(aa_first) == num:  # successfully read through
         if extra == 0:
             continue_second = second
@@ -854,8 +866,8 @@ def get_peptides(de_facto_first,second,ks):
         aa_second = str(Seq(continue_second).translate(to_stop=True))
         if len(aa_second) > 0:  # at least, not ''
             for k in ks:
-                second_most = min(k,len(aa_second)) # the max allowed number of base for aa_second
-                first_most = len(aa_first)  # the max allowed number of base for aa_first
+                second_most = min(k,len(aa_second)) # the max allowed number of residue for aa_second
+                first_most = len(aa_first)  # the max allowed number of residue for aa_first
                 for n_from_second in range(second_most,0,-1):
                     n_from_first = k - n_from_second
                     if n_from_first == 0 and extra == 0:
@@ -863,7 +875,7 @@ def get_peptides(de_facto_first,second,ks):
                         cttca cct cac ttt acc ttc tcc tcc agc aca gga act agg aac tac gga gag aga agc caa 
                            S   P   H   F   T   F   S   S   S   T   G   T   R   N   Y   G   E   R   S   Q
 
-                        the common is between "ttt" and "acc"
+                        the comma is between "ttt" and "acc"
                         so, when extra == 0, means whole second will be after the junction, in this case, we have to require 
                         the peptide at least include a amino acid from first part, otherwise, TFSSSTGTR won't be a splice-derived
                         peptide.   

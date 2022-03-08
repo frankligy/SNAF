@@ -24,8 +24,8 @@ def show_candicates(ax,aa,extra,n_from_first,hla,first,second,dna_first,dna_seco
     ax.add_patch(rect_first)
     ax.add_patch(rect_second)
     # draw junction seq
-    seq_first_text = ax.text(x=50,y=20,s=first[-dna_first:],color='blue',va='bottom',ha='right',fontsize=5)
-    seq_second_text = ax.text(x=50,y=20,s=second[:dna_second+1],color='orange',va='bottom',ha='left',fontsize=5)
+    seq_first_text = ax.text(x=50,y=20,s=first[-dna_first:],color='blue',va='bottom',ha='right',fontsize=2)
+    seq_second_text = ax.text(x=50,y=20,s=second[:dna_second],color='orange',va='bottom',ha='left',fontsize=2)
     plt.pause(0.01)
     # draw aa seq
     bbox_coords = ax.transData.inverted().transform(seq_first_text.get_window_extent().get_points())
@@ -36,16 +36,16 @@ def show_candicates(ax,aa,extra,n_from_first,hla,first,second,dna_first,dna_seco
     tmp_aa_list = []
     tmp_aa_list[:] = aa
     aa_to_draw = '  '.join(tmp_aa_list)
-    aa_text = ax.text(x=start_x,y=start_y,s=aa_to_draw,color='r',fontweight='bold',fontsize=5)
+    aa_text = ax.text(x=start_x,y=start_y,s=aa_to_draw,color='r',fontweight='bold',fontsize=2)
     plt.pause(0.01)
     # draw barplot for scores
     barcontainer = ax.bar(x=[25,75],height=[np.interp(binding_score,xp=(0,2),fp=(0,50)),np.interp(immunogenicity_score,xp=(0,1),fp=(0,50))],bottom=50,width=20,color=['#158BFB','#F2075D'])
-    ax.text(x=barcontainer[0].get_x() + barcontainer[0].get_width()/2,y=50,s='binding',fontsize=5,va='top',ha='center')
-    ax.text(x=barcontainer[1].get_x() + barcontainer[1].get_width()/2,y=50,s='immunogenicity',fontsize=5,va='top',ha='center')
-    ax.text(x=barcontainer[0].get_x() + barcontainer[0].get_width()/2,y=barcontainer[0].get_y() + barcontainer[0].get_height(),s='{}'.format(binding_score),fontsize=5,va='top',ha='center')
-    ax.text(x=barcontainer[1].get_x() + barcontainer[1].get_width()/2,y=barcontainer[1].get_y() + barcontainer[1].get_height(),s='{}'.format(immunogenicity_score),fontsize=5,va='top',ha='center')
+    ax.text(x=barcontainer[0].get_x() + barcontainer[0].get_width()/2,y=50,s='binding',fontsize=3,va='top',ha='center')
+    ax.text(x=barcontainer[1].get_x() + barcontainer[1].get_width()/2,y=50,s='immunogenicity',fontsize=3,va='top',ha='center')
+    ax.text(x=barcontainer[0].get_x() + barcontainer[0].get_width()/2,y=barcontainer[0].get_y() + barcontainer[0].get_height(),s='{}'.format(round(binding_score,3)),fontsize=3,va='top',ha='center')
+    ax.text(x=barcontainer[1].get_x() + barcontainer[1].get_width()/2,y=barcontainer[1].get_y() + barcontainer[1].get_height(),s='{}'.format(round(immunogenicity_score,3)),fontsize=3,va='top',ha='center')
     # annotate HLA and score
-    ax.set_title('{}'.format(hla),fontsize=5)
+    ax.set_title('{}'.format(hla),fontsize=3)
     # remove tick and labels
     ax.set_xticks([])
     ax.set_yticks([])
@@ -87,18 +87,18 @@ def draw_genome(ax,uid,dict_exonCoords):
             subexon_end = np.interp(x=row.end,xp=[starting,ending],fp=[0,1])
             if row.Index == first or row.Index == second:
                 facecolor = 'red'
-                edgecolor = 'red'
+                edgecolor = 'k'
             else:
                 facecolor = '#0D1273'
                 edgecolor = 'k'
             if row.Index.startswith('E'):
-                subexon_rect = Rectangle((subexon_start,0.3),subexon_end - subexon_start, 0.2,linewidth=0.5,facecolor=facecolor,edgecolor=edgecolor)
+                subexon_rect = Rectangle((subexon_start,0.3),subexon_end - subexon_start, 0.4,linewidth=0.1,facecolor=facecolor,edgecolor=edgecolor)
                 ax.add_patch(subexon_rect)
-                ax.text(subexon_start,0.3,row.Index,fontsize=1,va='top',ha='right',rotation=60) 
+                ax.text(subexon_start,0.3,row.Index,fontsize=1,va='top',ha='left',rotation=60) 
             elif row.Index.startswith('I'):
-                subexon_rect = Rectangle((subexon_start,0.4),subexon_end - subexon_start, 0.05,linewidth=0.5,facecolor=facecolor,edgecolor=edgecolor)
+                subexon_rect = Rectangle((subexon_start,0.45),subexon_end - subexon_start, 0.1,linewidth=0.1,facecolor=facecolor,edgecolor=edgecolor)
                 ax.add_patch(subexon_rect)
-                ax.text(subexon_start,0.3 + 0.2,row.Index,fontsize=1,va='bottom',ha='left',rotation=60)        
+                ax.text(subexon_start,0.3 + 0.4,row.Index,fontsize=1,va='bottom',ha='left',rotation=60)        
 
     else:
         starting, ending = df_all_subexons.iloc[0,3], df_all_subexons.iloc[-1,2] 
@@ -107,18 +107,18 @@ def draw_genome(ax,uid,dict_exonCoords):
             subexon_end = np.interp(x=row.start,xp=[starting,ending],fp=[0,1])
             if row.Index == first or row.Index == second:
                 facecolor = 'red'
-                edgecolor = 'red'
+                edgecolor = 'k'
             else:
                 facecolor = '#0D1273'
                 edgecolor = 'k'
             if row.Index.startswith('E'):
-                subexon_rect = Rectangle((subexon_start,0.3),subexon_end - subexon_start, 0.2,linewidth=0.5,facecolor=facecolor,edgecolor=edgecolor)
+                subexon_rect = Rectangle((subexon_start,0.3),subexon_end - subexon_start, 0.4,linewidth=0.1,facecolor=facecolor,edgecolor=edgecolor)
                 ax.add_patch(subexon_rect)
                 ax.text(subexon_start,0.3,row.Index,fontsize=1,va='top',ha='right',rotation=60) 
             elif row.Index.startswith('I'):
-                subexon_rect = Rectangle((subexon_start,0.4),subexon_end - subexon_start, 0.05,linewidth=0.5,facecolor=facecolor,edgecolor=edgecolor)
+                subexon_rect = Rectangle((subexon_start,0.45),subexon_end - subexon_start, 0.1,linewidth=0.1,facecolor=facecolor,edgecolor=edgecolor)
                 ax.add_patch(subexon_rect)
-                ax.text(subexon_start,0.3 + 0.2,row.Index,fontsize=1,va='bottom',ha='left',rotation=60)     
+                ax.text(subexon_start,0.3 + 0.4,row.Index,fontsize=1,va='bottom',ha='right',rotation=60)     
 
     # final touch
     ax.set_xticks([0,1])

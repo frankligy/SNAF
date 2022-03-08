@@ -137,7 +137,14 @@ def stage0_compatible_results(jcmq,outdir='.',name_burden='burden_stage0.txt',na
     df.to_csv(os.path.join(outdir,name_frequency),sep='\t')
 
 
-
+def add_gene_symbol_frequency_table(df):
+    # the index has to be comma separated string
+    from ast import literal_eval
+    df['samples'] = [literal_eval(item) for item in df['samples']]
+    ensg_list = [item.split(',')[1].split(':')[0] for item in df.index] 
+    symbol_list = ensemblgene_to_symbol(ensg_list,'human') 
+    df['symbol'] = symbol_list
+    return df
 
 
 def reformat_frequency_table(df):
@@ -152,5 +159,24 @@ def reformat_frequency_table(df):
     result = result.groupby(by=['id','sample'])['value'].mean().unstack(fill_value=0)
     return result
         
+
+def ensemblgene_to_symbol(query,species):
+    '''
+    Examples::
+        from sctriangulate.preprocessing import GeneConvert
+        converted_list = GeneConvert.ensemblgene_to_symbol(['ENSG00000010404','ENSG00000010505'],species='human')
+    '''
+    # assume query is a list, will also return a list
+    import mygene
+    mg = mygene.MyGeneInfo()
+    out = mg.querymany(query,scopes='ensemblgene',fileds='symbol',species=species,returnall=True,as_dataframe=True,df_index=True)
+    result = out['out']['symbol'].fillna('unknown_gene').tolist()
+    try:
+        assert len(query) == len(result)
+    except AssertionError:    # have duplicate results
+        df = out['out']
+        df_unique = df.loc[~df.index.duplicated(),:]
+        result = df_unique['symbol'].fillna('unknown_gene').tolist()
+    return result
 
     

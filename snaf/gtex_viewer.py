@@ -44,7 +44,12 @@ def gtex_visual_combine(query,norm=False,out_folder='.',figsize=(6.4,4.8),tumor=
     snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
     snaf.gtex_visual_combine(query='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
     '''
-    info = adata[[query],:]
+    try:
+        info = adata[[query],:]
+    except:
+        print('{} not detected in gtex, impute as zero'.format(query))
+        info = adata[['ENSG00000090339:E4.3-E4.5'],:]
+        info.X = np.full((1,info.shape[0]),0)
     title = query
     identifier = query.replace(':','_')
     df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
