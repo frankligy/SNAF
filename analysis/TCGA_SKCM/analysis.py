@@ -3,17 +3,13 @@
 import os
 import sys
 import snaf
+from snaf import surface
 import pandas as pd
 import numpy as np
 import pickle
 import seaborn as sns
 import matplotlib.pyplot as plt
-from lifelines import KaplanMeierFitter
-from lifelines.statistics import logrank_test
-from scipy.stats import mannwhitneyu,pearsonr,spearmanr
 from tqdm import tqdm
-import statsmodels.stats.multitest as ssm
-
 
 
 # preprocess the dataframe
@@ -27,35 +23,56 @@ df = df.loc[df.index.isin(set(ee)),:]
 
 
 # run SNAF
-exon_table = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/Hs_Ensembl_exon_add_col.txt'
-fasta = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/Hs_gene-seq-2000_flank.fa'
 netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-gtex_db = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/GTEx_junction_counts.h5ad'
+db_dir = '/data/salomonis2/LabFiles/Frank-Li/refactor/data'
 
-# snaf.initialize(exon_table=exon_table,fasta=fasta,software_path=netMHCpan_path,gtex_db=gtex_db,binding_method='netMHCpan')
+snaf.initialize(db_dir=db_dir,gtex_mode='count',binding_method='netMHCpan',software_path=netMHCpan_path)
+surface.initialize(db_dir=db_dir)
+
+# # gtex check
+# snaf.gtex_visual_combine(query='ENSG00000101003:E7.2-E9.2',norm=True,tumor=df)
+
+
+'''B cell neoantigen'''
+# jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30)
+# neojunctions = jcmq.valid
+# membrane_uid = surface.filter_to_membrane_protein(neojunctions)
+# membrane_uid = [(uid,snaf.gtex.accurate_tumor_specificity(uid,method='mean'),jcmq.get_neojunction_info(uid)[0],jcmq.get_neojunction_info(uid)[1]) for uid in membrane_uid]
+# surface.single_run(membrane_uid,2,True,'/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
+# c_candidates,c_further = surface.process_results('single_run_surface_antigen.p',strigency=3)
+# print(c_candidates,c_further)
+
+# sa = snaf.surface.individual_check('ENSG00000176204:E5.2-E6.1',tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',indices=[None],fragments=[None])
+# surface.run_dash_prioritizer(pkl='single_run_surface_antigen.p',candidates='candidates.txt',python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+# snaf.gtex_viewer.gtex_visual(query='ENSG00000090339:E4.3-E4.5',norm=True)
+# snaf.gtex_viewer.gtex_visual(query='ENSG00000090339:E4.3-E4.5',norm=False)
+
+
+'''T cell neoantigen'''
+#### Step1: Running the program
 # jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=50)
-# jcmq.parallelize_run(kind=1)
 # sample_to_hla = pd.read_csv('../HLA_genotype/sample_hla.txt',sep='\t',index_col=0)['hla'].to_dict()
 # hlas = [hla_string.split(',') for hla_string in df.columns.map(sample_to_hla)]
-# jcmq.parallelize_run(kind=3,hlas=hlas)
-# jcmq.serialize(outdir='.',name='after_prediction.p')
-# jcmq = snaf.JunctionCountMatrixQuery.deserialize(name='./after_prediction.p')
-# burden_stage0 = jcmq.cond_df.astype('int8')
-# burden_stage0.loc['burden'] = burden_stage0.sum(axis=0).values
-# burden_stage0['mean'] = burden_stage0.mean(axis=1).values
-# burden_stage0.to_csv('burden_stage0.txt',sep='\t')
-# for stage in [3,2,1]:
-#     jcmq.show_neoantigen_burden(outdir='.',name='burden_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False)
-#     jcmq.show_neoantigen_frequency(outdir='.',name='frequency_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False,plot=True,plot_name='frequency_stage{}.pdf'.format(stage))
-# jcmq_skcm.show_neoantigen_frequency(outdir='.',name='frequency_stage3_verbosity1_uid.txt',stage=3,verbosity=1,contain_uid=True,plot=False)
+# jcmq.run(hlas=hlas,outdir='./result')
+# snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
 
+
+### Step2: necessary secondary results
+# df = pd.read_csv('./result/frequency_stage3_verbosity1_uid.txt',sep='\t',index_col=0)
+# snaf.downstream.add_gene_symbol_frequency_table(df=df).to_csv('./result/frequency_stage3_verbosity1_uid_gene_symbol.txt',sep='\t')
+# jcmq = snaf.JunctionCountMatrixQuery.deserialize(name='./result/after_prediction.p')
+# jcmq.visualize(uid='ENSG00000198034:E8.4-E9.1',sample='TCGA-WE-A8ZT-06A-11R-A37K-07.bed',outdir='./result')
+
+
+### Step3: downstream analysis (patient level and neoantigen level)
 
 '''patient analysis'''
 # 1. survival analysis
 # survival = pd.read_csv('patient_analysis/TCGA-SKCM.survival.tsv',sep='\t',index_col=0)  # 463
 # burden = pd.read_csv('burden_stage2.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]  # 472
 # burden.index = ['-'.join(sample.split('-')[0:4]) for sample in burden.index]
-# burden,burden_encode,burden_vc = snaf.survival_analysis(burden,survival,n=4,stratification_plot='patient_analysis/stage2_stratify.pdf',survival_plot='patient_analysis/stage2_survival.pdf')
+# burden,burden_encode,burden_vc = snaf.survival_analysis(burden,survival,n=2,stratification_plot='patient_analysis/stage2_stratify.pdf',survival_plot='patient_analysis/stage2_survival.pdf')
+# burden_encode.to_csv('to_anu/stage2_stratify.txt',sep='\t',header=None)
 
 # 2. mutation analysis
 # mutation = pd.read_csv('patient_analysis/TCGA-SKCM.mutect2_snv.tsv',sep='\t',index_col=0)  # 467 samples have mutations
@@ -66,93 +83,52 @@ gtex_db = '/data/salomonis2/LabFiles/Frank-Li/refactor/data/GTEx_junction_counts
 # snaf.mutation_analysis(mode='plot',burden=burden,mutation=mutation,output='patient_analysis/stage3_mutation_CAMKK2.pdf',genes_to_plot=['CAMKK2'])
 
 
-# 3. differential gene analysis
-# count = pd.read_csv('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/patient_analysis/de/TCGA-SKCM.htseq_counts.tsv',sep='\t',index_col=0)  # (60488, 472)
-# count.index = [ensg.split('.')[0] for ensg in count.index]   # the decimal part indicate how many times this model has been changed in Ensembl
-# count = count.loc[np.logical_not(count.index.duplicated()),:] # (60488, 472)
-
-# def ensemblgene_to_symbol(query,species):
-#     '''
-#     Examples::
-#         from sctriangulate.preprocessing import GeneConvert
-#         converted_list = GeneConvert.ensemblgene_to_symbol(['ENSG00000010404','ENSG00000010505'],species='human')
-#     '''
-#     # assume query is a list, will also return a list
-#     import mygene
-#     mg = mygene.MyGeneInfo()
-#     out = mg.querymany(query,scopes='ensemblgene',fileds='symbol',species=species,returnall=True,as_dataframe=True,df_index=True)
-#     result = out['out']['symbol'].fillna('unknown_gene').tolist()
-#     try:
-#         assert len(query) == len(result)
-#     except AssertionError:    # have duplicate results
-#         print('having duplicated results, only take unique ones')
-#         df = out['out']
-#         df_unique = df.loc[np.logical_not(df.index.duplicated()),:]
-#         df_unique = df_unique.loc[query,:]
-#         result = df_unique['symbol'].fillna('unknown_gene').tolist()
-#     return result
-
-# gene_symbol = ensemblgene_to_symbol(query=count.index.tolist(),species='human')
-# count.index = gene_symbol
-# count = count.loc[count.index!='unknown_gene',:]  # (40443, 472)
-# count = count.loc[np.logical_not(count.index.duplicated()),:]  # (39271, 472)
-# count = pd.DataFrame(data=np.clip(np.round_(np.exp2(count.values)),a_min=1,a_max=None) - 1,index=count.index,columns=count.columns)
-# count.to_csv('patient_analysis/de/gene_symbol_count_matrix.txt',sep='\t')
-
-# count = pd.read_csv('patient_analysis/de/gene_symbol_count_matrix.txt',sep='\t',index_col=0)
-# survival = pd.read_csv('patient_analysis/TCGA-SKCM.survival.tsv',sep='\t',index_col=0)  # 463
-# burden = pd.read_csv('burden_stage3.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]  # 472
-# burden.index = ['-'.join(sample.split('-')[0:4]) for sample in burden.index]
-# burden = burden.loc[burden.index.isin(survival.index)]   # 458
-# burden_encode = pd.Series(data=pd.qcut(burden,4,labels=['low','medium_low','medium_high','high']).to_list(),index=burden.index)
-# burden_encode = burden_encode.loc[(burden_encode=='low')|(burden_encode=='high')].to_frame(name='group')
-# count_s = count.loc[:,burden_encode.index]
-# count_s.to_csv('patient_analysis/de/deseq2_count.txt',sep='\t')
-# burden_encode.to_csv('patient_analysis/de/deseq2_meta.txt',sep='\t')
-
-# deseq_de = pd.read_csv('patient_analysis/de/deseq2_results.txt',sep='\t',index_col=0)
-# high_gene = deseq_de.loc[(deseq_de['log2FoldChange']>2)&(deseq_de['padj']<0.01),:].index.tolist()
-# low_gene = deseq_de.loc[(deseq_de['log2FoldChange']<-2)&(deseq_de['padj']<0.01),:].index.tolist()
-
-
-# 4. dynamic analysis
-burden0 = pd.read_csv('burden_stage0.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]
-burden1 = pd.read_csv('burden_stage1.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]
-burden2 = pd.read_csv('burden_stage2.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]
-burden3 = pd.read_csv('burden_stage3.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]
-burden = pd.concat([burden0,burden1,burden2,burden3],axis=1)
-burden.columns = ['burden0','burden1','burden2','burden3']
-burden.to_csv('patient_analysis/burden_dynamics.txt',sep='\t')
-sys.exit('stop')
-
-
 '''neoantigen analysis'''
 # 1. physicalchemical properties relate to occurence?
-# freq3 = pd.read_csv('frequency_stage3_verbosity1_uid.txt',sep='\t',index_col=0)
+# freq = pd.read_csv('to_anu/frequency_stage2_verbosity1_uid.txt',sep='\t',index_col=0)
 # burden0 = pd.read_csv('burden_stage0.txt',sep='\t',index_col=0)['mean'].to_dict()
-# freq3['uid'] = [item.split(',')[-1] for item in freq3.index]
-# freq3.index = [item.split(',')[0] for item in freq3.index]
-# freq3['burden0'] = freq3['uid'].map(burden0).values
-# freq3['expected'] = freq3['burden0'] * 472
-# freq3.drop(columns='samples',inplace=True)
+# freq['uid'] = [item.split(',')[-1] for item in freq.index]
+# freq.index = [item.split(',')[0] for item in freq.index]
+# freq['burden0'] = freq['uid'].map(burden0).values
+# freq['expected'] = freq['burden0'] * 472
+# freq.drop(columns='samples',inplace=True)
 # identity = []
-# for o,e in zip(freq3['n_sample'].values,freq3['expected'].values):
+# for o,e in zip(freq['n_sample'].values,freq['expected'].values):
 #     if o < 0.1 * e:
 #         identity.append('low')
 #     elif o > 0.9 * e:
 #         identity.append('high')
 #     else:
 #         identity.append('medium')
-# freq3['identity'] = identity
-# freq3 = freq3.loc[np.logical_not(freq3.index.duplicated()),:]
-# freq3 = freq3.loc[freq3['identity']!='medium',:]
-# freq3 = freq3.loc[freq3['burden0']>0.1,:]
-# freq3.to_csv('neoantigen_analysis/df_test_app.txt',sep='\t')
-# sns.regplot(freq3['burden0'].values,freq3['n_sample'])
-# plt.savefig('neoantigen_analysis/freq3_correlation_filter.pdf',bbox_inches='tight');plt.close()
+# freq['identity'] = identity
+# freq = freq.loc[np.logical_not(freq.index.duplicated()),:]
+# freq = freq.loc[freq['identity']!='medium',:]
+# freq = freq.loc[freq['burden0']>0.1,:]
+# freq['length'] = [len(item) for item in freq.index]
+# freq_9mer = freq.loc[freq['length']==9,:]
+# freq_10mer = freq.loc[freq['length']==10,:]
+# freq.to_csv('to_anu/neoantigen_common_unique.txt',sep='\t')
+# freq_9mer.to_csv('neoantigen_analysis/df_test_app_mer9.txt',sep='\t')
+# freq_10mer.to_csv('neoantigen_analysis/df_test_app_mer10.txt',sep='\t')
+# sns.regplot(freq['burden0'].values,freq['n_sample'])
+# plt.savefig('neoantigen_analysis/freq_correlation_filter.pdf',bbox_inches='tight');plt.close()
 
 # snaf.run_dash_app(intpath='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/neoantigen_analysis/df_test_app.txt',
 #                   remove_cols=['uid'],host='bmi-460g9-10.chmcres.cchmc.org')
+
+# # discriminative motif analysis
+# df = pd.read_csv('neoantigen_analysis/df_test_app_mer9.txt',sep='\t',index_col=0)
+# with open('neoantigen_analysis/mer9_high.fasta','w') as f1, open('neoantigen_analysis/mer9_low.fasta','w') as f2:
+#     for identity,sub_df in df.groupby(by='identity'):
+#         if identity == 'high':
+#             for item in sub_df.index:
+#                 f1.write('>{}\n{}\n'.format(item,item))
+#         else:
+#             for item in sub_df.index:
+#                 f2.write('>{}\n{}\n'.format(item,item))          
+
+
+
 
 
 
