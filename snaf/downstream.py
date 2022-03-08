@@ -137,20 +137,22 @@ def stage0_compatible_results(jcmq,outdir='.',name_burden='burden_stage0.txt',na
     df.to_csv(os.path.join(outdir,name_frequency),sep='\t')
 
 
-def add_gene_symbol_frequency_table(df):
+def add_gene_symbol_frequency_table(df,remove_quote=True):
     # the index has to be comma separated string
     from ast import literal_eval
-    df['samples'] = [literal_eval(item) for item in df['samples']]
+    if remove_quote:
+        df['samples'] = [literal_eval(item) for item in df['samples']]
     ensg_list = [item.split(',')[1].split(':')[0] for item in df.index] 
     symbol_list = ensemblgene_to_symbol(ensg_list,'human') 
     df['symbol'] = symbol_list
     return df
 
 
-def reformat_frequency_table(df):
+def reformat_frequency_table(df,remove_quote=True):
     # the index has to be comma separated string
     from ast import literal_eval
-    df['samples'] = [literal_eval(item) for item in df['samples']]
+    if remove_quote:
+        df['samples'] = [literal_eval(item) for item in df['samples']]
     sequence_io = []
     for row in df.itertuples():
         for item in row.samples:
