@@ -259,7 +259,7 @@ class JunctionCountMatrixQuery():
             jcmq = pickle.load(f)
         return jcmq
 
-    def visualize(self,uid,sample,outdir):
+    def visualize(self,uid,sample,outdir,tumor=False):
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         if sample is not None:
@@ -270,17 +270,18 @@ class JunctionCountMatrixQuery():
             nj = deepcopy(results[row_index])
             nj.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=hlas[col_index])
             nj.visualize(outdir,'{}_{}.pdf'.format(uid.replace(':','_'),sample))
-        # in tumor sample
-        fig,ax = plt.subplots()
-        counts = self.junction_count_matrix.loc[uid,:]
-        ax.plot(np.arange(len(counts)),counts.values,marker='o',markersize=3,color='k',markerfacecolor='r',markeredgecolor='r',linestyle='--')
-        ax.set_xticks(np.arange(len(counts)))
-        ax.set_xticklabels(counts.index.values,fontsize=1,rotation=90)
-        ax.set_title('{}_tumor'.format(uid),fontsize=8)
-        ax.set_ylim(bottom=-0.05)
-        ax.set_ylabel('counts')
-        plt.savefig(os.path.join(outdir,'{}_tumor.pdf'.format(uid.replace(':','_'))))
-        plt.close()
+        if tumor:
+            # in tumor sample
+            fig,ax = plt.subplots()
+            counts = self.junction_count_matrix.loc[uid,:]
+            ax.plot(np.arange(len(counts)),counts.values,marker='o',markersize=3,color='k',markerfacecolor='r',markeredgecolor='r',linestyle='--')
+            ax.set_xticks(np.arange(len(counts)))
+            ax.set_xticklabels(counts.index.values,fontsize=1,rotation=90)
+            ax.set_title('{}_tumor'.format(uid),fontsize=8)
+            ax.set_ylim(bottom=-0.05)
+            ax.set_ylabel('counts')
+            plt.savefig(os.path.join(outdir,'{}_tumor.pdf'.format(uid.replace(':','_'))))
+            plt.close()
 
 
 
