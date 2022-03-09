@@ -234,11 +234,15 @@ def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
             fw.write(a)
 
         '''
-        Then to run maxQuant:
+
+        Download the maxQuant (working version, 1.6.14 and 2.0.3.1) zip from official website, on windowns, just lanuch exe, follow the instructions,
+        .Net framework should be fine, if .Net core 3.1 is needed, just install it and verify it in cmd. On Linux, Using below instructions.
+
         cd /path/to/folder/have/raw_and_mqpar
         module load mono/5.20.1
         mono --version
         export PATH=$PATH:​/usr/local/mono/5.20.1/bin
-        mono /data/salomonis2/LabFiles/Frank-Li/MaxQuant/bin/MaxQuantCmd.exe /path/to/mqpar.xml
+        mono /path/to/folder/bin/maxquantCMD.exe /path/to/mqpar.xml   
+
         '''
 #######################  Here marks the end of maxQuant configuration
