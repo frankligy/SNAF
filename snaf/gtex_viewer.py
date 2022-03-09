@@ -49,7 +49,7 @@ def gtex_visual_combine(query,norm=False,out_folder='.',figsize=(6.4,4.8),tumor=
     except:
         print('{} not detected in gtex, impute as zero'.format(query))
         info = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info.X = np.full((1,info.shape[0]),0)
+        info.X = np.full((1,info.shape[1]),0)
     title = query
     identifier = query.replace(':','_')
     df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
