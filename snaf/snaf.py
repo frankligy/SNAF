@@ -1018,7 +1018,102 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
     return exon_seq
 
 
+def add_coord_frequency_table(df,remove_quote=True):
+    # the index has to be comma separated string
+    from ast import literal_eval
+    if remove_quote:
+        df['samples'] = [literal_eval(item) for item in df['samples']]   
+    uid_list = [item.split(',')[1] for item in df.index] 
+    coord_list = [uid_to_coord(uid) for uid in uid_list]
+    df['coord'] = coord_list
+    return df
 
+
+def uid_to_coord(uid):
+    tmp_list = uid.split(':')
+    if len(tmp_list) == 2:
+        ensg,exons = tmp_list
+    elif len(tmp_list) == 3:
+        ensg = tmp_list[0]
+        exons = ':'.join(tmp_list[1:])
+    first,second = exons.split('-')
+    # figure out start_coord
+    if '_' in first:
+        actual_exon,trailing = first.split('_')
+        try:
+            attrs = dict_exonCoords[ensg][actual_exon]
+        except KeyError:
+            if 'U' in actual_exon:
+                proxy_exon = list(dict_exonCoords[ensg].keys())[0]
+                attrs = dict_exonCoords[ensg][proxy_exon]
+                chrom = attrs[0]
+                strand = attrs[1]
+                start_coord = trailing
+            else:   # probably a rare error
+                chrom = 'unknown'
+                strand = 'unknown'
+                start_coord = 'unknown'
+        else:
+            chrom = attrs[0]
+            strand = attrs[1]
+            start_coord = trailing
+    else:
+        actual_exon = first
+        try:
+            attrs = dict_exonCoords[ensg][actual_exon]
+        except KeyError:
+            chrom = 'unkonwn'
+            strand = 'unknown'
+            start_coord = 'unknown'
+        else:
+            chrom = attrs[0]
+            strand = attrs[1]
+            if strand == '+':
+                start_coord = attrs[3]  # end
+            else:
+                start_coord = attrs[2]  # start
+    
+    # figure out end_coord
+    if '_' in second:
+        actual_exon,trailing = second.split('_')
+        try:
+            attrs = dict_exonCoords[ensg][actual_exon]
+        except KeyError:
+            if 'U' in actual_exon:
+                end_coord = trailing
+            elif 'ENSG' in actual_exon:
+                end_coord = trailing
+            else:
+                end_coord = 'unknown'      
+        else:
+            end_coord = trailing
+    else:
+        actual_exon = second
+        try:
+            attrs = dict_exonCoords[ensg][actual_exon]
+        except KeyError:
+            if 'ENSG' in actual_exon:
+                ensg_second, actual_exon_second = actual_exon.split(':')
+                attrs = dict_exonCoords[ensg_second][actual_exon_second]
+                if strand == '+':
+                    end_coord = attrs[2]  # start
+                else:
+                    end_coord = attrs[3]  # end
+            else:
+                end_coord = 'unknown'
+        else:
+            if strand == '+':
+                end_coord = attrs[2]  # start
+            else:
+                end_coord = attrs[3]  # end
+    
+    # assemble
+    if strand == '+':
+        assemble = '{}:{}-{}({})'.format(chrom,start_coord,end_coord,strand)
+    else:
+        assemble = '{}:{}-{}({})'.format(chrom,end_coord,start_coord,strand)
+
+    return assemble
 
 
 

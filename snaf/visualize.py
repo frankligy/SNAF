@@ -127,8 +127,8 @@ def draw_genome(ax,uid,dict_exonCoords):
     ax.set_yticks([])
     for trail in [trail1,trail2]:
         if trail is not None:
-            ax.axvline(x=np.interp(x=int(trail),xp=[starting,ending],fp=[0,1]),ymin=0.2,ymax=0.6,linewidth=1)
-            ax.text(x=np.interp(x=int(trail),xp=[starting,ending],fp=[0,1]),y=0.2,s=trail,va='top',ha='center',fontsize=5)            
+            ax.axvline(x=np.interp(x=int(trail),xp=[starting,ending],fp=[0,1]),ymin=0.3,ymax=0.7,linewidth=0.1,linestyle='--')
+            ax.text(x=np.interp(x=int(trail),xp=[starting,ending],fp=[0,1]),y=0.2,s=trail,va='top',ha='center',fontsize=1,rotation=60)            
     return ax
 
 

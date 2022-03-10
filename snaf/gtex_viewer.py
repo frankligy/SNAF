@@ -38,7 +38,7 @@ def gtex_visual_per_tissue_count(query,out_folder='.'):
     plt.close()
 
 
-def gtex_visual_combine(query,norm=False,out_folder='.',figsize=(6.4,4.8),tumor=None):
+def gtex_visual_combine(query,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None):
     ''' 
     Example:
     snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
@@ -49,7 +49,7 @@ def gtex_visual_combine(query,norm=False,out_folder='.',figsize=(6.4,4.8),tumor=
     except:
         print('{} not detected in gtex, impute as zero'.format(query))
         info = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info.X = np.full((1,info.shape[1]),0)
+        info.X = np.full((1,info.shape[0]),0)
     title = query
     identifier = query.replace(':','_')
     df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
@@ -94,7 +94,7 @@ def gtex_visual_combine(query,norm=False,out_folder='.',figsize=(6.4,4.8),tumor=
         ylabel = 'Normalized read counts (TPM)'
     ax.set_ylabel(ylabel)
     ax.set_xlabel('Normal Tissues --> Tumor')
-    plt.savefig(os.path.join(out_folder,'gtex_visual_combine_{}.pdf'.format(identifier)),bbox_inches='tight')
+    plt.savefig(os.path.join(outdir,'gtex_visual_combine_norm_{}_{}.pdf'.format(norm,identifier)),bbox_inches='tight')
     plt.close()
     
 
@@ -103,7 +103,7 @@ def gtex_visual_combine(query,norm=False,out_folder='.',figsize=(6.4,4.8),tumor=
 
 
 
-def gtex_visual_subplots(query,norm=True,out_folder='.'):
+def gtex_visual_subplots(query,norm=True,outdir='.'):
     ''' 
     Example:
     snaf.gtex_visual_subplots(query='ENSG00000090339:E4.3-E4.5',norm=True)
@@ -137,7 +137,7 @@ def gtex_visual_subplots(query,norm=True,out_folder='.'):
         name = 'gtex_visual_norm_count_{}.pdf'.format(identifier)
     else:
         name = 'gtex_visual_count_{}.pdf'.format(identifier)
-    plt.savefig(os.path.join(out_folder,name),bbox_inches='tight')
+    plt.savefig(os.path.join(outdir,name),bbox_inches='tight')
     plt.close()
 
 
