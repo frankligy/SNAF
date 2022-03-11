@@ -5,7 +5,7 @@ from .binding import binding_configuration
 from .proteomics import *
 from .downstream import *
 from datetime import datetime,date
-from .dash_app import run_dash_app,run_pweblogo
+from .dash_app import run_dash_T_antigen,run_pweblogo
 import os,sys
 
 def initialize(db_dir,gtex_mode,software_path=None,binding_method=None,t_min=20,n_max=3,add_control=None):

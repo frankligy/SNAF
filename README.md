@@ -11,4 +11,5 @@ conda install -c conda-forge pymc3 mkl-service   # numpy will be updated to 1.21
 pip install mhcflurry==2.0.5 # for now version seems to not matter
 pip install statsmodels lifelines umap plotly   # numba needs to be 0.53
 pip install requests xmltramp2 dash-dangerously-set-inner-html
+pip install mygene
 ```

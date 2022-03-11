@@ -182,6 +182,44 @@ def ensemblgene_to_symbol(query,species):
     return result
 
 
+def analyze_neoantigens(freq_path,junction_path,total_samples,outdir,mers=None,columns=None,cutoffs=(0.1,0.9),junction_bl=0.1):
+    freq = pd.read_csv(freq_path,sep='\t',index_col=0)
+    junction = pd.read_csv(junction_path,sep='\t',index_col=0)['mean'].to_dict()
+    freq['uid'] = [item.split(',')[-1] for item in freq.index]
+    freq.index = [item.split(',')[0] for item in freq.index]
+    freq['mean_percent_samples_junction_present'] = freq['uid'].map(junction).values
+    freq['actual_percent_samples_neoantigen_present'] = freq['n_sample'] / total_samples
+    freq.drop(columns='samples',inplace=True)
+    identity = []
+    for e,o in zip(freq['mean_percent_samples_junction_present'],freq['actual_percent_samples_neoantigen_present']):
+        if o < cutoffs[0] * e:
+            identity.append('low')
+        elif o > cutoffs[1] * e:
+            identity.append('high')
+        else:
+            identity.append('medium')
+    freq['identity'] = identity
+    freq = freq.loc[np.logical_not(freq.index.duplicated()),:]
+    freq = freq.loc[freq['identity']!='medium',:]
+    freq = freq.loc[freq['mean_percent_samples_junction_present']>junction_bl,:]
+    freq['length'] = [len(item) for item in freq.index]
+    if columns is None:
+        columns = []
+    selected_columns = ['n_sample','uid','mean_percent_samples_junction_present','actual_percent_samples_neoantigen_present','identity','length'] + columns
+    freq = freq.loc[:,selected_columns]
+    sns.regplot(data=freq,x='mean_percent_samples_junction_present',y='actual_percent_samples_neoantigen_present')
+    plt.savefig(os.path.join(outdir,'shared_vs_unique_neoantigen_all.pdf'),bbox_inches='tight')
+    plt.close()
+    if mers is None:
+        freq.to_csv(os.path.join(outdir,'shared_vs_unique_neoantigen_all.txt'),sep='\t')
+    else:
+        for mer in mers:
+            freq = freq.loc[freq['length']==mer,:]
+            freq.to_csv(os.path.join(outdir,'shared_vs_unique_neoantigen_mer{}.txt'.format(mer)),sep='\t')
+
+
+
+
 
 
 

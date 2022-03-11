@@ -5,12 +5,13 @@ import numpy as np
 import os,sys
 from ast import literal_eval
 import dash
-from dash import dcc,html
+from dash import dcc,html,dash_table
 import plotly.graph_objects as go
 import plotly.express as px
 from dash.dependencies import Input,Output,State
 from .pweblogo import run_pweblogo
 from datetime import date,datetime
+import subprocess
 import atexit
 
 
@@ -21,13 +22,12 @@ def clear_assets():
         os.remove(os.path.join('assets',img))
 
 
-def run_dash_app(intpath,remove_cols=None,host='127.0.0.1',port='8050'):
+def run_dash_T_antigen(input_abs_path,remove_cols=['uid'],host=None,port='8050'):
     # since this module heavily relies on relative path
     os.chdir(os.path.dirname(__file__))
     print('changed working directory to {}'.format(os.getcwd()))
     ### df
-    df = pd.read_csv(intpath,sep='\t',index_col=0)
-    df['length'] = [len(item) for item in df.index]
+    df = pd.read_csv(input_abs_path,sep='\t',index_col=0)
     ### umap
     after_pca = np.loadtxt(os.path.join('..','deepimmuno','data','after_pca.txt'))
     def aaindex(peptide,after_pca):
@@ -57,42 +57,20 @@ def run_dash_app(intpath,remove_cols=None,host='127.0.0.1',port='8050'):
     print('embedding ready, app will be built soon')
 
     # building app
-
     app = dash.Dash(__name__)
     dropdown_cols = list(df.columns)
     for col in remove_cols:
         dropdown_cols.remove(col)
     app.layout = html.Div([
-        # heading
-        html.Div(html.H1('SNAF Neoantigen Viewer')),
-        # selection
-        html.Div([
-            # dropdown label
-            html.Label('Metadata to display'),
-            dcc.Dropdown(
-                id = 'metadata_dropdown',
-                options = [{'label':col,'value':col} for col in dropdown_cols],
-                value = 'HLA'),
-            # length radioitem label
-            html.Label('Length'),
-            dcc.RadioItems(id='length_radioitem',options=[{'label':9,'value':9},{'label':10,'value':10}],value=9),
-            # button to submit
-            html.Button(id='submit_button',n_clicks=0,children='Submit')
-
-        ]),
-        # graph
-        html.Div([
-            html.H2('Scatter Plot'),
-            dcc.Graph(id='scatter_figure')]),
-        # table for display    
-        html.Div([
-            html.H2('Selected Neoantigen'),
-            dcc.Graph(id='display_table')]),
-        # weblogo
-        html.Div([html.H2('Selected Weblogo'),
-                  html.Img(alt='weblogo',id='display_weblogo')])
-        
-
+        html.Div(html.H1('SNAF T-antigen Viewer'),style={'text-align':'center'}),
+        html.Div([html.Label('Metadata to display',style={'font-weight':'bold'}),dcc.Dropdown(id = 'metadata_dropdown',options = [{'label':col,'value':col} for col in dropdown_cols],value = 'identity'),
+                  html.Br(),
+                  html.Label('Length',style={'font-weight':'bold'}),dcc.RadioItems(id='length_radioitem',options=[{'label':9,'value':9},{'label':10,'value':10}],value=9),
+                  html.Br(),
+                  html.Button(id='submit_button',n_clicks=0,children='Submit')],style={'width':'30%','float':'left'}),
+        html.Div([dcc.Graph(id='scatter_figure')],style={'width':'60%','float':'right','margin-top':'100px'}),
+        html.Div([html.Br(),html.H2('Selected Weblogo'),html.Img(alt='weblogo',id='display_weblogo',width='95%',height='80%',style={'border-style':'dashed'})],style={'clear':'left','width':'30%'}), 
+        html.Div([html.Br(),html.H2('Selected Neoantigen'),dash_table.DataTable(id='display_table',columns=[{'name':column,'id':column} for column in ['neoantigen','uid','mean_percent_samples_junction_present','actual_percent_samples_neoantigen_present','identity','length']],page_size=10)],style={'width':'100%','clear':'both'})     
     ])
 
     # app callback
@@ -107,16 +85,15 @@ def run_dash_app(intpath,remove_cols=None,host='127.0.0.1',port='8050'):
         plot_df = plot_df.loc[plot_df['length']==length_value]  
         embedding = embed[0] if length_value==9 else embed[1]
         # plot
-        fig = px.scatter(x=embedding[:,0],y=embedding[:,1],
-                        color=plot_df[dropdown_value],text=plot_df.index.values)
+        fig = px.scatter(x=embedding[:,0],y=embedding[:,1],color=plot_df[dropdown_value],text=plot_df.index.values)
         fig.update_traces(mode='markers',customdata=plot_df['uid'].values,hovertemplate='%{text}<br>%{customdata}')
-        fig.update_layout(title='test',margin=dict(l=300,r=300),plot_bgcolor='rgba(0,0,0,0)',hovermode='closest')
+        fig.update_layout(title='Embedded based on physiochemical properties',margin=dict(t=30,l=0,r=0),plot_bgcolor='rgba(0,0,0,0)',hovermode='closest')
         fig.update_xaxes(title='umap_x',type='linear')
         fig.update_yaxes(title='umap_y',type='linear')
         return fig
 
     @app.callback(
-        Output('display_table','figure'),
+        Output('display_table','data'),
         Input('scatter_figure','selectedData'))
     def display_df(selectedData):
         display_df = df.copy()
@@ -124,10 +101,10 @@ def run_dash_app(intpath,remove_cols=None,host='127.0.0.1',port='8050'):
         for p in selectedData['points']:
             selected_index.append(p['text'])
         display_df = display_df.loc[selected_index,:]
-        fig = go.Figure(data=[go.Table(header=dict(values=['neoantigen','uid'],fill_color='paleturquoise',align='left'),
-                                    cells=dict(values=[display_df.index,display_df.uid],fill_color='lavender',align='left'))])
-        #fig.update_layout(width=600)
-        return fig
+        data_table = []
+        for row in display_df.itertuples():
+            data_table.append({'neoantigen':row.Index,'uid':row.uid,'mean_percent_samples_junction_present':row.mean_percent_samples_junction_present,'actual_percent_samples_neoantigen_present':row.actual_percent_samples_neoantigen_present,'identity':row.identity,'length':row.length})
+        return data_table
 
     @app.callback(
         Output('display_weblogo','src'),
@@ -141,6 +118,8 @@ def run_dash_app(intpath,remove_cols=None,host='127.0.0.1',port='8050'):
         return app.get_asset_url('pweblogo_{}.png'.format(suffix))
 
     # run app
+    if host is None:
+        host = subprocess.run(['hostname'],stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[0]
     app.run_server(host=host,port=port)
 
 
