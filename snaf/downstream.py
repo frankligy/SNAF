@@ -182,7 +182,7 @@ def ensemblgene_to_symbol(query,species):
     return result
 
 
-def analyze_neoantigens(freq_path,junction_path,total_samples,outdir,mers=None,columns=None,cutoffs=(0.1,0.9),junction_bl=0.1):
+def analyze_neoantigens(freq_path,junction_path,total_samples,outdir,fasta=False,mers=None,columns=None,cutoffs=(0.1,0.9),junction_bl=0.1):
     freq = pd.read_csv(freq_path,sep='\t',index_col=0)
     junction = pd.read_csv(junction_path,sep='\t',index_col=0)['mean'].to_dict()
     freq['uid'] = [item.split(',')[-1] for item in freq.index]
@@ -214,8 +214,18 @@ def analyze_neoantigens(freq_path,junction_path,total_samples,outdir,mers=None,c
         freq.to_csv(os.path.join(outdir,'shared_vs_unique_neoantigen_all.txt'),sep='\t')
     else:
         for mer in mers:
-            freq = freq.loc[freq['length']==mer,:]
-            freq.to_csv(os.path.join(outdir,'shared_vs_unique_neoantigen_mer{}.txt'.format(mer)),sep='\t')
+            freq_mer = freq.loc[freq['length']==mer,:]
+            freq_mer.to_csv(os.path.join(outdir,'shared_vs_unique_neoantigen_mer{}.txt'.format(mer)),sep='\t')
+            if fasta:
+                with open(os.path.join(outdir,'mer{}_high.fasta'.format(mer)),'w') as f1, open(os.path.join(outdir,'mer{}_low.fasta'.format(mer)),'w') as f2:  
+                    for identity,sub_df in freq_mer.groupby(by='identity'):
+                        if identity == 'high':
+                            for item in sub_df.index:
+                                f1.write('>{}\n{}\n'.format(item,item))
+                        else:
+                            for item in sub_df.index:
+                                f2.write('>{}\n{}\n'.format(item,item))  
+                     
 
 
 
