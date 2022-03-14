@@ -42,23 +42,25 @@ def initialize(db_dir):
     print('{} {} finished surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
 
 
+
+
 def _run_dash_prioritizer_return_events(candidates):
     # candidates is a list of each lines, containing the newline symbol
     collect = []
     for i,line in enumerate(candidates):
-        if i % 13 == 0:
+        if i % 14 == 0:
             collect.append(line.rstrip('\n')[4:])
     return collect
 
 def _run_dash_prioritizer_return_valid_indices(candidates,collect,event):
     valid_indices = []
     index = collect.index(event)
-    indices_to_retrive = [index*13+6, index*13+8, index*13+9, index*13+10]
+    indices_to_retrive = [index*14+6, index*14+8, index*14+9, index*14+10]
     store = []
     for i,line in enumerate(candidates):
-        if i < index*13+6:
+        if i < index*14+6:
             continue
-        elif i > index*13+10:
+        elif i > index*14+10:
             break
         else:
             if i in indices_to_retrive:
@@ -73,8 +75,15 @@ def _run_dash_prioritizer_return_sa(results,gene):
         if sa.uid == gene:
             return sa
 
+def _run_dash_prioritizer_return_gene(candidates):
+    collect = []
+    for i,line in enumerate(candidates):
+        if i % 14 == 12:
+            collect.append(line.rstrip('\n')[12:])
+    return collect
 
-def run_dash_prioritizer(pkl,candidates,python_executable,host=None,port='8050'):
+
+def run_dash_B_antigen(pkl,candidates,python_executable,host=None,port='8050'):
     import dash
     from dash import dcc,html,dash_table
     from dash.dependencies import Input,Output,State
@@ -85,11 +94,12 @@ def run_dash_prioritizer(pkl,candidates,python_executable,host=None,port='8050')
     sa, df_certain = None, None       # a binding for further nonlocal declaration 
     with open(candidates,'r') as f2:
         candidates = f2.readlines()   # a list of each lines, containing the newline symbol
-    collect = _run_dash_prioritizer_return_events(candidates)  # a list of all uid
+    collect_uid = _run_dash_prioritizer_return_events(candidates)  # a list of all uid
+    collect_gene = _run_dash_prioritizer_return_gene(candidates)   # a list of all gene symbol
     app = dash.Dash(__name__)
     app.layout = html.Div([
-        html.Div([html.H2('Splicing Event UID:'),html.Br(),dcc.Input(id='event_selection',value=collect[0],type='text',style={'width':'40%'})],style={'text-align':'center'}),
-        html.Div([html.H2('Expression graph in tumor cohort'),html.Br(),dcc.Graph(id='expression')],style={'text-align':'center'}),
+        html.Div([html.H2('SNAF B-antigen Viewer'),html.Br(),html.Label('Splicing Event UID: ',style={'font-weight':'bold'}),dcc.Input(id='event_selection',value=collect_uid[0],type='text',style={'width':'40%'})],style={'text-align':'center'}),
+        html.Div([html.Br(),html.H2('Expression (Normal --> Tumor)'),html.Br(),dcc.Graph(id='expression')],style={'text-align':'center'}),
         html.Div([html.H2(id='exon_h2'),dash_table.DataTable(id='exon',columns=[{'name':column,'id':column} for column in ['subexon','chromosome','strand','start','end']],page_size=10)]),
         html.Div([html.H2('All related existing transcripts'),dash_table.DataTable(id='transcript',columns=[{'name':column,'id':column} for column in ['index','EnsGID','EnsTID','EnsPID','Exons']])]),
         html.Br(),
@@ -128,9 +138,12 @@ def run_dash_prioritizer(pkl,candidates,python_executable,host=None,port='8050')
         nonlocal sa
         nonlocal df_certain
         sa = _run_dash_prioritizer_return_sa(results,value)  # the sa object that will be used for displaying sequence
-        gene = value.split(':')[0]        
-        values = dict_exonCoords[gene]    # {E1.1:[attrs]}
-        valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect,value)   # list of valid indices
+        ensg = value.split(':')[0]        
+        values = dict_exonCoords[ensg]    # {E1.1:[attrs]}
+        gene_symbol = collect_gene[collect_uid.index(value)]
+        coord = uid_to_coord(value)
+        valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)   # list of valid indices
+        # data_exon
         data_exon = []
         for k,v in values.items():
             data_exon.append({'subexon':k,'chromosome':v[0],'strand':v[1],'start':v[2],'end':v[3]})
@@ -139,21 +152,34 @@ def run_dash_prioritizer(pkl,candidates,python_executable,host=None,port='8050')
             data_exon.sort(reverse=False,key=lambda x:x['start'])
         elif data_exon[0]['strand'] == '-':
             data_exon.sort(reverse=True,key=lambda x:x['end'])
-        df_certain = df_exonlist.loc[df_exonlist['EnsGID']==gene,:]
+        # data transcript
+        df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensg,:]
         df_certain = df_certain.iloc[valid_indices,:]
         df_certain.insert(loc=0,column='index',value=valid_indices)
         data_transcript = df_certain.to_dict(orient='records')
+        # drop down menu
         dropdown_options = [{'label':item,'value':item} for item in valid_indices]
-        exon_h2_value = 'All exons of: {}'.format(value)
+        # exon_h2_value
+        exon_h2_value = 'Exons of: {} ({}) --- Coord: {}'.format(ensg,gene_symbol,coord)
         # expression plot
-        expr_dict = sa.ed   # {sample:value}
-        expr = list(expr_dict.values())
-        sample = list(expr_dict.keys())
-        edge_trace = go.Scatter(x=np.arange(len(expr)),y=expr,mode='lines',line={'width':0.1,'color':'black'})
-        node_trace = go.Scatter(x=np.arange(len(expr)),y=expr,mode='markers',marker={'color':'red','size':5},text=sample,hoverinfo='text')
-        fig = go.Figure(data=[edge_trace,node_trace],layout=go.Layout(showlegend=False))
-        fig.update_xaxes(title_text='Patients')
-        fig.update_yaxes(title_text='Read Count')
+        expr_tumor_dict = sa.ed   # {sample:value}
+        expr_tumor_dict = {sample + ',' + 'tumor': value for sample,value in expr_tumor_dict.items()}  # {sample,tumor:value}
+        expr_tumor_dict = {k:v for k,v in sorted(expr_tumor_dict.items(),key=lambda x:x[1])}
+        expr_gtex_df = sa.df  # index is sample name, two columns: value and tissue
+        expr_gtex_dict = {row.Index + ',' + row.tissue: row.value for row in expr_gtex_df.itertuples()}   # {sample,tissue:value}
+        expr_gtex_dict = {k:v for k,v in sorted(expr_gtex_dict.items(),key=lambda x:x[1])}
+        node_x = []
+        node_y = []
+        node_text = []
+        expr_gtex_dict.update(expr_tumor_dict)
+        for i,(k,v) in enumerate(expr_gtex_dict.items()):
+            node_x.append(i)
+            node_y.append(v)
+            node_text.append(k)
+        node_trace = go.Scatter(x=node_x,y=node_y,mode='markers',marker={'color':'red','size':2},text=node_text,hoverinfo='text')
+        fig = go.Figure(data=[node_trace],layout=go.Layout(showlegend=False))
+        fig.update_xaxes(title_text='Samples(Normal -> Tumor)')
+        fig.update_yaxes(title_text='Raw Read Count')
         return fig,exon_h2_value,data_exon,data_transcript,dropdown_options
 
     @app.callback(Output('sequence','children'),Output('ensembl','children'),Output('alignment','children'),Input('submit','n_clicks'),State('valid_indices','value'),State('display','value'),)
@@ -192,7 +218,91 @@ def run_dash_prioritizer(pkl,candidates,python_executable,host=None,port='8050')
         
 
 
+def uid_to_coord(uid):
+    tmp_list = uid.split(':')
+    if len(tmp_list) == 2:
+        ensg,exons = tmp_list
+    elif len(tmp_list) == 3:
+        ensg = tmp_list[0]
+        exons = ':'.join(tmp_list[1:])
+    first,second = exons.split('-')
+    # figure out start_coord
+    if '_' in first:
+        actual_exon,trailing = first.split('_')
+        try:
+            attrs = dict_exonCoords[ensg][actual_exon]
+        except KeyError:
+            if 'U' in actual_exon:
+                proxy_exon = list(dict_exonCoords[ensg].keys())[0]
+                attrs = dict_exonCoords[ensg][proxy_exon]
+                chrom = attrs[0]
+                strand = attrs[1]
+                start_coord = trailing
+            else:   # probably a rare error
+                chrom = 'unknown'
+                strand = 'unknown'
+                start_coord = 'unknown'
+        else:
+            chrom = attrs[0]
+            strand = attrs[1]
+            start_coord = trailing
+    else:
+        actual_exon = first
+        try:
+            attrs = dict_exonCoords[ensg][actual_exon]
+        except KeyError:
+            chrom = 'unkonwn'
+            strand = 'unknown'
+            start_coord = 'unknown'
+        else:
+            chrom = attrs[0]
+            strand = attrs[1]
+            if strand == '+':
+                start_coord = attrs[3]  # end
+            else:
+                start_coord = attrs[2]  # start
+    
+    # figure out end_coord
+    if '_' in second:
+        actual_exon,trailing = second.split('_')
+        try:
+            attrs = dict_exonCoords[ensg][actual_exon]
+        except KeyError:
+            if 'U' in actual_exon:
+                end_coord = trailing
+            elif 'ENSG' in actual_exon:
+                end_coord = trailing
+            else:
+                end_coord = 'unknown'      
+        else:
+            end_coord = trailing
+    else:
+        actual_exon = second
+        try:
+            attrs = dict_exonCoords[ensg][actual_exon]
+        except KeyError:
+            if 'ENSG' in actual_exon:
+                ensg_second, actual_exon_second = actual_exon.split(':')
+                attrs = dict_exonCoords[ensg_second][actual_exon_second]
+                if strand == '+':
+                    end_coord = attrs[2]  # start
+                else:
+                    end_coord = attrs[3]  # end
+            else:
+                end_coord = 'unknown'
+        else:
+            if strand == '+':
+                end_coord = attrs[2]  # start
+            else:
+                end_coord = attrs[3]  # end
+    
+    # assemble
+    if strand == '+':
+        assemble = '{}:{}-{}({})'.format(chrom,start_coord,end_coord,strand)
+    else:
+        assemble = '{}:{}-{}({})'.format(chrom,end_coord,start_coord,strand)
 
+    return assemble
 
 
 def split_array_to_chunks(array,cores=None):
@@ -298,16 +408,36 @@ def generate_results(pickle_path,strigency=3,outdir='.'):
                             send = not send
                             n_hit += 1
                 if send:
-                    candidates.append((sa,sa.score,sa.freq,n_hit))
+                    candidates.append((sa,sa.score,sa.freq,n_hit,sa.uid))
                     count_candidates += 1
     sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2],-x[3]),reverse=False)
+    uid_list = list(list(zip(*sorted_candidates))[4])
+    ensg_list = [uid.split(':')[0] for uid in uid_list]
+    gene_symbols = ensemblgene_to_symbol(ensg_list,'human')
     with open(os.path.join(outdir,'candidates.txt'),'w') as f1:
-        for sa,score,freq,hit in sorted_candidates:
-            print(sa,'n_hits:{}'.format(hit),'\n',file=f1,sep='')
+        for (sa,score,freq,hit,uid),gene in zip(sorted_candidates,gene_symbols):
+            print(sa,'n_hits:{}\n'.format(hit),'gene_symbol:{}\n'.format(gene),file=f1,sep='',end='\n')
     return count_candidates,count_further
 
 
-    
+def ensemblgene_to_symbol(query,species):
+    '''
+    Examples::
+        from sctriangulate.preprocessing import GeneConvert
+        converted_list = GeneConvert.ensemblgene_to_symbol(['ENSG00000010404','ENSG00000010505'],species='human')
+    '''
+    # assume query is a list, will also return a list
+    import mygene
+    mg = mygene.MyGeneInfo()
+    out = mg.querymany(query,scopes='ensemblgene',fileds='symbol',species=species,returnall=True,as_dataframe=True,df_index=True)
+    result = out['out']['symbol'].fillna('unknown_gene').tolist()
+    try:
+        assert len(query) == len(result)
+    except AssertionError:    # have duplicate results
+        df = out['out']
+        df_unique = df.loc[~df.index.duplicated(),:]
+        result = df_unique['symbol'].fillna('unknown_gene').tolist()
+    return result    
     
 
 def get_exon_table(ensgid,outdir='.'):
