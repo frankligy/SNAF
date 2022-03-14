@@ -97,13 +97,23 @@ def mle_func(parameters,y):
     neg_ll = -1 * ll
     return neg_ll
 
-def accurate_tumor_specificity(uid,method):
+def accurate_tumor_specificity(uid,method,return_df=False):
+    try:
+        info = adata[[uid],:]
+    except:
+        print('{} not detected in gtex, impute as zero'.format(uid))
+        info = adata[['ENSG00000090339:E4.3-E4.5'],:]
+        info.X = np.full((1,info.shape[1]),0)
+    df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
     if method == 'mean':
         try:
             sigma = adata.obs.loc[uid,'mean']
         except KeyError:
             sigma = 0
-        return sigma
+        if return_df:
+            return sigma,df
+        else:
+            return sigma
     elif method == 'mle':
         try:
             y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
@@ -126,7 +136,10 @@ def accurate_tumor_specificity(uid,method):
                 sigma = mle_model.x[0]
             else:   # usually means too many zero, so true expression is near zero
                 sigma = 0
-        return 1-sigma
+        if return_df:
+            return sigma,df
+        else:
+            return sigma
     elif method == 'bayesian':
         try:
             y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
@@ -149,7 +162,10 @@ def accurate_tumor_specificity(uid,method):
                 trace = pm.sample(100,step=step,return_inferencedata=False,cores=1)
             df = az.summary(trace,round_to=2)
             sigma = df.iloc[0]['mean']
-        return 1-sigma
+        if return_df:
+            return sigma,df
+        else:
+            return sigma
             
 
 

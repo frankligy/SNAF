@@ -49,7 +49,7 @@ def gtex_visual_combine(query,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None
     except:
         print('{} not detected in gtex, impute as zero'.format(query))
         info = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info.X = np.full((1,info.shape[0]),0)
+        info.X = np.full((1,info.shape[1]),0)
     title = query
     identifier = query.replace(':','_')
     df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
@@ -109,7 +109,12 @@ def gtex_visual_subplots(query,norm=True,outdir='.'):
     snaf.gtex_visual_subplots(query='ENSG00000090339:E4.3-E4.5',norm=True)
     snaf.gtex_visual_subplots(query='ENSG00000112149:E7.1-E9.1',norm=True)
     '''
-    info = adata[[query],:]
+    try:
+        info = adata[[query],:]
+    except:
+        print('{} not detected in gtex, impute as zero'.format(query))
+        info = adata[['ENSG00000090339:E4.3-E4.5'],:]
+        info.X = np.full((1,info.shape[1]),0)
     title = query
     identifier = query.replace(':','_')
     n_tissue = len(info.var['tissue'].unique())

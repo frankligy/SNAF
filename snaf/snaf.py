@@ -95,6 +95,21 @@ class JunctionCountMatrixQuery():
         return ed,freq
 
 
+    @staticmethod
+    def get_membrane_tuples(df):
+        from .surface import filter_to_membrane_protein
+        jcmq = JunctionCountMatrixQuery(junction_count_matrix=df)
+        neojunctions = jcmq.valid
+        membrane_uid = filter_to_membrane_protein(neojunctions)
+        membrane_tuples = []
+        for uid in membrane_uid:
+            mean_gtex, df_gtex = accurate_tumor_specificity(uid,method='mean',return_df=True)
+            ed, freq = jcmq.get_neojunction_info(uid)
+            membrane_tuples.append((uid,mean_gtex,df_gtex,ed,freq))
+        return membrane_tuples
+
+
+
     @staticmethod    
     def split_df_to_chunks(df,cores=None):
         df_index = np.arange(df.shape[0])
@@ -191,7 +206,7 @@ class JunctionCountMatrixQuery():
 
     @staticmethod
     def generate_results(self,path,outdir):
-        jcmq = snaf.JunctionCountMatrixQuery.deserialize(name=path)
+        jcmq = JunctionCountMatrixQuery.deserialize(name=path)
         snaf.downstream.stage0_compatible_results(jcmq,outdir=outdir)
         for stage in [3,2,1]:
             jcmq.show_neoantigen_burden(outdir=outdir,name='burden_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False)
