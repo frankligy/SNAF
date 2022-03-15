@@ -383,7 +383,7 @@ def process_est_or_long_read(gtf):
                 continue
     return gtf_dict
 
-def is_support_by_est_or_long_read(sa,op):
+def is_support_by_est_or_long_read(sa,op,strict=True):
     coord = uid_to_coord(sa.uid)
     start_coord, end_coord = coord.split(':')[1].split('(')[0].split('-')
     start_coord, end_coord = int(start_coord), int(end_coord)
@@ -417,12 +417,25 @@ def is_support_by_est_or_long_read(sa,op):
         candidate_orfs = transcript2orf(sequence)
         max_orf = prioritize_orf(candidate_orfs)
         max_pep = orf2pep(max_orf)
-        if max_pep == op:
-            return_value = True
-            return_cand = cand
-            break
-        else:
+        # junction site present
+        exon_sites = []
+        for exon in cand:
+            exon_sites.extend([int(item) for item in exon])
+        try:
+            si = exon_sites.index(start_coord)
+            ei = exon_sites.index(end_coord)
+        except ValueError:
             continue
+        if strict:
+            if ei == si + 1 and max_pep == op:
+                return_value = True
+                return_cand = cand
+                break
+        else:
+            if ei == si + 1:
+                return_value = True
+                return_cand = cand
+                break
     return return_value, return_cand
     
 
@@ -448,9 +461,15 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None):
             else:
                 send = False
                 for i,(op,n,t,a) in enumerate(zip(sa.orfp,sa.nmd,sa.translatability,sa.alignment)):
-                    if strigency == 4:
+                    if strigency == 5:
                         if n == '#' and t == '#' and a:
-                            value,cand = is_support_by_est_or_long_read(sa,op)
+                            value,cand = is_support_by_est_or_long_read(sa,op,strict=True)
+                            if value:
+                                send = True
+                                valid_indices.append(i)
+                    elif strigency == 4:
+                        if n == '#' and t == '#' and a:
+                            value,cand = is_support_by_est_or_long_read(sa,op,strict=False)
                             if value:
                                 send = True
                                 valid_indices.append(i)
@@ -1107,17 +1126,3 @@ def recover_ordinary(ensgid,exons,must_novel=True):
             full_transcript_store.append('')
 
     return full_transcript_store,comments
-                
-
-
-
-
-
-
-
-
-
-
-                    
-
-
