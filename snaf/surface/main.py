@@ -52,23 +52,13 @@ def _run_dash_prioritizer_return_events(candidates):
             collect.append(line.rstrip('\n')[4:])
     return collect
 
-def _run_dash_prioritizer_return_valid_indices(candidates,collect,event):
-    valid_indices = []
-    index = collect.index(event)
-    indices_to_retrive = [index*14+6, index*14+8, index*14+9, index*14+10]
-    store = []
-    for i,line in enumerate(candidates):
-        if i < index*14+6:
-            continue
-        elif i > index*14+10:
-            break
-        else:
-            if i in indices_to_retrive:
-                store.append(literal_eval('['+line.rstrip('\n').split('[')[-1]))
-    for i,n,t,a in zip(store[0],store[1],store[2],store[3]):
-        if n == '#' and t == '#' and a == True:
-            valid_indices.append(int(i))
+def _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,uid):
+    index = collect_uid.index(uid)
+    line = candidates[index*14+11]
+    valid_indices = literal_eval('[' + line.rstrip('\n').split('[')[-1])
     return valid_indices
+
+
 
 def _run_dash_prioritizer_return_sa(results,gene):
     for sa in results:
@@ -99,8 +89,8 @@ def run_dash_B_antigen(pkl,candidates,python_executable,host=None,port='8050'):
     app = dash.Dash(__name__)
     app.layout = html.Div([
         html.Div([html.H2('SNAF B-antigen Viewer'),html.Br(),html.Label('Splicing Event UID: ',style={'font-weight':'bold'}),dcc.Input(id='event_selection',value=collect_uid[0],type='text',style={'width':'40%'})],style={'text-align':'center'}),
-        html.Div([html.Br(),html.H2('Expression (Normal --> Tumor)'),html.Br(),dcc.Graph(id='expression')],style={'text-align':'center'}),
-        html.Div([html.H2(id='exon_h2'),dash_table.DataTable(id='exon',columns=[{'name':column,'id':column} for column in ['subexon','chromosome','strand','start','end']],page_size=10)]),
+        html.Div([html.Br(),html.H2(id='exon_h2'),html.Br(),html.H2('Expression (Normal --> Tumor)'),html.Br(),dcc.Graph(id='expression')],style={'text-align':'center'}),
+        html.Div([html.H2('All Exons in AltAnalyze Gene Model'),dash_table.DataTable(id='exon',columns=[{'name':column,'id':column} for column in ['subexon','chromosome','strand','start','end']],page_size=10)]),
         html.Div([html.H2('All related existing transcripts'),dash_table.DataTable(id='transcript',columns=[{'name':column,'id':column} for column in ['index','EnsGID','EnsTID','EnsPID','Exons']])]),
         html.Br(),
         html.Hr(),
@@ -160,7 +150,7 @@ def run_dash_B_antigen(pkl,candidates,python_executable,host=None,port='8050'):
         # drop down menu
         dropdown_options = [{'label':item,'value':item} for item in valid_indices]
         # exon_h2_value
-        exon_h2_value = 'Exons of: {} ({}) --- Coord: {}'.format(ensg,gene_symbol,coord)
+        exon_h2_value = '{} ({}) --- Coord: {}'.format(ensg,gene_symbol,coord)
         # expression plot
         expr_tumor_dict = sa.ed   # {sample:value}
         expr_tumor_dict = {sample + ',' + 'tumor': value for sample,value in expr_tumor_dict.items()}  # {sample,tumor:value}
@@ -376,11 +366,74 @@ def individual_check(uid,n_stride=2,tmhmm=False,software_path=None,exons=None,in
             sa.visualize(index=index,fragment=fragment)
     return sa
 
+def process_est_or_long_read(gtf):
+    gtf_dict = {}
+    with open(gtf,'r') as f:
+        transcript = -1
+        for line in f:
+            chrom, source, typ, start, end, score, strand, phase, attrs = line.rstrip('\n').split('\t')
+            if typ == 'transcript':
+                if transcript >= 0:
+                    gtf_dict.setdefault(chrom,{'+':[],'-':[]})[strand].append(composition)
+                transcript += 1
+                composition = []                
+            elif typ == 'exon':
+                composition.append((start,end))
+            else:
+                continue
+    return gtf_dict
+
+def is_support_by_est_or_long_read(sa,op):
+    coord = uid_to_coord(sa.uid)
+    start_coord, end_coord = coord.split(':')[1].split('(')[0].split('-')
+    start_coord, end_coord = int(start_coord), int(end_coord)
+    ensg = sa.uid.split(':')[0]
+    values = dict_exonCoords[ensg]
+    first_key = list(values.keys())[0]
+    attrs = values[first_key]
+    chrom = attrs[0]
+    strand = attrs[1]
+    transcripts = gtf_dict[chrom][strand]
+    candidate_transcripts = []
+    for transcript in transcripts:
+        transcript_start = int(transcript[0][0])
+        transcript_end = int(transcript[-1][-1])
+        if transcript_start > start_coord:
+            break
+        elif transcript_start < start_coord and transcript_end > end_coord:
+            candidate_transcripts.append(transcript)
+        else:
+            continue
+    return_value = False
+    return_cand = None
+    for cand in candidate_transcripts:
+        sequence = ''
+        if strand == '+':
+            for exon in cand:
+                sequence += query_from_dict_fa(exon[0],exon[1],ensg,strand)
+        else:
+            for exon in cand[::-1]:
+                sequence += query_from_dict_fa(exon[0],exon[1],ensg,strand)
+        candidate_orfs = transcript2orf(sequence)
+        max_orf = prioritize_orf(candidate_orfs)
+        max_pep = orf2pep(max_orf)
+        if max_pep == op:
+            return_value = True
+            return_cand = cand
+            break
+        else:
+            continue
+    return return_value, return_cand
+    
 
 
-def generate_results(pickle_path,strigency=3,outdir='.'):
+
+def generate_results(pickle_path,strigency=3,outdir='.',gtf=None):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
+    if gtf is not None:
+        global gtf_dict
+        gtf_dict = process_est_or_long_read(gtf)
     with open(pickle_path,'rb') as f:
         results = pickle.load(f)
     count_candidates = 0
@@ -388,35 +441,41 @@ def generate_results(pickle_path,strigency=3,outdir='.'):
     candidates = []
     with open(os.path.join(outdir,'further.txt'),'w') as f2:
         for sa in results:
-            n_hit = 0
+            valid_indices = []
             if len(sa.comments) > 0:
                 print(sa,file=f2)
                 count_further += 1
             else:
                 send = False
-                for n,t,a in zip(sa.nmd,sa.translatability,sa.alignment):
-                    if strigency == 3:
+                for i,(op,n,t,a) in enumerate(zip(sa.orfp,sa.nmd,sa.translatability,sa.alignment)):
+                    if strigency == 4:
+                        if n == '#' and t == '#' and a:
+                            value,cand = is_support_by_est_or_long_read(sa,op)
+                            if value:
+                                send = True
+                                valid_indices.append(i)
+                    elif strigency == 3:
                         if n == '#' and t == '#' and a:
                             send = True
-                            n_hit += 1
+                            valid_indices.append(i)
                     elif strigency == 2:
                         if t == '#' and a:
                             send = True
-                            n_hit += 1
+                            valid_indices.append(i)
                     elif strigency == 1:
                         if a:
                             send = not send
-                            n_hit += 1
+                            valid_indices.append(i)
                 if send:
-                    candidates.append((sa,sa.score,sa.freq,n_hit,sa.uid))
+                    candidates.append((sa,sa.score,sa.freq,len(valid_indices),sa.uid,valid_indices))
                     count_candidates += 1
     sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2],-x[3]),reverse=False)
     uid_list = list(list(zip(*sorted_candidates))[4])
     ensg_list = [uid.split(':')[0] for uid in uid_list]
     gene_symbols = ensemblgene_to_symbol(ensg_list,'human')
     with open(os.path.join(outdir,'candidates.txt'),'w') as f1:
-        for (sa,score,freq,hit,uid),gene in zip(sorted_candidates,gene_symbols):
-            print(sa,'n_hits:{}\n'.format(hit),'gene_symbol:{}\n'.format(gene),file=f1,sep='',end='\n')
+        for (sa,score,freq,hit,uid,vi),gene in zip(sorted_candidates,gene_symbols):
+            print(sa,'valid_indices:{}\n'.format(vi),'gene_symbol:{}\n'.format(gene),file=f1,sep='',end='\n')
     return count_candidates,count_further
 
 
