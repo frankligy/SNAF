@@ -29,23 +29,13 @@ db_dir = '/data/salomonis2/LabFiles/Frank-Li/refactor/data'
 snaf.initialize(db_dir=db_dir,gtex_mode='count',binding_method='netMHCpan',software_path=netMHCpan_path)
 surface.initialize(db_dir=db_dir)
 
-# # gtex check
-# snaf.gtex_visual_combine(query='ENSG00000101003:E7.2-E9.2',norm=True,tumor=df)
-
 
 '''B cell neoantigen'''
-# jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30)
-# neojunctions = jcmq.valid
-# membrane_uid = surface.filter_to_membrane_protein(neojunctions)
-# membrane_uid = [(uid,snaf.gtex.accurate_tumor_specificity(uid,method='mean'),jcmq.get_neojunction_info(uid)[0],jcmq.get_neojunction_info(uid)[1]) for uid in membrane_uid]
-# surface.single_run(membrane_uid,2,True,'/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
-# c_candidates,c_further = surface.process_results('single_run_surface_antigen.p',strigency=3)
-# print(c_candidates,c_further)
-
-# sa = snaf.surface.individual_check('ENSG00000176204:E5.2-E6.1',tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',indices=[None],fragments=[None])
-# surface.run_dash_prioritizer(pkl='single_run_surface_antigen.p',candidates='candidates.txt',python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
-# snaf.gtex_viewer.gtex_visual(query='ENSG00000090339:E4.3-E4.5',norm=True)
-# snaf.gtex_viewer.gtex_visual(query='ENSG00000090339:E4.3-E4.5',norm=False)
+# membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df)
+# surface.run(membrane_tuples,outdir='result',tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
+# surface.generate_results(pickle_path='./result/surface_antigen.p',outdir='result',strigency=5,gtf='./SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')   # './SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf'
+surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+sys.exit('stop')
 
 
 '''T cell neoantigen'''
@@ -61,8 +51,7 @@ surface.initialize(db_dir=db_dir)
 # df = pd.read_csv('./result/frequency_stage3_verbosity1_uid.txt',sep='\t',index_col=0)
 # snaf.downstream.add_gene_symbol_frequency_table(df=df).to_csv('./result/frequency_stage3_verbosity1_uid_gene_symbol.txt',sep='\t')
 # jcmq = snaf.JunctionCountMatrixQuery.deserialize(name='./result/after_prediction.p')
-# jcmq.visualize(uid='ENSG00000198034:E8.4-E9.1',sample='TCGA-WE-A8ZT-06A-11R-A37K-07.bed',outdir='./result')
-
+# jcmq.visualize(uid='ENSG00000167291:E38.6-E39.1',sample='TCGA-DA-A1I1-06A-12R-A18U-07.bed',outdir='./result')
 
 ### Step3: downstream analysis (patient level and neoantigen level)
 
@@ -84,48 +73,11 @@ surface.initialize(db_dir=db_dir)
 
 
 '''neoantigen analysis'''
-# 1. physicalchemical properties relate to occurence?
-# freq = pd.read_csv('to_anu/frequency_stage2_verbosity1_uid.txt',sep='\t',index_col=0)
-# burden0 = pd.read_csv('burden_stage0.txt',sep='\t',index_col=0)['mean'].to_dict()
-# freq['uid'] = [item.split(',')[-1] for item in freq.index]
-# freq.index = [item.split(',')[0] for item in freq.index]
-# freq['burden0'] = freq['uid'].map(burden0).values
-# freq['expected'] = freq['burden0'] * 472
-# freq.drop(columns='samples',inplace=True)
-# identity = []
-# for o,e in zip(freq['n_sample'].values,freq['expected'].values):
-#     if o < 0.1 * e:
-#         identity.append('low')
-#     elif o > 0.9 * e:
-#         identity.append('high')
-#     else:
-#         identity.append('medium')
-# freq['identity'] = identity
-# freq = freq.loc[np.logical_not(freq.index.duplicated()),:]
-# freq = freq.loc[freq['identity']!='medium',:]
-# freq = freq.loc[freq['burden0']>0.1,:]
-# freq['length'] = [len(item) for item in freq.index]
-# freq_9mer = freq.loc[freq['length']==9,:]
-# freq_10mer = freq.loc[freq['length']==10,:]
-# freq.to_csv('to_anu/neoantigen_common_unique.txt',sep='\t')
-# freq_9mer.to_csv('neoantigen_analysis/df_test_app_mer9.txt',sep='\t')
-# freq_10mer.to_csv('neoantigen_analysis/df_test_app_mer10.txt',sep='\t')
-# sns.regplot(freq['burden0'].values,freq['n_sample'])
-# plt.savefig('neoantigen_analysis/freq_correlation_filter.pdf',bbox_inches='tight');plt.close()
+# 1. physicalchemical properties and occurence frequency
+# snaf.downstream.analyze_neoantigens(freq_path='result/frequency_stage2_verbosity1_uid.txt',junction_path='result/burden_stage0.txt',total_samples=472,outdir='result',mers=[9,10],fasta=True)
+# snaf.run_dash_T_antigen(input_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/result/shared_vs_unique_neoantigen_all.txt')
 
-# snaf.run_dash_app(intpath='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/neoantigen_analysis/df_test_app.txt',
-#                   remove_cols=['uid'],host='bmi-460g9-10.chmcres.cchmc.org')
-
-# # discriminative motif analysis
-# df = pd.read_csv('neoantigen_analysis/df_test_app_mer9.txt',sep='\t',index_col=0)
-# with open('neoantigen_analysis/mer9_high.fasta','w') as f1, open('neoantigen_analysis/mer9_low.fasta','w') as f2:
-#     for identity,sub_df in df.groupby(by='identity'):
-#         if identity == 'high':
-#             for item in sub_df.index:
-#                 f1.write('>{}\n{}\n'.format(item,item))
-#         else:
-#             for item in sub_df.index:
-#                 f2.write('>{}\n{}\n'.format(item,item))          
+        
 
 
 
