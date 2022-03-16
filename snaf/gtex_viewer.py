@@ -9,6 +9,7 @@ import h5py
 import matplotlib.pyplot as plt
 import anndata as ad
 import seaborn as sns
+from scipy.sparse import csr_matrix
 
 '''
 this is gtex viewer
@@ -38,18 +39,19 @@ def gtex_visual_per_tissue_count(query,out_folder='.'):
     plt.close()
 
 
-def gtex_visual_combine(query,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None):
+def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None):
     ''' 
     Example:
     snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
     snaf.gtex_visual_combine(query='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
     '''
+    query = uid
     try:
         info = adata[[query],:]
     except:
         print('{} not detected in gtex, impute as zero'.format(query))
-        info = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info.X = np.full((1,info.shape[1]),0)
+        info_tmp = adata[['ENSG00000090339:E4.3-E4.5'],:]
+        info = ad.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
     title = query
     identifier = query.replace(':','_')
     df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
@@ -73,6 +75,7 @@ def gtex_visual_combine(query,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None
     v_delimiter = [0]
     xticklabel = []
     for i,sub_df in enumerate(sorted_sub_df_list):
+        sub_df.sort_values(by='value',inplace=True)
         n = sub_df.shape[0]
         xticklabel.append(sub_df['tissue'].iloc[0])
         for j,v in enumerate(sub_df['value']):
@@ -103,18 +106,19 @@ def gtex_visual_combine(query,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None
 
 
 
-def gtex_visual_subplots(query,norm=True,outdir='.'):
+def gtex_visual_subplots(uid,norm=True,outdir='.'):
     ''' 
     Example:
     snaf.gtex_visual_subplots(query='ENSG00000090339:E4.3-E4.5',norm=True)
     snaf.gtex_visual_subplots(query='ENSG00000112149:E7.1-E9.1',norm=True)
     '''
+    query = uid
     try:
         info = adata[[query],:]
     except:
         print('{} not detected in gtex, impute as zero'.format(query))
-        info = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info.X = np.full((1,info.shape[1]),0)
+        info_tmp = adata[['ENSG00000090339:E4.3-E4.5'],:]
+        info = ad.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
     title = query
     identifier = query.replace(':','_')
     n_tissue = len(info.var['tissue'].unique())
