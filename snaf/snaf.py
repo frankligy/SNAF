@@ -36,6 +36,10 @@ from .gtex import *
 from .gtex_viewer import *
 
 
+import matplotlib as mpl
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['font.family'] = 'Arial'
 
 
 # configuration

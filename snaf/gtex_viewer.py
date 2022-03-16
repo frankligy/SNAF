@@ -15,6 +15,10 @@ from scipy.sparse import csr_matrix
 this is gtex viewer
 '''
 
+import matplotlib as mpl
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['font.family'] = 'Arial'
 
 # gtex viewer
 
@@ -39,7 +43,7 @@ def gtex_visual_per_tissue_count(query,out_folder='.'):
     plt.close()
 
 
-def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None):
+def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,ylim=None):
     ''' 
     Example:
     snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
@@ -67,6 +71,7 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None):
             tumor_total_count = tumor.sum(axis=0)
             tumor_query_value = tumor_query_value / (tumor_total_count.values.squeeze()/1e6)
         tumor_sub_df = pd.DataFrame(data={'value':tumor_query_value,'tissue':['tumor']*tumor.shape[1]},index=tumor.columns)
+        print(tumor_sub_df)
         sorted_sub_df_list.append(tumor_sub_df)
     fig,ax = plt.subplots(figsize=figsize)
     x = 0
@@ -94,9 +99,11 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None):
     ax.set_title(title)
     ylabel = 'Raw read counts'
     if norm:
-        ylabel = 'Normalized read counts (TPM)'
+        ylabel = 'Normalized read counts (CPM)'
     ax.set_ylabel(ylabel)
     ax.set_xlabel('Normal Tissues --> Tumor')
+    if ylim is not None:
+        ax.set_ylim(ylim)
     plt.savefig(os.path.join(outdir,'gtex_visual_combine_norm_{}_{}.pdf'.format(norm,identifier)),bbox_inches='tight')
     plt.close()
     

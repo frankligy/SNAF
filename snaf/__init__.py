@@ -1,5 +1,5 @@
-from .snaf import snaf_configuration,NeoJunction,JunctionCountMatrixQuery
-from .gtex import gtex_configuration
+from .snaf import snaf_configuration,NeoJunction,JunctionCountMatrixQuery,uid_to_coord
+from .gtex import gtex_configuration, tumor_specificity
 from .gtex_viewer import gtex_viewer_configuration, gtex_visual_combine, gtex_visual_subplots
 from .binding import binding_configuration
 from .proteomics import *

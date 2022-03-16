@@ -10,6 +10,11 @@ import argparse
 from .schema import *
 import os,sys
 
+import matplotlib as mpl
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['font.family'] = 'Arial'
+
 
 def draw_letter(letter,x,y,x_scale=1,y_scale=1,ax=None):
     text = letter_schema[letter]

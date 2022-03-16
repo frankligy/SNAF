@@ -18,6 +18,11 @@ from tqdm import tqdm
 this script contains survival analysis, mutation analysis
 '''
 
+import matplotlib as mpl
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['font.family'] = 'Arial'
+
 def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column='gene',genes_to_plot=None):
     # sample is in the index of mutation
     # burden is a series, make sure the index are consistent

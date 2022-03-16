@@ -14,6 +14,11 @@ import matplotlib as mpl
 contain visualization functions
 '''
 
+import matplotlib as mpl
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['font.family'] = 'Arial'
+
 def show_candicates(ax,aa,extra,n_from_first,hla,first,second,dna_first,dna_second,binding_score,immunogenicity_score):
     # set lim
     ax.set_xlim(0,100)

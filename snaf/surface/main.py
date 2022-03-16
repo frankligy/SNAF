@@ -17,6 +17,10 @@ from .alignment import *
 from .api import *
 
 
+import matplotlib as mpl
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['font.family'] = 'Arial'
 
 
 def initialize(db_dir):
