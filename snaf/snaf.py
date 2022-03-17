@@ -34,6 +34,7 @@ from .data_io import *
 from .visualize import *
 from .gtex import *
 from .gtex_viewer import *
+from .downstream import *
 
 
 import matplotlib as mpl
@@ -209,9 +210,9 @@ class JunctionCountMatrixQuery():
         self.serialize(outdir=outdir,name=name)
 
     @staticmethod
-    def generate_results(self,path,outdir):
+    def generate_results(path,outdir):
         jcmq = JunctionCountMatrixQuery.deserialize(name=path)
-        snaf.downstream.stage0_compatible_results(jcmq,outdir=outdir)
+        stage0_compatible_results(jcmq,outdir=outdir)
         for stage in [3,2,1]:
             jcmq.show_neoantigen_burden(outdir=outdir,name='burden_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False)
             jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False,plot=True,plot_name='frequency_stage{}.pdf'.format(stage))

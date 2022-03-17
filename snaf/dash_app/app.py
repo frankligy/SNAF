@@ -22,7 +22,7 @@ def clear_assets():
         os.remove(os.path.join('assets',img))
 
 
-def run_dash_T_antigen(input_abs_path,remove_cols=['uid'],host=None,port='8050'):
+def run_dash_T_antigen(input_abs_path,remove_cols=['uid'],host=None,port='8050',output_abs_path=None):
     # since this module heavily relies on relative path
     os.chdir(os.path.dirname(__file__))
     print('changed working directory to {}'.format(os.getcwd()))
@@ -55,6 +55,14 @@ def run_dash_T_antigen(input_abs_path,remove_cols=['uid'],host=None,port='8050')
         embedding = reducer.fit_transform(pca_scoring)
         embed.append(embedding)
     print('embedding ready, app will be built soon')
+    if output_abs_path is not None:
+        # write the embedding for other usages
+        df9['umap_x'] = embed[0][:,0]
+        df9['umap_y'] = embed[0][:,1]
+        df10['umap_x'] = embed[1][:,0]
+        df10['umap_y'] = embed[1][:,1]
+        df9.to_csv(os.path.join(output_abs_path,'mer9_umap_embed_df.txt'),sep='\t')
+        df10.to_csv(os.path.join(output_abs_path,'mer10_umap_embed_df.txt'),sep='\t')
 
     # building app
     app = dash.Dash(__name__)

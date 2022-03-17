@@ -23,6 +23,17 @@ mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
+def plot_umap_neoantigen(df_path,outdir):
+    df = pd.read_csv(df_path,sep='\t',index_col=0)
+    fig,ax = plt.subplots()
+    ax.scatter(df['umap_x'],df['umap_y'],color=['red' if item == 'high' else 'blue' for item in df['identity']],s=3)
+    from matplotlib.lines import Line2D
+    ax.legend(handles=[Line2D([],[],marker='o',linestyle='',color=i) for i in ['red','blue']],labels=['Shared Neoantigen','Unique Neoantigen'],bbox_to_anchor=(1,1),loc='upper left',frameon=False)
+    ax.set_xlabel('umap_x')
+    ax.set_ylabel('umap_y')
+    plt.savefig(os.path.join(outdir,'mer_umap.pdf'),bbox_inches='tight')
+    plt.close()
+
 def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column='gene',genes_to_plot=None):
     # sample is in the index of mutation
     # burden is a series, make sure the index are consistent
@@ -96,13 +107,20 @@ def survival_analysis(burden,survival,n,stratification_plot,survival_plot,
             elif item <= quantiles[0]:
                 identity_col.append('low')
     elif n == 2:
-        quantiles = burden.quantile([0.5]).values[0]  # a scalar
+        quantiles = burden.quantile([0.25,0.5,0.75]).values
+        iqr = quantiles[2] - quantiles[0]
+        upper_bound = quantiles[2] + 1.5*iqr
+        lower_bound = quantiles[0] - 1.5*iqr
         identity_col = []
         for item in burden:
-            if item > quantiles:
+            if item > upper_bound:
+                identity_col.append('outlier')
+            elif item > quantiles[1] and item <= upper_bound:
                 identity_col.append('high')
-            else:
+            elif item >= lower_bound and item <= quantiles[1]:
                 identity_col.append('low')
+            else:
+                identity_col.append('outlier')
     burden_encode = pd.Series(index=burden.index,data=identity_col)
     be_vc = burden_encode.value_counts()
     # plot stratification
@@ -120,7 +138,7 @@ def survival_analysis(burden,survival,n,stratification_plot,survival_plot,
         kmf.plot_survival_function(ax=ax,ci_show=False,at_risk_counts=False)
     current_handles,current_labels = ax.get_legend_handles_labels()
     new_labels = ['low_burden','high_burden']
-    ax.legend(current_handles,new_labels)
+    ax.legend(current_handles,new_labels,bbox_to_anchor=(1,1),loc='upper left',frameon=False)
     results = logrank_test(low_os[survival_duration],high_os[survival_duration],low_os[survival_event],high_os[survival_event])
     ax.text(x=1000,y=0.05,s='Log-rank test: p-value is {:.2f}'.format(results.p_value),weight='bold')
     plt.savefig(survival_plot,bbox_inches='tight');plt.close()
@@ -212,7 +230,7 @@ def analyze_neoantigens(freq_path,junction_path,total_samples,outdir,fasta=False
         columns = []
     selected_columns = ['n_sample','uid','mean_percent_samples_junction_present','actual_percent_samples_neoantigen_present','identity','length'] + columns
     freq = freq.loc[:,selected_columns]
-    sns.regplot(data=freq,x='mean_percent_samples_junction_present',y='actual_percent_samples_neoantigen_present')
+    sns.regplot(data=freq,x='mean_percent_samples_junction_present',y='actual_percent_samples_neoantigen_present',fit_reg=False,x_jitter=0.01,y_jitter=0.01,scatter_kws={'s':5})
     plt.savefig(os.path.join(outdir,'shared_vs_unique_neoantigen_all.pdf'),bbox_inches='tight')
     plt.close()
     if mers is None:
