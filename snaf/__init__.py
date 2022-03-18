@@ -1,7 +1,6 @@
 from .snaf import snaf_configuration,NeoJunction,JunctionCountMatrixQuery,uid_to_coord
 from .gtex import gtex_configuration, tumor_specificity
 from .gtex_viewer import gtex_viewer_configuration, gtex_visual_combine, gtex_visual_subplots
-from .binding import binding_configuration
 from .proteomics import *
 from .downstream import *
 from datetime import datetime,date
@@ -17,7 +16,6 @@ def initialize(db_dir,gtex_mode,software_path=None,binding_method=None,t_min=20,
     elif gtex_mode == 'psi':
         gtex_db = os.path.join(db_dir,'GTEx_junction_psi.h5ad')
     snaf_configuration(exon_table,fasta,software_path,binding_method)
-    binding_configuration(binding_method)
     gtex_configuration(gtex_db,t_min,n_max,add_control)
     gtex_viewer_configuration(gtex_db)
     print('{} {} finishing initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))

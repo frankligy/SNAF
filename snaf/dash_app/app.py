@@ -123,6 +123,7 @@ def run_dash_T_antigen(input_abs_path,remove_cols=['uid'],host=None,port='8050',
             selected_index.append(p['text'])
         suffix = str(date.today()) + datetime.now().strftime('%H-%M-%S-%f')
         run_pweblogo(selected_index,'./assets/pweblogo_{}.png'.format(suffix))
+        print(app.get_asset_url('pweblogo_{}.png'.format(suffix)))
         return app.get_asset_url('pweblogo_{}.png'.format(suffix))
 
     # run app

@@ -10,9 +10,18 @@ import matplotlib.pyplot as plt
 import anndata
 from scipy.optimize import minimize
 from scipy import stats
-import pymc3 as pm   # conda install -c conda-forge pymc3 mkl-service
-import theano
-import arviz as az
+
+try:
+    import pymc3 as pm   # conda install -c conda-forge pymc3 mkl-service
+    import theano
+    import arviz as az
+except ImportError:
+    print('''
+        Optional package pymc3 is not installed, it is for calculating tumor specificity using hirerarchical bayesian model
+        For Linux: https://github.com/pymc-devs/pymc/wiki/Installation-Guide-(Linux)
+        For MacOS: https://github.com/pymc-devs/pymc/wiki/Installation-Guide-(MacOS)
+        For PC:    https://github.com/pymc-devs/pymc/wiki/Installation-Guide-(Windows)
+    ''')
 
 '''
 this script is to query the tumor specificity of the junction

@@ -12,10 +12,6 @@ from copy import deepcopy,copy
 
 
 
-def binding_configuration(binding_method):
-    if binding_method == 'MHCflurry':
-        global predictor
-        from mhcflurry import Class1PresentationPredictor
 
 '''
 this script is to query the binding affinity of a peptide (9-10)
@@ -117,7 +113,12 @@ def run_MHCflurry(peptides,hlas):
     tmp_dic_for_alleles= {}
     for index,mhc_ in enumerate(hlas):
         tmp_dic_for_alleles['sample{}'.format(index)] = [mhc_]
-    predictor = Class1PresentationPredictor.load()   # very time consuming
+    from mhcflurry import Class1PresentationPredictor
+    try:
+        predictor = Class1PresentationPredictor.load()   # very time consuming
+    except:
+        cmd = 'mhcflurry-downloads fetch models_class1_presentation'
+        subprocess.run(cmd,shell=True)
     result = predictor.predict(peptides=peptides,alleles=tmp_dic_for_alleles,verbose=0) 
     df = result.loc[:,['peptide','best_allele','presentation_percentile']]
     df['mer'] = [len(item) for item in df['peptide']]

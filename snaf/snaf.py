@@ -206,6 +206,7 @@ class JunctionCountMatrixQuery():
 
     def run(self,hlas,outdir='.',name='after_prediction.p'):
         self.parallelize_run(kind=1)
+        print(self)
         self.parallelize_run(kind=3,hlas=hlas)
         self.serialize(outdir=outdir,name=name)
 
