@@ -45,7 +45,7 @@ def gtex_visual_per_tissue_count(query,out_folder='.'):
 
 def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,ylim=None):
     ''' 
-    Visualize the gtex expression and tumor specificity for splicing event
+    Visualize the gtex expression and tumor specificity for splicing event (combine into one plot)
 
     :param uid: string, the uid for the splicing event
     :param norm: bool. whether normalize for the sequencing depth or not
@@ -125,10 +125,16 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
 
 def gtex_visual_subplots(uid,norm=True,outdir='.'):
     ''' 
-    
-    Example:
-    snaf.gtex_visual_subplots(query='ENSG00000090339:E4.3-E4.5',norm=True)
-    snaf.gtex_visual_subplots(query='ENSG00000112149:E7.1-E9.1',norm=True)
+    Visualize the gtex expression and tumor specificity for splicing event (subplots)
+
+    :param uid: string, the uid for the splicing event
+    :param norm: bool. whether normalize for the sequencing depth or not
+    :param outdir: string, where the figure go into
+
+    Example::
+
+        snaf.gtex_visual_subplots(query='ENSG00000090339:E4.3-E4.5',norm=True)
+        snaf.gtex_visual_subplots(query='ENSG00000112149:E7.1-E9.1',norm=True)
     '''
     query = uid
     try:

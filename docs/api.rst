@@ -52,6 +52,7 @@ gtex_visual_combine
 
 gtex_visual_subplots
 ~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.gtex_viewer.gtex_visual_subplots
 
 Miscellaneous
 ------------------

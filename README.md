@@ -1,15 +1,30 @@
 # SNAF
-Splicing Neo Antigen Finder (SNAF) is an easy-to-use Python package to identify splicing-derived tumor neoantigens from RNA sequencing data, it further leverages both deep learning and hierarchical bayesian models to prioritize certain candidates for experimental validations
+Splicing Neo Antigen Finder (SNAF) is an easy-to-use Python package to identify splicing-derived tumor neoantigens from RNA sequencing data, it can 
+predict, prioritize and visualize MHC-bound neoantigen for T cell (T antigen) and altered surface protein for B cell (B antigen).
 
-## Environments
+![workflow](./images/fig1.png)
 
-```bash
-conda create -n neo_env python=3.7
-pip install tensorflow==2.3.0 pandas==1.1.1 numpy==1.18.5
-pip install h5py anndata matplotlib seaborn requests xmltodict tqdm
-conda install -c conda-forge pymc3 mkl-service   # numpy will be updated to 1.21.3 (seems not, still 1.18.5)
-pip install mhcflurry==2.0.5 # for now version seems to not matter
-pip install statsmodels lifelines umap plotly   # numba needs to be 0.53
-pip install requests xmltramp2 dash-dangerously-set-inner-html
-pip install mygene
-```
+
+# Tutorial and documentation
+
+![Full Documentation](https://snaf.readthedocs.io)
+
+# Input and Output
+
+Simply put, user needs to supply a folder with bam files, and the HLA type assciated with each patient (using your favorite HLA typing tool). And it will generate predicted immunogenic MHC-bound peptides and altered surface protein. Moreover, there's a myriad of convenient function that enables users to conduct survival analysis, association analysis and publication-quality visualiztion. Check our tutorials for more detail.
+
+# Citation
+
+SNAF will be published in AACR annual meeting 2022 proceedings and Cancer Research Supplemental. Before the above two go into public, please cite this GitHub repository if you find this useful for your reference.
+
+# Contact
+
+Guangyuan(Frank) Li
+
+Email: li2g2@mail.uc.edu
+
+PhD student, Biomedical Informatics
+
+Cincinnati Children’s Hospital Medical Center(CCHMC)
+
+University of Cincinnati, College of Medicine
