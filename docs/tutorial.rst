@@ -2,8 +2,13 @@ Tutorial
 ==========
 
 In this tutorial, we are going to identify the splicing derived neoantigen (both MHC bound T antigen and altered surface B antigen) on 
-TCGA Skin Cutaneous Melanoma (SKCM) cohort (472 samples). Since it is a relatively large dataset, it is advised to subsample the input dataframe 
-if you just want to get the codebase running. Here we use the whole dataset to better illustrate the full functionalites of the workflow.
+TCGA Skin Cutaneous Melanoma (SKCM) cohort (472 samples).
+
+.. note::
+
+    I use the whole dataset (472 bam files) to demostrate the full functionalities of SNAF. Actually finishing running this tutorial could take 
+    hours and requires multi-core High Performance Computers (HPC). So please replace the bam file folder with your sample and configure your sample 
+    HLA type file as well as illustrated below. I hope you find the tutorial intuitive and useful.
 
 Running AltAnalyze to identify alternative splicing event
 -----------------------------------------------------------
@@ -126,6 +131,7 @@ We download the TCGA SKCM survival data from Xena browser, we provide a convenie
     burden.index = ['-'.join(sample.split('-')[0:4]) for sample in burden.index]
     snaf.survival_analysis(burden,survival,n=2,stratification_plot='result/stage2_stratify.pdf',survival_plot='result/stage2_survival.pdf')
 
+
 .. image:: ./_static/survival.png
     :height: 400px
     :width: 600px
@@ -143,6 +149,21 @@ We download the TCGA SKCM mutation data from Xena browser, we provide a convenie
     burden.index = ['-'.join(sample.split('-')[0:4]) for sample in burden.index]
     snaf.mutation_analysis(mode='compute',burden=burden,mutation=mutation,output='result/stage3_mutation.txt')
     snaf.mutation_analysis(mode='plot',burden=burden,mutation=mutation,output='result/stage3_mutation_CAMKK2.pdf',genes_to_plot=['CAMKK2'])
+
+.. csv-table:: mutation
+    :file: ./_static/stage3_mutation_sample.csv
+    :widths: 10,10,10,10
+    :header-rows: 1
+
+For a specific mutation ``CAMKK2``, which has been reported that the suppression of this gene can increase the ferroptosis efficacy and 
+anti-PD1 immunotherapy (`paper link <https://pubmed.ncbi.nlm.nih.gov/34242660/>`_), we showed that patients with mutated ``CAMKK2`` have higher 
+neoantigen burden so that can explain why it lead to better immunotherapy efficacy.
+
+.. image:: ./_static/mutation.png
+    :height: 400px
+    :width: 600px
+    :align: center
+    :target: target
 
 
 Interactive neoantigen Viewer
@@ -199,19 +220,47 @@ Different strigency are explanined below:
 * strigency4: novel isoform also needs to have long-read or EST support (as long as the novel junction present in full-length)
 * strigency5: novel isoform also needs to have long-read or EST support (whole ORF needs to be the same as full-length)
 
-Visualization
-~~~~~~~~~~~~~~~~~
-
-We can visualize
 
 Interactive neoantigen viewer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Similar to T antigen, users can explore all the altered surface protein for B antigen::
+
+    surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',
+                               python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
 
 .. image:: ./_static/b_viewer.png
     :height: 400px
     :width: 600px
     :align: center
     :target: target
+
+Tumor Specificity (GTEx)
+----------------------------
+
+For a specific splicing event, we can visualize its tumor specificity by comparing its expression in tumor versus normal tissue::
+
+    snaf.gtex_visual_combine('ENSG00000167291:E38.6-E39.1',norm=True,outdir='result',tumor=df)
+
+here ``norm`` argument controls whether we'd like to normalize the raw read count to Count Per Million (CPM) to account for sequencing depth bias.
+
+.. image:: ./_static/gtex_combine.png
+    :height: 400px
+    :width: 500px
+    :align: center
+    :target: target
+
+You can also view each tissue type separately::
+
+    snaf.gtex_visual_subplots('ENSG00000198053:E7.2-E13.1_1915159',norm=True,outdir='result')
+
+.. image:: ./_static/gtex_subplots.png
+    :height: 400px
+    :width: 500px
+    :align: center
+    :target: target
+
+
 
 
 

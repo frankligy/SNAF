@@ -150,9 +150,9 @@ def gtex_visual_subplots(uid,norm=True,outdir='.'):
             ax.axis('off')
     fig.suptitle(title,fontsize=10)
     if norm:
-        name = 'gtex_visual_norm_count_{}.pdf'.format(identifier)
+        name = 'gtex_visual_subplots_norm_count_{}.pdf'.format(identifier)
     else:
-        name = 'gtex_visual_count_{}.pdf'.format(identifier)
+        name = 'gtex_visual_subplots_count_{}.pdf'.format(identifier)
     plt.savefig(os.path.join(outdir,name),bbox_inches='tight')
     plt.close()
 

@@ -52,11 +52,11 @@ def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column
                 y = burden_df.loc[~(burden_df['mutation_{}'.format(gene)]),'burden'].values
                 u,p = mannwhitneyu(x=x,y=y)
                 f.write('{}\t{}\t{}\n'.format(gene,len(yes_samples),p))
-            asso = pd.read_csv('snaf_mutation_tmp',sep='\t',index_col=0)
-            results = ssm.multipletests(asso['pval'].values,alpha=0.05,method='fdr_bh')
-            asso['adjp'] = results[1]
-            asso.to_csv(output,sep='\t')
-            os.remove('snaf_mutation_tmp')
+        asso = pd.read_csv('snaf_mutation_tmp',sep='\t',index_col=0)
+        results = ssm.multipletests(asso['pval'].values,alpha=0.05,method='fdr_bh')
+        asso['adjp'] = results[1]
+        asso.to_csv(output,sep='\t')
+        os.remove('snaf_mutation_tmp')
     elif mode == 'plot':
         for gene in genes_to_plot:
             yes_samples = mutation.loc[mutation[gene_column] == gene,:].index.unique().tolist()
