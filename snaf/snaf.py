@@ -57,6 +57,22 @@ def snaf_configuration(exon_table,fasta,software_path_arg=None,binding_method_ar
 
 
 class JunctionCountMatrixQuery():
+
+    '''
+    Instantiate the JunctionCountMatrixQuery class
+
+    :param junction_count_matrix: The pandas dataframe for the junction_count_matrix, outputted by AltAnalyze
+    :param cores: int, how many cores you'd like to use, if None, then will automatically detect the maximum amount of cores in the OS
+    :param add_control: None or pandas dataframe, SNAF will determine tumor specific junction using GTEx dataset in the downloaded reference folder,
+                        however, if you have additional matched control you want to add, please add that, it is the same format as the junction count matrix, 
+                        but the samples will all be normal control samples.
+
+    Example::
+
+        jcmq = JunctionCountMatrixQuery(junction_count_matrix=df,cores=50,add_control=control_df)
+        
+    '''
+
     def __init__(self,junction_count_matrix,cores=None,add_control=None):
         self.junction_count_matrix = junction_count_matrix
         if cores is None:
@@ -102,6 +118,24 @@ class JunctionCountMatrixQuery():
 
     @staticmethod
     def get_membrane_tuples(df):
+        '''
+        this function is used by SurfaceAntigen pipeline to filter out splicing evnets that are not tumor-specific and also compute
+        useful informations for each membrane protein.
+
+        :param df: pandas dataframe, the junction count matrix
+        :return membrane_tuples: a list, in which each item is a tuple (uid,mean_gtex,df_gtex,ed,freq). 
+
+            * uid: the uid of the splicing evnet
+            * mean_gtex: the mean raw read count across GTEx
+            * df_gtex: a dataframe of gtex sample name, tissue types and read count values
+            * ed: expression dictionary for tumor samples
+            * freq: expression frequency for tumor samples
+
+        Example::
+
+            membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df)
+
+        '''
         from .surface import filter_to_membrane_protein
         jcmq = JunctionCountMatrixQuery(junction_count_matrix=df)
         neojunctions = jcmq.valid
@@ -205,6 +239,17 @@ class JunctionCountMatrixQuery():
         return nj_list
 
     def run(self,hlas,outdir='.',name='after_prediction.p'):
+        '''
+        main function to run mhc bound peptide T antigen pipeline
+
+        :param hlas: list, each item is a list of 6 HLA types associated with each sample, the order of this list must be consistent with the sample name in the df column
+        :param outdir: string, the path where all the results will go into
+        :param name: string, the name of the generated pickle result object
+
+        Example::
+
+            jcmq.run(hlas=hlas,outdir='result',name='after_prediction.p')
+        '''
         self.parallelize_run(kind=1)
         print(self)
         self.parallelize_run(kind=3,hlas=hlas)
@@ -212,6 +257,18 @@ class JunctionCountMatrixQuery():
 
     @staticmethod
     def generate_results(path,outdir):
+        '''
+        wrapper function to automatically generate all necessary output
+
+        :param path: string, where the pickle result file lie on the disk
+        :param outdir: string, where to generate all the necessary result
+
+        Example::
+
+            JunctionCountMatrixQuery.generate_results(path='result/after_prediction.p',outdir='result')
+
+        '''
+
         jcmq = JunctionCountMatrixQuery.deserialize(name=path)
         stage0_compatible_results(jcmq,outdir=outdir)
         for stage in [3,2,1]:
@@ -281,6 +338,18 @@ class JunctionCountMatrixQuery():
         return jcmq
 
     def visualize(self,uid,sample,outdir,tumor=False):
+        '''
+        Visualize certain Neojunction in certain sample
+
+        :param uid: string, the uid for the event you want to check
+        :param sample: string, the sample name
+        :param outdir: string, where to deposite the figure
+        :param tumor: bool, whether to show the expression level in tumor sample as well, default is not
+
+        Example::
+
+            jcmq.visualize(uid='ENSG00000167291:E38.6-E39.1',sample='TCGA-DA-A1I1-06A-12R-A18U-07.bed',outdir='./result')
+        '''
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         if sample is not None:
@@ -1040,6 +1109,17 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
 
 
 def add_coord_frequency_table(df,remove_quote=True):
+    '''
+    Convert the uid to chromsome coordinates
+
+    :param df: the input df, index must be uid
+    :param remove_quote: bool, depending on how your df is loaded, if directly read from the disk, certain column will contain quotation, whether to remove it or not
+    :return df: the output df, with added coordinate column
+
+    Exmaple::
+
+        add_coord_frequency_table(df=df,remove_quote=True)
+    '''
     # the index has to be comma separated string
     from ast import literal_eval
     if remove_quote:

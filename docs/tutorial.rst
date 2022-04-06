@@ -170,7 +170,10 @@ Interactive neoantigen Viewer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Users can launch a dash interactive neoantigen viewer to visualize all the neoantigens based on their physiochemical properties and their motif
-composition along with the source splicing junction.
+composition along with the source splicing junction::
+
+    snaf.downstream.analyze_neoantigens(freq_path='result/frequency_stage2_verbosity1_uid.txt',junction_path='result/burden_stage0.txt',total_samples=472,outdir='result',mers=[9,10],fasta=True)
+    snaf.run_dash_T_antigen(input_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/result/shared_vs_unique_neoantigen_all.txt')
 
 .. image:: ./_static/t_viewer.png
     :height: 400px

@@ -78,6 +78,23 @@ def _run_dash_prioritizer_return_gene(candidates):
 
 
 def run_dash_B_antigen(pkl,candidates,python_executable,host=None,port='8050'):
+    '''
+    run the dash B antigen viewer
+
+    :param pkl: string, the path to the surface B pipeline pickle file
+    :param candidates: string ,the path to the candidates.txt file
+    :param python_executable: string ,the path to the python executable you are using
+    :param host: None or string, string or None, if None, program will run hostname to automatically detect
+    :param port: string, default is 8050
+
+    Example::
+
+        surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',
+                           python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+
+
+
+    '''
     import dash
     from dash import dcc,html,dash_table
     from dash.dependencies import Input,Output,State
@@ -315,6 +332,23 @@ def split_array_to_chunks(array,cores=None):
     return sub_arrays
 
 def run(uids,outdir,n_stride=2,tmhmm=False,software_path=None,serialize=True):
+    '''
+    main function for run B antigen pipeline
+
+    :param uids: list, the membrane tuples
+    :param outdir: string, the path where all the output will go into
+    :param n_stride: int, how many exons define a early stop codon, for NMD check
+    :param tmhmm: bool, use tmhmm or not
+    :param software_path: None or string, if tmhmm=True, specify the tmhmm software path
+    :param serialize: bool, serialize to the pickle file for the result
+
+    Examples::
+
+        # if using TMHMM
+        surface.run(membrane_tuples,outdir='result',tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
+        # if not using TMHMM
+        surface.run(membrane_tuples,outdir='result',tmhmm=False,software_path=None)
+    '''
     if not os.path.exists(outdir):
         os.mkdir(outdir)
     results = []
@@ -446,6 +480,28 @@ def is_support_by_est_or_long_read(sa,op,strict=True):
 
 
 def generate_results(pickle_path,strigency=3,outdir='.',gtf=None):
+    '''
+    Generate candidates for B antigen
+
+    :param pickle_path: string, the path to the pickle result file
+    :param strigency: int, from 1-5, how strigent you want to program to be for calling B antigen
+
+        * strigency1: novel isoform needs to be absent in uniprot database
+        * strigency2: novel isoform also needs to be a documented protein-coding gene
+        * strigency3: novel isoform also needs to not be subjected to Nonsense Mediated Decay (NMD)
+        * strigency4: novel isoform also needs to have long-read or EST support (as long as the novel junction present in full-length)
+        * strigency5: novel isoform also needs to have long-read or EST support (whole ORF needs to be the same as full-length)
+    :param outdir: string, path to the output folder
+    :param gtf: string, if strigency>3, you need to specify the path to the long-read or EST gtf file
+
+    Example::
+
+        # if having gtf file for long-read data
+        surface.generate_results(pickle_path='./result/surface_antigen.p',outdir='result',strigency=5,gtf='./SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
+        # if not having
+        surface.generate_results(pickle_path='./result/surface_antigen.p',outdir='result',strigency=3,gtf=None)
+
+    '''
     if not os.path.exists(outdir):
         os.mkdir(outdir)
     if gtf is not None:

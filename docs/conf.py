@@ -14,6 +14,9 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
+# if tested on local sphinx, but comment out if in read the doc
+autodoc_mock_imports = ['tensorflow','lifelines','statsmodels','sklearn','umap','dash','plotly']
+
 
 # -- Project information -----------------------------------------------------
 

@@ -23,6 +23,19 @@ def clear_assets():
 
 
 def run_dash_T_antigen(input_abs_path,remove_cols=['uid'],host=None,port='8050',output_abs_path=None):
+    '''
+    run the dash T antigen viewer
+
+    :param input_abs_path: string, the absolute path to the input df
+    :param remove_cols: list, the column name to remove from the input df
+    :param host: string or None, if None, program will run hostname to automatically detect
+    :param port: string, default is 8050
+    :param output_abs_path: string or None, if you want to have the umap embedding, specify the output path and name
+
+    Example::
+
+        snaf.run_dash_T_antigen(input_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/result/shared_vs_unique_neoantigen_all.txt')
+    '''
     # since this module heavily relies on relative path
     os.chdir(os.path.dirname(__file__))
     print('changed working directory to {}'.format(os.getcwd()))

@@ -45,9 +45,19 @@ def gtex_visual_per_tissue_count(query,out_folder='.'):
 
 def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,ylim=None):
     ''' 
-    Example:
-    snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
-    snaf.gtex_visual_combine(query='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
+    Visualize the gtex expression and tumor specificity for splicing event
+
+    :param uid: string, the uid for the splicing event
+    :param norm: bool. whether normalize for the sequencing depth or not
+    :param outdir: string, where the figure go into
+    :param figsize: tuple, the (width,height) of the figure
+    :param tumor: pandas dataframe, the tumor df to compare with
+    :param ylim: tuple, modify the ylim of the (bottom, top) of the figure
+
+    Example::
+
+        snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
+        snaf.gtex_visual_combine(query='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
     '''
     query = uid
     try:
@@ -115,6 +125,7 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
 
 def gtex_visual_subplots(uid,norm=True,outdir='.'):
     ''' 
+    
     Example:
     snaf.gtex_visual_subplots(query='ENSG00000090339:E4.3-E4.5',norm=True)
     snaf.gtex_visual_subplots(query='ENSG00000112149:E7.1-E9.1',norm=True)
