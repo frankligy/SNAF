@@ -6,8 +6,18 @@
 Welcome to SNAF's documentation!
 ================================
 
-Splicing Neo-Antigen Finder
+Splicing Neo-Antigen Finder (``SNAF``) is an easy-to-use pipeline to predict ``MHC-bound neoantigens`` (T-antigen) and ``altered surface protein``
+(B-antigen) produced by abnormal ``alternative splicing`` events from RNA-Seq data.
 
+.. image:: ./_static/fig1.png
+   :height: 275px
+   :width: 550px
+   :align: center
+   :target: target
+
+
+Content
+==========
 .. toctree::
    :maxdepth: 2
 
@@ -21,9 +31,3 @@ Splicing Neo-Antigen Finder
 
 
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
