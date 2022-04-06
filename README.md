@@ -15,7 +15,7 @@ Simply put, user needs to supply ``a folder with bam files``, and the ``HLA type
 
 # Citation
 
-SNAF will be published in AACR annual meeting 2022 proceedings and Cancer Research Supplemental. Before the above two go into public, please cite this GitHub repository if you find this useful for your reference.
+SNAF will be published in AACR annual meeting 2022 proceedings and Cancer Research Supplemental. Before the above two go into public, please cite this GitHub repository if you find this useful for your research.
 
 # Contact
 
