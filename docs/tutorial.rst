@@ -253,6 +253,8 @@ Different strigencies are explanined below:
 * strigency 4: The novel isoform also needs to have long-read or EST support (as long as the novel junction present in full-length)
 * strigency 5: The novel isoform also needs to have long-read or EST support (whole ORF needs to be the same as full-length)
 
+An output called ``candidates.txt`` is what we are looking for, to facilitate the inspection of the result, let's use the B antigen viewer shown below.
+
 
 Interactive neoantigen viewer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

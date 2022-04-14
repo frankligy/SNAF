@@ -57,13 +57,13 @@ gtex_visual_subplots
 Miscellaneous
 ------------------
 
-.. _reference_to_add_gene_symbol
+.. _reference_to_add_gene_symbol:
 
 Add gene symbol
 ~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.add_gene_symbol_frequency_table
 
-.. _reference_to_add_chromsome_coordinate
+.. _reference_to_add_chromsome_coordinate:
 
 Add chromsome coordinate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
