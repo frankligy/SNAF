@@ -39,7 +39,8 @@ Step 4: (Optional) Install netMHCpan4.1 and TMHMM2.0
 By default, SNAF uses MHCflurry to predict which peptides will undergo MHC presentation, however, users can optionally install 
 netMHCpan4.1 to be used instead. TMHMM2.0 is used for topology prediction in the B-antigen membrane protein workflow if installed. If not installed, results may be less accurate. 
 These tools can be downloaded from the authors source websites to get the latest version 
-(`netMHCpan4.1 <https://www.cbs.dtu.dk/service.php?NetMHCpan>`_, `TMHMM2.0 <https://services.healthtech.dtu.dk/service.php?TMHMM-2.0>`_)
+(`netMHCpan4.1 <https://www.cbs.dtu.dk/service.php?NetMHCpan>`_, `TMHMM2.0 <https://services.healthtech.dtu.dk/service.php?TMHMM-2.0>`_). SNAF will ask you
+to provide software_path (where do you install these two softwares) when running corresponding steps, that's how these two softwares will be used in SNAF.
 
 
 
