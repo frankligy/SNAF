@@ -263,7 +263,7 @@ Similar to T antigen, users can explore all the altered surface protein for B an
     surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',
                                python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
 
-.. image:: ./_static/b_viewer.png
+.. image:: ./_static/viewer_for_b.png
     :height: 400px
     :width: 600px
     :align: center
