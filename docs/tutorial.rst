@@ -10,6 +10,11 @@ the TCGA Skin Cutaneous Melanoma (SKCM) cohort (472 tumor samples).
     hours and requires a multi-core High Performance Compute environment (HPC). Please replace the bam file folder with yours and configure your sample 
     HLA type file as illustrated below.
 
+.. warning::
+
+    There are a few steps in the workflow that requires internet connection, especially when launching B-antigen viewer. To avoid any errors, it is recommended 
+    to make sure your system has internet connection, which shouldn't be a problem for any computer or HPC.
+
 Running AltAnalyze to identify alternative splicing events
 -----------------------------------------------------------
 
