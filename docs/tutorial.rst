@@ -101,14 +101,13 @@ neoantigens at each stages are useful for various downstream analyses.
 * stage 0: neojunction, the number of tumor-specific junction reads
 * stage 1: peptides that are predicted (3-way in-silico translation) from each neojunction
 * stage 2: peptides that are predicted to be presented on an MHC molecule (based on netMHCpan or MHCflurry prediction)
-* stage 3: peptides that are predicted to be immunogenic (DeepImmuno)
+* stage 3: peptides that are predicted to be immunogenic (`DeepImmuno <https://academic.oup.com/bib/article/22/6/bbab160/6261914>`_)
 
 For each stage, you may see the following categories of results:
 
 * burden_stage{0-3}.txt: This file characterizes the patient level neoantigen burden (See below concrete example).
 * frequency_stage{0-3}.txt: This file chracterizes each specific neoantigen, how many times does it occur across the whole cohort? 
-* frequency_stage{0-3}_verbosity1_uid.txt: This is an enhanced version of frequency.txt file, where each row contains both the neoantigen and the source junction uid.
-    This file can be further enhanced by adding gene symbol and chromosome coordinates.
+* frequency_stage{0-3}_verbosity1_uid.txt: This is an enhanced version of frequency.txt file, where each row contains both the neoantigen and the source junction uid. This file can be further enhanced by adding :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`.
 * x_neoantigen_frequency{0-3}.pdf: This is a visual representation of neoantigen frequency as a sorted barplot, where each bar is a neoantigen and the height is its occurence across cohorts.
 * x_occurence_frequency{0-3}.pdf: This is an alternative visualization of neoantigen frequency as a histplot, interval (x-axis) with the occurence of each neoantigen across the cohort.
 
