@@ -98,18 +98,18 @@ refers to different stages in the neoantigen production process, first and forem
 peptides will be generated after in-silico translation, followed by MHC presentation and MHC-peptide complex formation to elicit a T cell response. We argue that exporting
 neoantigens at each stages are useful for various downstream analyses.
 
-* stage 0: neojunction, the number of tumor-specific junction reads
-* stage 1: peptides that are predicted (3-way in-silico translation) from each neojunction
-* stage 2: peptides that are predicted to be presented on an MHC molecule (based on netMHCpan or MHCflurry prediction)
-* stage 3: peptides that are predicted to be immunogenic (`DeepImmuno <https://academic.oup.com/bib/article/22/6/bbab160/6261914>`_)
+* ``stage 0``: neojunction, the number of tumor-specific junction reads
+* ``stage 1``: peptides that are predicted (3-way in-silico translation) from each neojunction
+* ``stage 2``: peptides that are predicted to be presented on an MHC molecule (based on netMHCpan or MHCflurry prediction)
+* ``stage 3``: peptides that are predicted to be immunogenic (`DeepImmuno <https://academic.oup.com/bib/article/22/6/bbab160/6261914>`_)
 
 For each stage, you may see the following categories of results:
 
-* burden_stage{0-3}.txt: This file characterizes the patient level neoantigen burden (See below concrete example).
-* frequency_stage{0-3}.txt: This file chracterizes each specific neoantigen, how many times does it occur across the whole cohort? 
-* frequency_stage{0-3}_verbosity1_uid.txt: This is an enhanced version of frequency.txt file, where each row contains both the neoantigen and the source junction uid. This file can be further enhanced by adding :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`.
-* x_neoantigen_frequency{0-3}.pdf: This is a visual representation of neoantigen frequency as a sorted barplot, where each bar is a neoantigen and the height is its occurence across cohorts.
-* x_occurence_frequency{0-3}.pdf: This is an alternative visualization of neoantigen frequency as a histplot, interval (x-axis) with the occurence of each neoantigen across the cohort.
+* ``burden_stage{0-3}.txt``: This file characterizes the patient level neoantigen burden (See below concrete example).
+* ``frequency_stage{0-3}.txt``: This file chracterizes each specific neoantigen, how many times does it occur across the whole cohort? 
+* ``frequency_stage{0-3}_verbosity1_uid.txt``: This is an enhanced version of frequency.txt file, where each row contains both the neoantigen and the source junction uid. This file can be further enhanced by adding :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`.
+* ``x_neoantigen_frequency{0-3}.pdf``: This is a visual representation of neoantigen frequency as a sorted barplot, where each bar is a neoantigen and the height is its occurence across cohorts.
+* ``x_occurence_frequency{0-3}.pdf``: This is an alternative visualization of neoantigen frequency as a histplot, interval (x-axis) with the occurence of each neoantigen across the cohort.
 
 The burden matrix should look like the below, where the last column and last row represent the mean burden for each feature and the total burden for each sample. Since this output only illustrates
 the last 10 columns and rows, all of the entries are zero, to give the user a sense of the file layout.
@@ -247,11 +247,11 @@ After this step, a pickle file will again be deposited to the ``result`` folder.
 
 Different strigencies are explanined below:
 
-* strigency 1: The novel isoform needs to be absent in UniProt database
-* strigency 2: The novel isoform also needs to be a documented protein-coding gene
-* strigency 3: The novel isoform also needs to not be subjected to Nonsense Mediated Decay (NMD)
-* strigency 4: The novel isoform also needs to have long-read or EST support (as long as the novel junction present in full-length)
-* strigency 5: The novel isoform also needs to have long-read or EST support (whole ORF needs to be the same as full-length)
+* ``strigency 1``: The novel isoform needs to be absent in UniProt database
+* ``strigency 2``: The novel isoform also needs to be a documented protein-coding gene
+* ``strigency 3``: The novel isoform also needs to not be subjected to Nonsense Mediated Decay (NMD)
+* ``strigency 4``: The novel isoform also needs to have long-read or EST support (as long as the novel junction present in full-length)
+* ``strigency 5``: The novel isoform also needs to have long-read or EST support (whole ORF needs to be the same as full-length)
 
 An output called ``candidates.txt`` is what we are looking for, to facilitate the inspection of the result, let's use the B antigen viewer shown below.
 
