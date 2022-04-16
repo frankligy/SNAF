@@ -4,6 +4,7 @@ matplotlib==2.1.2
 sklearn==0.0
 umap-learn==0.3.6
 nimfa==1.3.4
+llvmlite==0.29.0.dev0+32.gc372da0.dirty
 numba==0.40.1
 python-louvain==0.11
 annoy==1.13.0
