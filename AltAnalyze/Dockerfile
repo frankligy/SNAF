@@ -10,10 +10,11 @@ RUN curl -o requirements.txt https://raw.githubusercontent.com/frankligy/SNAF/ma
     && cd .. \
     && curl -o Hs.bed https://raw.githubusercontent.com/frankligy/SNAF/main/AltAnalyze/Hs.bed \
     && mv ./Hs.bed ./altanalyze/AltDatabase/EnsMart91/ensembl/Hs \
-    && curl -o AltAnalyze.sh https://raw.githubusercontent.com/frankligy/SNAF/main/AltAnalyze/AltAnalyze.sh
-ENTRYPOINT ["AltAnalyze.sh"]
+    && curl -o AltAnalyze.sh https://raw.githubusercontent.com/frankligy/SNAF/main/AltAnalyze/AltAnalyze.sh \
+    && chmod 777 /usr/src/app/AltAnalyze.sh
+ENTRYPOINT ["/usr/src/app/AltAnalyze.sh"]
 
-## To build -- docker build -t altanalyze .
+## To build -- docker build --no-cache -t altanalyze .
 
 ## To pull -- docker pull frankligy123/AltAnalyze
 
