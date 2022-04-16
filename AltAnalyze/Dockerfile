@@ -18,6 +18,9 @@ ENTRYPOINT ["/usr/src/app/AltAnalyze.sh"]
 
 ## To build -- docker build --no-cache -t altanalyze .
 
+## To push  -- docker tag altanalyze frankligy123/altanalyze:0.5.0   (first create repository on DockerHub)
+## To push  -- docker push frankligy123/altanalyze:0.5.0
+
 ## To pull -- docker pull frankligy123/altanalyze
 
 ## To run  -- docker run -v $PWD:/usr/src/app/run -t frankligy123/altanalyze bam    # don't bind working dir because all the downloaded build will be wiped to be consistent with $PWD
