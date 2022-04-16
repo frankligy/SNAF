@@ -46,7 +46,7 @@ these files will save significant time compared to resorting to REST API while c
 Step 4: (Optional) Install netMHCpan4.1 and TMHMM2.0
 -------------------------------------------------------
 
-.. note:
+.. note::
 
     Check the Video tutorial for this step: `Install netMHCpan4.1 and TMHMM2.0 for SNAF <https://www.youtube.com/watch?v=KrAzbR5mRIQ>`_.
 
