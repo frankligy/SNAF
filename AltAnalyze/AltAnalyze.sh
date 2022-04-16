@@ -1,13 +1,4 @@
-#BSUB -W 24:00
-#BSUB -M 196000
-#BSUB -n 4
-#BSUB -R "span[hosts=1]"
-#BSUB -J bam_to_bed
-#BSUB -o /data/salomonis2/LabFiles/Frank-Li/job_dump/%J.out
-#BSUB -e /data/salomonis2/LabFiles/Frank-Li/job_dump/%J.err
-
-module load python/2.7.5
-
+#!/bin/bash
 
 '''
 step1: bam to bed
@@ -31,6 +22,7 @@ cd $1
 for file in *.bam; do run_BAMtoBED $file; done
 mkdir ../bed
 for file in *.bed; do mv $file ../bed; done
+cd ..
 
 
 '''
