@@ -1,8 +1,8 @@
 #!/bin/bash
 
-'''
-step1: bam to bed
-'''
+
+# step1: bam to bed
+
 
 function run_BAMtoBED() {
  
@@ -19,15 +19,16 @@ return 0
 
 
 cd $1
+echo "BAM file folder is "$1
 for file in *.bam; do run_BAMtoBED $file; done
 mkdir ../bed
 for file in *.bed; do mv $file ../bed; done
 cd ..
 
 
-'''
-step2: multipath-psi
-'''
+
+# step2: multipath-psi
+
 
 # initiate name
 task="original"
