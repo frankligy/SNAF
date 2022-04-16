@@ -13,7 +13,7 @@ RUN curl -o requirements.txt https://raw.githubusercontent.com/frankligy/SNAF/ma
     && curl -o AltAnalyze.sh https://raw.githubusercontent.com/frankligy/SNAF/main/AltAnalyze/AltAnalyze.sh
 ENTRYPOINT ["AltAnalyze.sh"]
 
-## To build -- docker build -t AltAnalyze .
+## To build -- docker build -t altanalyze .
 
 ## To pull -- docker pull frankligy123/AltAnalyze
 

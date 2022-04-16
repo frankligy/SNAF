@@ -8,7 +8,6 @@ numba==0.40.1
 python-louvain==0.11
 annoy==1.13.0
 networkx==1.11
-fastcluster==1.1.11
 Pillow==2.5.1
 pysam==0.15.0
 requests==2.7.0
