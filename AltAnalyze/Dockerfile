@@ -2,9 +2,10 @@
 
 FROM python:2
 WORKDIR /usr/src/app
-RUN curl https://github.com/frankligy/SNAF/altanalyze_requirements.txt \
+RUN curl -o requirements.txt https://raw.githubusercontent.com/frankligy/SNAF/main/AltAnalyze/requirements.txt \
     && pip install --no-cache-dir -r requirements.txt \
     && git clone https://github.com/nsalomonis/altanalyze.git \
+    && cd altanalyze \
     && python AltAnalyze.py --species Hs --update Official --version EnsMart91 --additional all \
     && curl https://github.com/frankligy/SNAF/Hs.bed \
     && mv ./Hs.bed ./altanalyze/AltDatabase/EnsMart91/ensembl/Hs \
