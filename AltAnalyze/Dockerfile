@@ -19,7 +19,7 @@ ENTRYPOINT ["/usr/src/app/AltAnalyze.sh"]
 
 ## To pull -- docker pull frankligy123/altanalyze
 
-## To run  -- docker run -v $PWD:/usr/src/app/run -t frankligy123/altanalyze bam
+## To run  -- docker run -v $PWD:/usr/src/app/run -t frankligy123/altanalyze bam    # don't bind working dir because all the downloaded build will be wiped to be consistent with $PWD
 
 ## To run (interactive) -- docker run --rm -it --entrypoint bash frankligy123/altanalyze 
 

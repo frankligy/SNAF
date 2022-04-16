@@ -14,3 +14,4 @@ pysam==0.15.0
 requests==2.7.0
 python-igraph==0.7.1.post6
 pycairo==1.14.0
+pandas==0.23.4

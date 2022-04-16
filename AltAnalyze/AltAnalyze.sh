@@ -68,3 +68,6 @@ python /usr/src/app/altanalyze/AltAnalyze.py --species Hs --platform RNASeq --ve
     --compdir /usr/src/app/run/altanalyze_output/ExpressionInput/comps.${task}.txt --expname ${task} \
     --runGOElite no
 
+# process the result to get pruned junction count matrix
+echo "prune the raw junction count matrix"
+python /usr/src/app/prune.py 
