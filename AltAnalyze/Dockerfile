@@ -11,11 +11,18 @@ RUN curl -o requirements.txt https://raw.githubusercontent.com/frankligy/SNAF/ma
     && curl -o Hs.bed https://raw.githubusercontent.com/frankligy/SNAF/main/AltAnalyze/Hs.bed \
     && mv ./Hs.bed ./altanalyze/AltDatabase/EnsMart91/ensembl/Hs \
     && curl -o AltAnalyze.sh https://raw.githubusercontent.com/frankligy/SNAF/main/AltAnalyze/AltAnalyze.sh \
-    && chmod 777 /usr/src/app/AltAnalyze.sh
+    && chmod 777 /usr/src/app/AltAnalyze.sh \
+    && mkdir run
 ENTRYPOINT ["/usr/src/app/AltAnalyze.sh"]
 
 ## To build -- docker build --no-cache -t altanalyze .
 
-## To pull -- docker pull frankligy123/AltAnalyze
+## To pull -- docker pull frankligy123/altanalyze
 
-## To run  -- docker run -v $PWD:/usr/src/app -t frankligy123/AltAnalyze ./bam
+## To run  -- docker run -v $PWD:/usr/src/app/run -t frankligy123/altanalyze bam
+
+## To run (interactive) -- docker run --rm -it --entrypoint bash frankligy123/altanalyze 
+
+## To check -- docker images
+## To check -- docker ps
+## To check -- docker images rm -f altanalyze

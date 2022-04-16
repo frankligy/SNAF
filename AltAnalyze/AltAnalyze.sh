@@ -1,5 +1,9 @@
 #!/bin/bash
 
+cd run
+echo "Current folder is "$PWD
+echo "BAM file folder is "$1
+
 
 # step1: bam to bed
 
@@ -19,13 +23,12 @@ return 0
 
 
 cd $1
-echo "BAM file folder is "$1
 for file in *.bam; do run_BAMtoBED $file; done
-mkdir ../bed
+cd ..
+mkdir bed
+cd $1
 for file in *.bed; do mv $file ../bed; done
 cd ..
-
-
 
 # step2: multipath-psi
 
