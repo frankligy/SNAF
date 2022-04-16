@@ -22,7 +22,7 @@ The analysis starts with a group of bam files, with each BAM corresponding to si
 the full path to the folder is the only command you need to run in this step (See Installation for more detail)::
 
     # run the container, the below command assume a folder named bam is in your current folder on the host machine
-    docker run -v $PWD:/usr/src/app/run -t frankligy123/AltAnalyze bam
+    docker run -v $PWD:/usr/src/app/run -t frankligy123/altanalyze bam
 
 The output of this step contains different useful readouts, including splicing junction quantification, splicing event quantification and gene expression, but the most important output that will be used
 in the following step is the junction count matrix. Let us take a look at a subsampled junction count matrix, each row represent a splicing junction

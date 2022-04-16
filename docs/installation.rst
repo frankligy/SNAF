@@ -11,9 +11,9 @@ Step 1: AltAnalyze
 A docker image can be downloaded from DockerHub and run using one line of code::
 
     # build the image
-    docker pull frankligy123/altanalyze:0.5.0
+    docker pull frankligy123/altanalyze
     # run the container, the below command assume a folder named bam is in your current folder on the host machine
-    docker run -v $PWD:/usr/src/app/run -t frankligy123/AltAnalyze bam
+    docker run -v $PWD:/usr/src/app/run -t frankligy123/altanalyze bam
 
 The resultant junction count matrix will be in ``./altanalyze_output/ExpressionInput/counts.original.pruned.txt``, all the directory and subdirectory
 will be automatically created.
@@ -21,7 +21,7 @@ will be automatically created.
 Alternatively, lots of HPC on university or institution use Singularity instead of docker::
 
     # pull the image
-    singularity pull altanalyze.sif docker://frankligy123/altanalyze:0.5.0
+    singularity pull altanalyze.sif docker://frankligy123/altanalyze
     # run the container, the below command assume a folder named bam is in your current folder on the host machine
     singularity run -B $PWD:/usr/src/app/run altanalyze.sif bam
 
@@ -45,6 +45,10 @@ these files will save significant time compared to resorting to REST API while c
 
 Step 4: (Optional) Install netMHCpan4.1 and TMHMM2.0
 -------------------------------------------------------
+
+.. note:
+
+    Check the Video tutorial for this step: `Install netMHCpan4.1 and TMHMM2.0 for SNAF <https://www.youtube.com/watch?v=KrAzbR5mRIQ>`_.
 
 By default, SNAF uses MHCflurry to predict which peptides will undergo MHC presentation, however, users can optionally install 
 netMHCpan4.1 to be used instead. TMHMM2.0 is used for topology prediction in the B-antigen membrane protein workflow if installed. If not installed, results may be less accurate. 
