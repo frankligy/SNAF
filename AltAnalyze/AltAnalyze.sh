@@ -62,9 +62,9 @@ echo -e '1\t2' > altanalyze_output/ExpressionInput/comps.${task}.txt
 
 # run multipath-psi
 python /usr/src/app/altanalyze/AltAnalyze.py --species Hs --platform RNASeq --version EnsMart91 \
-    --bedDir /usr/src/app/bed \
-    --output /usr/src/app/altanalyze_output \
-    --groupdir /usr/src/app/altanalyze_output/ExpressionInput/groups.${task}.txt \
-    --compdir /usr/src/app/altanalyze_output/ExpressionInput/comps.${task}.txt --expname ${task} \
+    --bedDir /usr/src/app/run/bed \
+    --output /usr/src/app/run/altanalyze_output \
+    --groupdir /usr/src/app/run/altanalyze_output/ExpressionInput/groups.${task}.txt \
+    --compdir /usr/src/app/run/altanalyze_output/ExpressionInput/comps.${task}.txt --expname ${task} \
     --runGOElite no
 
