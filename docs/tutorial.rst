@@ -312,7 +312,7 @@ reprensented in diverse annotation in different pipelines.
 It is in our to-do list but also requires a lot of work to harmonize all the annotations, for now, we provide functions to convert AltAnalyze annotation
 to the most generic representation, namely, ``gene symbol`` and ``chromosome coordinates``. It will be handled by two functions, :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`.
 
-Now let's take the output `frequency_stage2_verbosity1_uid.txt` as the example (most important thing is pandas dataframe index format)::
+Now let's take the output ``frequency_stage2_verbosity1_uid.txt`` as the example (most important thing is pandas dataframe index format)::
 
 	                                              n_sample
     TQLSVPWRL,ENSG00000258017:E2.3-E2.6	                 470
@@ -349,15 +349,15 @@ Let's add chromsome coorinates to the splicing junction annotation as well::
 Results look like this::
 
 	                                                n_sample	           symbol	         coord
-TQLSVPWRL,ENSG00000258017:E2.3-E2.6	                  470	           unknown_gene	   chr12:49128207-49128627(+)
-QIFESVSHF,ENSG00000198034:E8.4-E9.1	                  463	               RPS4X	   chrX:72256054-72272640(-)
-MGSKRLTSL,ENSG00000241343:E2.2-E2.4	                  449	               RPL36A	   chrX:101391235-101391459(+)
-HALLVYPTL,ENSG00000090581:E5.10-E5.24	              435	               GNPTG	   chr16:1362320-1362452(+)
-QFADGRQSW,ENSG00000111843:E9.1-ENSG00000137210:E6.1	  433	              TMEM14C	   chr6:10728727-10756467(+)
-GIHPSKVVY,ENSG00000263809:E3.1-E4.1	                  432	            unknown_gene	chr17:8376104-8379796(-)
-RPYLPVKVL,ENSG00000134330:E8.4-E9.1	                  432	                IAH1	    chr2:9484550-9487456(+)
-LPPPRLASV,ENSG00000090581:E5.10-E5.24	              428	                GNPTG	    chr16:1362320-1362452(+)
-SSQVHLSHL,ENSG00000172053:E11.8-E11.11	              425	                QARS1	   chr3:49099853-49099994(-)
+    TQLSVPWRL,ENSG00000258017:E2.3-E2.6	                  470	           unknown_gene	   chr12:49128207-49128627(+)
+    QIFESVSHF,ENSG00000198034:E8.4-E9.1	                  463	               RPS4X	   chrX:72256054-72272640(-)
+    MGSKRLTSL,ENSG00000241343:E2.2-E2.4	                  449	               RPL36A	   chrX:101391235-101391459(+)
+    HALLVYPTL,ENSG00000090581:E5.10-E5.24	              435	               GNPTG	   chr16:1362320-1362452(+)
+    QFADGRQSW,ENSG00000111843:E9.1-ENSG00000137210:E6.1	  433	              TMEM14C	   chr6:10728727-10756467(+)
+    GIHPSKVVY,ENSG00000263809:E3.1-E4.1	                  432	            unknown_gene	chr17:8376104-8379796(-)
+    RPYLPVKVL,ENSG00000134330:E8.4-E9.1	                  432	                IAH1	    chr2:9484550-9487456(+)
+    LPPPRLASV,ENSG00000090581:E5.10-E5.24	              428	                GNPTG	    chr16:1362320-1362452(+)
+    SSQVHLSHL,ENSG00000172053:E11.8-E11.11	              425	                QARS1	   chr3:49099853-49099994(-)
 
 
 
