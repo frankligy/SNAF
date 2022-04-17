@@ -25,6 +25,7 @@ requires = [
     'lifelines==0.26.4',
     'umap-learn==0.5.2',
     'plotly==5.4.0',
+    'Werkzeug==2.0.2',
     'dash==2.0.0',
     'dash-dangerously-set-inner-html==0.0.2',
     'mygene==3.2.2'
