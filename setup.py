@@ -33,7 +33,7 @@ requires = [
 
 setup(
     name = 'SNAF',
-    version = '0.5.0',
+    version = '0.5.1',
     description = 'A Python package to predict, prioritize and visualize splicing derived neoantigens, including MHC-bound peptides (T cell antigen) and altered surface protein (B cell antigen)',
     long_description = long_description,
     long_description_content_type = 'text/markdown',
