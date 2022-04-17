@@ -1,6 +1,16 @@
 Change Log
 ============
 
+
+Version 0.5.1 (2022.04.16)
+----------------------------
+
+Fixed two bugs:
+
+#. Weckzueg can not be version 2.1.1, force it to be 2.0.2
+#. expose add_coord_frequency_table to snaf namespace
+
+
 Version 0.5.0 (2022.04.06)
 ----------------------------
 Initial release
