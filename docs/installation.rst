@@ -31,7 +31,7 @@ Step 2: SNAF
 
 SNAF is a python3 package and has been tested on python>=3.7::
 
-    pip install snaf
+    pip install SNAF
 
 
 Step 3: Reference Dataset
