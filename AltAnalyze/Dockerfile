@@ -13,7 +13,8 @@ RUN curl -o requirements.txt https://raw.githubusercontent.com/frankligy/SNAF/ma
     && curl -o AltAnalyze.sh https://raw.githubusercontent.com/frankligy/SNAF/main/AltAnalyze/AltAnalyze.sh \
     && curl -o prune.py https://raw.githubusercontent.com/frankligy/SNAF/main/AltAnalyze/prune.py \
     && chmod 777 /usr/src/app/AltAnalyze.sh \
-    && mkdir run
+    && mkdir run \
+    && chmod -R 777 /usr/src/app/altanalyze   
 ENTRYPOINT ["/usr/src/app/AltAnalyze.sh"]
 
 ## To build -- docker build --no-cache -t altanalyze .

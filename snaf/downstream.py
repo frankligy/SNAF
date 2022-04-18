@@ -198,7 +198,7 @@ def add_gene_symbol_frequency_table(df,remove_quote=True):
     This function will convert the ENSG id to gene sysmbol and add a column in place for your dataframe
 
     :param df: the input df, make sure the index is the uid
-    :remove_quote: bool, depending on how your df is loaded, if directly read from the disk, certain column will contain quotation, whether to remove it or not
+    :param remove_quote: bool, depending on how your df is loaded, if directly read from the disk, certain column will contain quotation, whether to remove it or not
 
     :return df: the output df, with added gene symbol column
 

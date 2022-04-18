@@ -142,7 +142,7 @@ class JunctionCountMatrixQuery():
         membrane_uid = filter_to_membrane_protein(neojunctions)
         membrane_tuples = []
         for uid in membrane_uid:
-            mean_gtex, df_gtex = accurate_tumor_specificity(uid,method='mean',return_df=True)
+            mean_gtex, df_gtex = tumor_specificity(uid,method='mean',return_df=True)
             ed, freq = jcmq.get_neojunction_info(uid)
             membrane_tuples.append((uid,mean_gtex,df_gtex,ed,freq))
         return membrane_tuples

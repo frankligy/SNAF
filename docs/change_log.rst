@@ -1,6 +1,15 @@
 Change Log
 ============
 
+Version 0.5.2 (2022.04.17)
+----------------------------
+
+Fixed multiple bugs:
+
+#. scratch folder cleaning issue and multiprocessing conflist issues resolved
+#. tumor_specificity issue resolved
+#. fix docstring displacement
+#. In test folder, contain a complete testing case.
 
 Version 0.5.1 (2022.04.16)
 ----------------------------

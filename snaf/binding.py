@@ -43,9 +43,6 @@ def run_netMHCpan(software_path,peptides,hlas,length,cmd_num=1,tmp_dir=None,tmp_
         tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),'scratch')
     if tmp_name is None:
         tmp_name = 'input_{}.pep'.format(os.getpid())
-    # create the tmp_dir folder if not exist
-    if not os.path.exists(tmp_dir):
-        os.mkdir(tmp_dir)
     # reformat/create to the strings that we need
     peptides_path = os.path.join(tmp_dir,tmp_name)
     with open(peptides_path,'w') as f:
@@ -102,7 +99,11 @@ def run_netMHCpan(software_path,peptides,hlas,length,cmd_num=1,tmp_dir=None,tmp_
                 df = pd.DataFrame(columns=['peptide','mer','hla','score','identity'])
             df_store.append(df)
             i += 90  
-        df = pd.concat(df_store,axis=0)         
+        df = pd.concat(df_store,axis=0)      
+
+
+    # remove the scratch_pid folder
+    os.remove(peptides_path)
 
     return df
 

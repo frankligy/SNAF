@@ -25,7 +25,7 @@ the full path to the folder is the only command you need to run in this step (Se
     docker run -v $PWD:/usr/src/app/run -t frankligy123/altanalyze:0.5.0.1 bam
 
 The output of this step contains different useful readouts, including splicing junction quantification, splicing event quantification and gene expression, but the most important output that will be used
-in the following step is the junction count matrix. Let us take a look at a subsampled junction count matrix, each row represent a splicing junction
+in the following step is the junction count matrix. The junction count matrix will be the ``altanalyze_output/ExpressionInput/counts.original.pruned.txt``. Let us take a look at a subsampled junction count matrix, each row represent a splicing junction
 annotated by the AltAnalyze gene model, and each column represents the sample name. The numerical value represents the number of reads that support the 
 occurence of a certain junction. 
 
@@ -34,16 +34,17 @@ occurence of a certain junction.
     :widths: 10,10,10,10,10,10,10,10,10,10,10
     :header-rows: 1
 
+.. note::
 
-In the future, we are planning to support user-supplied splicing count matrices from alternative algorithms, which
-will increase the compatability of the pipeline with other workflows.
+    In the future, we are planning to support user-supplied splicing count matrices from alternative algorithms, which
+    will increase the compatability of the pipeline with other workflows.
 
 Identify MHC-bound neoantigens (T-antigen)
 ---------------------------------------------
 
 With the junction count matrix, we can proceed to predict MHC-bound neoantigens (T antigen). The only additional input we need is
 the patient HLA type information, in this analyis, we use `Optitype <https://github.com/FRED-2/OptiType>`_ to infer the 4 digit HLA type from RNA-Seq data, the ``sample_hla.txt`` file 
-looks like below example (sample_hla.txt)::
+looks like below example::
 
                 sample	                                                hla
     TCGA-X1-A1WX-06A-11R-A38C-07.bed	HLA-A*02:01,HLA-A*02:01,HLA-B*39:10,HLA-B*15:01,HLA-C*03:03,HLA-C*12:03
@@ -51,7 +52,11 @@ looks like below example (sample_hla.txt)::
     TCGA-X3-A1WX-06A-11R-A38C-07.bed	HLA-A*11:01,HLA-A*32:01,HLA-B*40:02,HLA-B*35:01,HLA-C*04:01,HLA-C*02:02
     TCGA-X4-A2PB-01A-11R-A18S-07.bed	HLA-A*02:01,HLA-A*01:01,HLA-B*07:02,HLA-B*18:01,HLA-C*07:01,HLA-C*07:02
 
-In another words, just make sure that you prepare your HLA type information in a file with the same format above.
+.. note::
+
+    Optitype is again tool that is super easy to install as they provide the docker version, the input you need is the fastq file 
+    for your patient RNA-Seq sample, just follow their `GitHub instructions <https://github.com/FRED-2/OptiType>`_. You can use your 
+    own favorite HLA typing tool as well. All we need is the HLA typing information.
 
 
 Loading and instantiating
@@ -74,11 +79,19 @@ The first step is to load our downloaded reference data into the memory to facil
     # instantiate (if not using netMHCpan)
     snaf.initialize(db_dir=db_dir,gtex_mode='count',binding_method='MHCflurry',software_path=None)
 
+.. note::
+
+    Explaination of ``gtex_mode`` argument: We provide two ways for GTEx filtering, one is using splicing junction count (``gtex_mode='count'``),
+    The another is using splicing percent spliced in (PSI) so that ``gtex_mode='psi'``, since in this tutorial we are using splicing junction 
+    count matrix as the quantification of the splicing junction, we call the count mode for GTEx filtering. We allow user to supply a PSI 
+    matrix, in this case, you should set ``gtex_mode='psi'``.
+
 Running the T antigen workflow
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We first instantiate ``JunctionCountMatrixQuery`` object, here the ``df`` is the junction count matrix (a pandas dataframe) that we refer to above.::
 
+    df = pd.read_csv('altanalyze_output/ExpressionInput/counts.original.pruned.txt',sep='\t',index_col=0)
     jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df)
 
 We will parse the HLA type ``sample_hla.txt`` file into a nested list. The goal  is to have a python nested list ``hlas``, where each element in 
@@ -88,6 +101,10 @@ then make sure the first element in ``hlas`` is the HLA type for sample1, then s
 
     sample_to_hla = pd.read_csv('sample_hla.txt',sep='\t',index_col=0)['hla'].to_dict()
     hlas = [hla_string.split(',') for hla_string in df.columns.map(sample_to_hla)]
+
+.. note::
+
+    The above step depends on how your HLA typing file looks like, so just adjust it accordingly.
 
 The main program can be wrapped into one line of code. A folder named ``result`` will be created and the resultant ``JunctionCountMatrixQuery``
 object will be saved as a pickle file::
@@ -113,7 +130,7 @@ For each stage, you may see the following categories of results:
 
 * ``burden_stage{0-3}.txt``: This file characterizes the patient level neoantigen burden (See below concrete example).
 * ``frequency_stage{0-3}.txt``: This file chracterizes each specific neoantigen, how many times does it occur across the whole cohort? 
-* ``frequency_stage{0-3}_verbosity1_uid.txt``: This is an enhanced version of frequency.txt file, where each row contains both the neoantigen and the source junction uid. This file can be further enhanced by adding :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`.
+* ``frequency_stage{0-3}_verbosity1_uid.txt``: This is an enhanced version of frequency.txt file, where each row contains both the neoantigen and the source junction uid. This file can be further enhanced by adding :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`. See :ref:`reference_to_compatibility`.
 * ``x_neoantigen_frequency{0-3}.pdf``: This is a visual representation of neoantigen frequency as a sorted barplot, where each bar is a neoantigen and the height is its occurence across cohorts.
 * ``x_occurence_frequency{0-3}.pdf``: This is an alternative visualization of neoantigen frequency as a histplot, interval (x-axis) with the occurence of each neoantigen across the cohort.
 
@@ -136,8 +153,10 @@ Neoantigen frequency plot shows the distinctive pattern between shared neoantige
 Visualization
 ~~~~~~~~~~~~~~~~~
 
-A very important question users will want to ask is what splicing event produces a certain neoepitope? We provide a convenient plotting function to achieve this::
+A very important question users will want to ask is what splicing event produces a certain neoepitope? We provide a convenient plotting function to achieve this,
+usually we want to first deserialize the resultant pickle object back to memory from last step::
 
+    jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
     jcmq.visualize(uid='ENSG00000167291:E38.6-E39.1',sample='TCGA-DA-A1I1-06A-12R-A18U-07.bed',outdir='./result')
 
 .. image:: ./_static/t_visual.png
@@ -170,7 +189,7 @@ to be the same, that's why we need a few lines of code for parsing below::
 Mutation Association Analysis
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We download the TCGA SKCM mutation data from Xena browser. We provide a convenient function to calculate all associations and plot them. To explain how
+We download the TCGA SKCM mutation data from `<Xena browser> <https://xenabrowser.net/datapages/?dataset=TCGA-SKCM.mutect2_snv.tsv&host=https%3A%2F%2Fgdc.xenahubs.net&removeHub=https%3A%2F%2Fxena.treehouse.gi.ucsc.edu%3A443>`_. We provide a convenient function to calculate all associations and plot them. To explain how
 this function work, basically, it has two mode, ``compute`` mode is to compute the association between each gene mutation and neoantigen burden. ``plot`` mode
 is to visualize selective genes as a side-by-side barplot. For ``compute`` mode, we need the burden file (again, a pandas series, same as described above in survival analysis),
 and mutation, which is a dataframe whose index is sample name, and one column represents mutated gene. For ``plot`` mode, just need to specify a list of
@@ -205,9 +224,11 @@ Interactive Neoantigen Viewer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Users can launch a dash interactive neoantigen viewer to visualize all the neoantigens based on their physiochemical properties and their motif
-composition along with the source splicing junction::
+composition along with the source splicing junction. To achieve it, we first run a pre-processing step ``analyze_neoantigens`` to generate
+some portable input file for the viewer, we need a file named ``shared_vs_unique_neoantigen_all.txt``. Be sure the specify the full name for this file,
+also, the umap plot may take 10 seconds to load if you don't see it loads instantly::
 
-    snaf.downstream.analyze_neoantigens(freq_path='result/frequency_stage2_verbosity1_uid.txt',junction_path='result/burden_stage0.txt',total_samples=472,outdir='result',mers=[9,10],fasta=True)
+    snaf.analyze_neoantigens(freq_path='result/frequency_stage2_verbosity1_uid.txt',junction_path='result/burden_stage0.txt',total_samples=2,outdir='result',mers=None,fasta=False)
     snaf.run_dash_T_antigen(input_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/result/shared_vs_unique_neoantigen_all.txt')
 
 .. image:: ./_static/t_viewer.png
@@ -227,6 +248,14 @@ Instantiating B pipeline
 
 We again load some necessary reference data files to RAM::
 
+    # same as T antigen pipeline
+    import snaf
+    import pandas
+    db_dir = '/user/ligk2e/download'  
+    netMHCpan_path = '/user/ligk2e/netMHCpan-4.1/netMHCpan'
+    snaf.initialize(db_dir=db_dir,gtex_mode='count',binding_method='netMHCpan',software_path=netMHCpan_path)
+
+    # additional instantiation steps
     from snaf import surface
     surface.initialize(db_dir=db_dir)
 
@@ -235,6 +264,7 @@ Running the program
 
 We first obtain the membrane splicing events::
 
+    df = pd.read_csv('altanalyze_output/ExpressionInput/counts.original.pruned.txt',sep='\t',index_col=0)
     membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df)
 
 Then we run the B pipeline::
@@ -265,10 +295,16 @@ An output called ``candidates.txt`` is what we are looking for, to facilitate th
 Interactive neoantigen viewer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Similar to T antigen, users can explore all the altered surface protein for B antigen::
+Similar to T antigen, users can explore all the altered surface protein for B antigen, we need the ``pickle object`` and the ``candidates`` file,
+importantly, please specify the full path to the python executable you use to run your python script::
 
     surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',
                                python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+
+.. note::
+
+    The reason for specifying python_executable is for using EmBoss Needleman global alignment REST API. As the REST API was provided 
+    as a python script, I need the python executable full path to execute the script.
 
 .. image:: ./_static/viewer_for_b.png
     :height: 400px
@@ -301,6 +337,7 @@ You can also view each tissue type separately::
     :align: center
     :target: target
 
+.. _reference_to_compatibility:
 
 Compatibility (Gene Symbol & chromsome coordinates)
 -------------------------------------------------------
@@ -328,7 +365,14 @@ Now let's take the output ``frequency_stage2_verbosity1_uid.txt`` as the example
 
 Let's add gene symbol to the dataframe::
 
-    df = snaf.add_gene_symbol_frequency_table(df=df,remove_quote=False)
+    df = snaf.add_gene_symbol_frequency_table(df=df,remove_quote=True)
+
+.. note:: 
+
+    The ``remove_quote`` argument is due to the fact that in ``frequency.txt`` file, one column is the list of all sample names that contain
+    the splicing neoantigen. The thing is, when such a list being re-read into the memory, sometimes a quotation will be added so that the data type
+    become a string instead of list, which is not desirable, so if your df is read using ``pd.read_csv``, you need to set it as ``True``,
+    otherwise, set it as ``False``.
 
 The resultant will look like that::
 

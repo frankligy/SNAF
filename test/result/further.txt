@@ -1,0 +1,84 @@
+uid:ENSG00000130827:E19.1_154467313-E20.1
+scores and freqs:2.9966695,1.0
+comments:['full_transcript > 10000']
+event type:alt5
+Junction:ACATG...TCATG
+Full length transcripts: length 20, indices [0, 6, 11, 12, 13, 14, 16, 19]
+ORF transcripts: length 20, indices [0, 6, 11, 13, 16, 19]
+ORF peptides: length 20, indices [0, 6, 11, 13, 16, 19]
+NMD check: length 20, indices ['#', '*', '#', '#', '#', '#']
+tranlatability check: length 20, indices ['*', '*', '*', '*', '*', '*']
+Alignment: length 20, indices [True, False, True, True, True, True]
+
+uid:ENSG00000138759:E66.1-E68.1
+scores and freqs:0.61948377,1.0
+comments:['full_transcript > 10000']
+event type:ordinary
+Junction:GTGAC...GCAAG
+Full length transcripts: length 32, indices [20]
+ORF transcripts: length 32, indices []
+ORF peptides: length 32, indices []
+NMD check: length 32, indices []
+tranlatability check: length 32, indices []
+Alignment: length 32, indices []
+
+uid:ENSG00000143126:E26.3-E26.6_109274416
+scores and freqs:2.1448796,1.0
+comments:['full_transcript > 10000']
+event type:alt3
+Junction:GCATC...GATTT
+Full length transcripts: length 11, indices [2, 10]
+ORF transcripts: length 11, indices [10]
+ORF peptides: length 11, indices [10]
+NMD check: length 11, indices ['#']
+tranlatability check: length 11, indices ['*']
+Alignment: length 11, indices [False]
+
+uid:ENSG00000164078:E10.23-E10.41
+scores and freqs:2.6910908,1.0
+comments:['full_transcript > 10000']
+event type:ordinary
+Junction:GCTTA...,CAGT
+Full length transcripts: length 81, indices [5, 11, 24, 25, 28, 31, 41, 42, 51, 62, 67]
+ORF transcripts: length 81, indices [5, 11, 24, 25, 28, 31, 41, 42, 62, 67]
+ORF peptides: length 81, indices [5, 11, 24, 25, 28, 31, 41, 42, 62, 67]
+NMD check: length 81, indices ['*', '*', '*', '*', '*', '*', '*', '*', '*', '*']
+tranlatability check: length 81, indices ['*', '*', '*', '*', '*', '*', '*', '*', '*', '*']
+Alignment: length 81, indices [False, False, False, False, False, False, False, False, False, False]
+
+uid:ENSG00000164078:E10.57-E10.78
+scores and freqs:1.9733555,1.0
+comments:['full_transcript > 10000']
+event type:ordinary
+Junction:TTTGA...AG,GT
+Full length transcripts: length 81, indices [5, 11, 17, 24, 25, 27, 28, 31, 41, 42, 43, 48, 51, 62, 67, 72]
+ORF transcripts: length 81, indices [5, 11, 17, 24, 25, 27, 28, 31, 41, 42, 43, 48, 62, 67, 72]
+ORF peptides: length 81, indices [5, 11, 17, 24, 25, 27, 28, 31, 41, 42, 43, 48, 62, 67, 72]
+NMD check: length 81, indices ['*', '*', '#', '*', '*', '*', '*', '*', '*', '*', '#', '*', '*', '*', '*']
+tranlatability check: length 81, indices ['*', '*', '#', '*', '*', '*', '*', '*', '*', '*', '#', '*', '*', '*', '*']
+Alignment: length 81, indices [False, False, True, False, False, True, False, False, False, False, False, False, False, False, False]
+
+uid:ENSG00000164078:E7.4-E9.2
+scores and freqs:2.9250627,1.0
+comments:['full_transcript > 10000']
+event type:ordinary
+Junction:CTACC...GCCCT
+Full length transcripts: length 81, indices [51]
+ORF transcripts: length 81, indices []
+ORF peptides: length 81, indices []
+NMD check: length 81, indices []
+tranlatability check: length 81, indices []
+Alignment: length 81, indices []
+
+uid:ENSG00000185101:E11.1_428387-E12.1
+scores and freqs:0.9600333,0.5
+comments:['full_transcript > 10000']
+event type:alt5
+Junction:ATCAA...GGCAG
+Full length transcripts: length 24, indices [3, 4, 5, 6, 8, 9, 10, 12, 14, 16, 17, 19]
+ORF transcripts: length 24, indices [3, 4, 5, 6, 8, 10, 12, 14, 16, 17, 19]
+ORF peptides: length 24, indices [3, 4, 5, 6, 8, 10, 12, 14, 16, 17, 19]
+NMD check: length 24, indices ['#', '*', '*', '#', '*', '*', '*', '*', '*', '*', '*']
+tranlatability check: length 24, indices ['*', '*', '*', '*', '*', '*', '*', '*', '*', '#', '*']
+Alignment: length 24, indices [True, True, True, True, True, True, True, True, True, True, True]
+

@@ -81,7 +81,6 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
             tumor_total_count = tumor.sum(axis=0)
             tumor_query_value = tumor_query_value / (tumor_total_count.values.squeeze()/1e6)
         tumor_sub_df = pd.DataFrame(data={'value':tumor_query_value,'tissue':['tumor']*tumor.shape[1]},index=tumor.columns)
-        print(tumor_sub_df)
         sorted_sub_df_list.append(tumor_sub_df)
     fig,ax = plt.subplots(figsize=figsize)
     x = 0

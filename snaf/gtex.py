@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import anndata
 from scipy.optimize import minimize
 from scipy import stats
+from scipy.sparse import csr_matrix
 
 try:
     import pymc3 as pm   # conda install -c conda-forge pymc3 mkl-service
@@ -110,9 +111,9 @@ def tumor_specificity(uid,method,return_df=False):
     try:
         info = adata[[uid],:]
     except:
-        print('{} not detected in gtex, impute as zero'.format(query))
+        print('{} not detected in gtex, impute as zero'.format(uid))
         info_tmp = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info = ad.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
+        info = anndata.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
     df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
     if method == 'mean':
         try:

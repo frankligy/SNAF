@@ -33,7 +33,7 @@ requires = [
 
 setup(
     name = 'SNAF',
-    version = '0.5.1',
+    version = '0.5.2',
     description = 'A Python package to predict, prioritize and visualize splicing derived neoantigens, including MHC-bound peptides (T cell antigen) and altered surface protein (B cell antigen)',
     long_description = long_description,
     long_description_content_type = 'text/markdown',
@@ -46,7 +46,8 @@ setup(
         'Documentation':'https://snaf.readthedocs.io',
     },
     packages=['snaf','snaf/deepimmuno','snaf/dash_app','snaf/surface'],
-    package_data = {'snaf/deepimmuno':['data/*','models/cnn_model_331_3_7/.data-00000-of-00001','models/cnn_model_331_3_7/.index','models/cnn_model_331_3_7/checkpoint']},
+    package_data = {'snaf/deepimmuno':['data/*','models/cnn_model_331_3_7/.data-00000-of-00001','models/cnn_model_331_3_7/.index','models/cnn_model_331_3_7/checkpoint'],
+                    'snaf':['mqpar.xml']},
     install_requires=requires,
     python_requires='>=3.7',
     classifers=[

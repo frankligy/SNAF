@@ -363,7 +363,13 @@ def run(uids,outdir,n_stride=2,tmhmm=False,software_path=None,serialize=True):
         results.append(sa)
     if serialize:
         with open(os.path.join(outdir,'surface_antigen.p'),'wb') as f:
-            pickle.dump(results,f)        
+            pickle.dump(results,f)     
+
+    # remove scratch
+    name = os.getpid()
+    int_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'scratch','{}.fasta'.format(name))  
+    os.remove(int_file_path) 
+    
     return results
 
 def batch_run(uid_list,cores,n_stride,tmhmm=False,software_path=None,serialize=False,outdir='.',name=None):

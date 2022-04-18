@@ -4,6 +4,7 @@ cd run
 echo "Current folder is "$PWD
 echo "BAM file folder is "$1
 
+chmod -R 777 /usr/src/app/altanalyze
 
 # step1: bam to bed
 
