@@ -24,6 +24,9 @@ the full path to the folder is the only command you need to run in this step (Se
     # run the container, the below command assume a folder named bam is in your current folder on the host machine
     docker run -v $PWD:/usr/src/app/run -t frankligy123/altanalyze:0.5.0.1 bam
 
+    # if using singularity
+    singularity run -B $PWD:/usr/src/app/run --writable altanalyze/ bam
+
 The output of this step contains different useful readouts, including splicing junction quantification, splicing event quantification and gene expression, but the most important output that will be used
 in the following step is the junction count matrix. The junction count matrix will be the ``altanalyze_output/ExpressionInput/counts.original.pruned.txt``. Let us take a look at a subsampled junction count matrix, each row represent a splicing junction
 annotated by the AltAnalyze gene model, and each column represents the sample name. The numerical value represents the number of reads that support the 
