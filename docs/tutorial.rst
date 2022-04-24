@@ -27,10 +27,24 @@ the full path to the folder is the only command you need to run in this step (Se
     # if using singularity
     singularity run -B $PWD:/usr/src/app/run --writable altanalyze/ bam
 
+.. warning::
+
+    1. What if you only have one bam file? Our original Altanalyze codebase was designed for cohort-level splicing analysis (so at least 2 samples). 
+    As a workaround, a quick fix is to copy your bam file to another one (sample.bam, sample_copy.bam), put them all in a folder, then run the pipeline.
+
+    2. make sure there are no existing folders named ``/bed`` and ``/altanalyze_output`` in the same level of your ``/bam`` folder.
+
+
 The output of this step contains different useful readouts, including splicing junction quantification, splicing event quantification and gene expression, but the most important output that will be used
 in the following step is the junction count matrix. The junction count matrix will be the ``altanalyze_output/ExpressionInput/counts.original.pruned.txt``. Let us take a look at a subsampled junction count matrix, each row represent a splicing junction
 annotated by the AltAnalyze gene model, and each column represents the sample name. The numerical value represents the number of reads that support the 
 occurence of a certain junction. 
+
+.. note::
+
+    In ``altanalyze/ExpressionInput`` folder, you will find ``counts.original.txt`` and ``counts.original.pruned.txt``, in cohort level analysis (like dozens or hundreds)
+    of samples, we suggest using "pruned" one as additional filetering steps have been implemented to only keep splicing events that meet certain minimum read count (20)
+    and minimum frequency across cohort (>75%). In case where you only have < 10 samples, you may want to use "non-pruned" one to increase the sensitivity.
 
 .. csv-table:: junction count matrix
     :file: ./_static/sample.csv
