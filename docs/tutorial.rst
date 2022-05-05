@@ -73,7 +73,7 @@ looks like below example::
 
     Optitype is again tool that is super easy to install as they provide the docker version, the input you need is the fastq file 
     for your patient RNA-Seq sample, just follow their `GitHub instructions <https://github.com/FRED-2/OptiType>`_. You can use your 
-    own favorite HLA typing tool as well. All we need is the HLA typing information.
+    own favorite HLA typing tool as well. All we need is the HLA typing information. I provide the Optitype script I used here: :ref:`reference_to_hla_typing`.
 
 
 Loading and instantiating
