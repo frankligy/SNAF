@@ -64,16 +64,16 @@ Or::
 --------------------------------
 
 Here we provide one solution using Optitype, which has been on top-performing HLA genotyping tool for a long time. The author provide a docker container, I usually 
-run like that:
+run like that::
 
-```
-# build image using singularity
-singularity build my_software.sif docker://fred2/optitype
 
-# run it, assuming the fastq file is in the current directory
-sample='TCGA-XX-XXXX-1'
-singularity run -B $(pwd):/mnt my_software.sif -i ${sample}.1.fastq ${sample}.2.fastq --rna -v -o /mnt
-```
+    # build image using singularity
+    singularity build my_software.sif docker://fred2/optitype
+
+    # run it, assuming the fastq file is in the current directory
+    sample='TCGA-XX-XXXX-1'
+    singularity run -B $(pwd):/mnt my_software.sif -i ${sample}.1.fastq ${sample}.2.fastq --rna -v -o /mnt
+
 
 After that, the result as a tsv file will be generated (30min probably), you can write your own parsing script for post-processing. In addition, this process can be parallelized,
 I often write it into a shell function, and use linux parallel tool to run like 20 jobs at the same time to speed thing up.
