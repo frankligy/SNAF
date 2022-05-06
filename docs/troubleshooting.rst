@@ -74,6 +74,13 @@ run like that::
     sample='TCGA-XX-XXXX-1'
     singularity run -B $(pwd):/mnt my_software.sif -i ${sample}.1.fastq ${sample}.2.fastq --rna -v -o /mnt
 
+But what if you only have bam files, no worreis, just convert them to fastq first::
+
+    # this step is required, have to sort by chromsome name
+    samtools sort -n $BAM $SAMPLE.qsort
+    # then just convert, more please look at bedtools bamtofastq docs, super easy
+    bedtools bamtofastq -i $SAMPLE.qsort.bam -fq $SAMPLE.1.fastq -fq2 $SAMPLE.2.fastq
+
 
 After that, the result as a tsv file will be generated (30min probably), you can write your own parsing script for post-processing. In addition, this process can be parallelized,
 I often write it into a shell function, and use linux parallel tool to run like 20 jobs at the same time to speed thing up.
