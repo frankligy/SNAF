@@ -76,53 +76,34 @@ def _run_dash_prioritizer_return_gene(candidates):
             collect.append(line.rstrip('\n')[12:])
     return collect
 
-
-def run_dash_B_antigen(pkl,candidates,python_executable,host=None,port='8050'):
-    '''
-    run the dash B antigen viewer
-
-    :param pkl: string, the path to the surface B pipeline pickle file
-    :param candidates: string ,the path to the candidates.txt file
-    :param python_executable: string ,the path to the python executable you are using
-    :param host: None or string, string or None, if None, program will run hostname to automatically detect
-    :param port: string, default is 8050
-
-    Example::
-
-        surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',
-                           python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
-
-
-
-    '''
+def _run_dash_long_read_mode(pkl,candidates,python_executable,host=None,port='8050'):
     import dash
     from dash import dcc,html,dash_table
     from dash.dependencies import Input,Output,State
     import dash_dangerously_set_inner_html
-    import plotly.graph_objects as go
+    import plotly.graph_objects as go 
     with open(pkl,'rb') as f1:
         results = pickle.load(f1)   # a list of sa object
-    sa, df_certain = None, None       # a binding for further nonlocal declaration 
+    sa, df_certain, isoforms = None, None, None     # a binding for further nonlocal declaration
     with open(candidates,'r') as f2:
         candidates = f2.readlines()   # a list of each lines, containing the newline symbol
     collect_uid = _run_dash_prioritizer_return_events(candidates)  # a list of all uid
     collect_gene = _run_dash_prioritizer_return_gene(candidates)   # a list of all gene symbol
-    app = dash.Dash(__name__)
+    app = dash.Dash(__name__)   
     app.layout = html.Div([
         html.Div([html.H2('SNAF B-antigen Viewer'),html.Br(),html.Label('Splicing Event UID: ',style={'font-weight':'bold'}),dcc.Input(id='event_selection',value=collect_uid[0],type='text',style={'width':'40%'})],style={'text-align':'center'}),
         html.Div([html.Br(),html.H2(id='exon_h2'),html.Br(),html.H2('Expression (Normal --> Tumor)'),html.Br(),dcc.Graph(id='expression')],style={'text-align':'center'}),
         html.Div([html.H2('All Exons in AltAnalyze Gene Model'),dash_table.DataTable(id='exon',columns=[{'name':column,'id':column} for column in ['subexon','chromosome','strand','start','end']],page_size=10)]),
-        html.Div([html.H2('All related existing transcripts'),dash_table.DataTable(id='transcript',columns=[{'name':column,'id':column} for column in ['index','EnsGID','EnsTID','EnsPID','Exons']])]),
         html.Br(),
         html.Hr(),
-        html.Div([html.H2('Transcript index'),dcc.Dropdown(id='valid_indices')],style={'text-align':'center'}),
-        html.Div([html.H2('cDNA or peptide'),dcc.RadioItems(id='display',options=[
-            {'label':item,'value':item} for item in ['full_length','orft','orfp','junction','score']],value='peptide')],style={'text-align':'center'}),
-        html.Br(),
+        # start
+        html.Div([html.H2('Novel transcript to display'),dcc.Dropdown(id='novel_transcript'),style={'text-align':'center'}]),
+        html.Div([html.H2('Existing isoform to display'),dcc.Dropdown(id='existing_isoform'),style={'text-align':'center'}]),
         html.Div([html.Button(id='submit',n_clicks=0,children='Submit',style={'width':'10%'})],style={'text-align':'center'}),
-        html.Div([html.H2('Sequence'),html.Br(),html.P(id='sequence')]),
-        html.Div([html.H2('Ensembl Reference'),html.Br(),html.P(id='ensembl')]),
+        html.Div([html.H2('Novel sequence'),html.Br(),html.P(id='sequence')]),
+        html.Div([html.H2('Exist sequence'),html.Br(),html.P(id='ensembl')]),
         html.Div([html.H2('Emboss Needle Alignment (peptide)'),html.Br(),html.P(id='alignment',style={'white-space':'pre','font-family':'monospace'})]),
+        # end
         html.Br(),
         html.Hr(),
         html.Div([html.H2('Downstream link'),
@@ -140,20 +121,19 @@ def run_dash_B_antigen(pkl,candidates,python_executable,host=None,port='8050'):
                   html.Br(),
                   html.A(id='ModFold_link',href='https://www.reading.ac.uk/bioinf/ModFOLD/',children='ModFold: 3D model assesser')])
 
-    ])
-
+    ]) 
 
     # function we need to define for running the app
-    @app.callback(Output('expression','figure'),Output('exon_h2','children'),Output('exon','data'),Output('transcript','data'),Output('valid_indices','options'),Input('event_selection','value'))
+    @app.callback(Output('expression','figure'),Output('exon_h2','children'),Output('exon','data'),Output('novel_transcript','options'),Output('existing_isoform','options'),Input('event_selection','value'))
     def select_event_show_table(value):
         nonlocal sa
         nonlocal df_certain
+        nonlocal isoforms
         sa = _run_dash_prioritizer_return_sa(results,value)  # the sa object that will be used for displaying sequence
         ensg = value.split(':')[0]        
         values = dict_exonCoords[ensg]    # {E1.1:[attrs]}
         gene_symbol = collect_gene[collect_uid.index(value)]
         coord = uid_to_coord(value)
-        valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)   # list of valid indices
         # data_exon
         data_exon = []
         for k,v in values.items():
@@ -163,13 +143,11 @@ def run_dash_B_antigen(pkl,candidates,python_executable,host=None,port='8050'):
             data_exon.sort(reverse=False,key=lambda x:x['start'])
         elif data_exon[0]['strand'] == '-':
             data_exon.sort(reverse=True,key=lambda x:x['end'])
-        # data transcript
-        df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensg,:]
-        df_certain = df_certain.iloc[valid_indices,:]
-        df_certain.insert(loc=0,column='index',value=valid_indices)
-        data_transcript = df_certain.to_dict(orient='records')
-        # drop down menu
-        dropdown_options = [{'label':item,'value':item} for item in valid_indices]
+        # novel transcript section
+        dropdown_options = [{'label':item,'value':item} for item in sa.full_length_attrs]
+        # existing isoform section
+        isoforms = dict_uni_fa[ensgid]  # {acc1:seq,acc1-2:seq}
+        dropdown_options_ei = [{'label':item,'value':item} for item in isoforms.keys()]
         # exon_h2_value
         exon_h2_value = '{} ({}) --- Coord: {}'.format(ensg,gene_symbol,coord)
         # expression plot
@@ -191,41 +169,173 @@ def run_dash_B_antigen(pkl,candidates,python_executable,host=None,port='8050'):
         fig = go.Figure(data=[node_trace],layout=go.Layout(showlegend=False))
         fig.update_xaxes(title_text='Samples(Normal -> Tumor)')
         fig.update_yaxes(title_text='Raw Read Count')
-        return fig,exon_h2_value,data_exon,data_transcript,dropdown_options
+        return fig,exon_h2_value,data_exon,dropdown_options,dropdown_options_ei
 
-    @app.callback(Output('sequence','children'),Output('ensembl','children'),Output('alignment','children'),Input('submit','n_clicks'),State('valid_indices','value'),State('display','value'),)
-    def select_sequence_to_display(n_clicks,value_index,value_display):
-        if value_display == 'full_length':
-            sequence = sa.full_length[value_index]
-            enst = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
-            ensembl_sequence = run_ensembl(ens=enst)
-            emboss_alignment = 'only support peptide now'
-        elif value_display == 'orft':
-            sequence = sa.orft[value_index]
-            enst = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
-            ensembl_sequence = run_ensembl(ens=enst)
-            emboss_alignment = 'only support peptide now'
-        elif value_display == 'orfp':
-            sequence =  sa.orfp[value_index]
-            ensp = df_certain.loc[df_certain['index']==value_index,:]['EnsPID'].values[0]
-            ensembl_sequence = run_ensembl(ens=ensp)
-            emboss_alignment = run_emboss(asequence=ensembl_sequence,bsequence=sequence,python_executable=python_executable)
-            emboss_alignment = emboss_alignment.replace('\n','<br/>')
-        elif value_display == 'junction':
-            sequence = sa.junction
-            enst = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
-            ensembl_sequence = run_ensembl(ens=enst)
-            emboss_alignment = 'only support peptide now'
-        elif value_display == 'score':
-            sequence = 'Mean expression across GTEx: {} Expression frequency in cancer cohort: {}'.format(sa.score,sa.freq)
-            ensp = df_certain.loc[df_certain['index']==value_index,:]['EnsPID'].values[0]
-            ensembl_sequence = run_ensembl(ens=ensp)
-            emboss_alignment = 'only support peptide now'
-        return sequence,ensembl_sequence,dash_dangerously_set_inner_html.DangerouslySetInnerHTML(emboss_alignment)
-
+    @app.callback(Output('sequence','children'),Output('ensembl','children'),Output('alignment','children'),Input('submit','n_clicks'),State('novel_transcript','value'),State('existing_isoform','value'),)
+    def select_sequence_to_display(n_clicks,value_novel,value_existing):
+        novel_pep_seq = sa.orfp[sa.full_length_attrs.index(value_novel)]
+        exist_pep_seq = isoforms[value_existing]
+        emboss_alignment = run_emboss(asequence=novel_pep_seq,bsequence=exist_pep_seq,python_executable=python_executable)
+        emboss_alignment = emboss_alignment.replace('\n','<br/>')
+        return novel_pep_seq,exist_pep_seq,dash_dangerously_set_inner_html.DangerouslySetInnerHTML(emboss_alignment)
+    
     if host is None:
         host = subprocess.run(['hostname'],stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[0]
     app.run_server(host=host,port=port)
+
+
+def run_dash_B_antigen(pkl,prediction_mode,candidates,python_executable,host=None,port='8050'):
+    '''
+    run the dash B antigen viewer
+
+    :param pkl: string, the path to the surface B pipeline pickle file
+    :param candidates: string ,the path to the candidates.txt file
+    :param python_executable: string ,the path to the python executable you are using
+    :param host: None or string, string or None, if None, program will run hostname to automatically detect
+    :param port: string, default is 8050
+
+    Example::
+
+        surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',
+                           python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+
+
+
+    '''
+    if prediction_mode == 'long_read':
+        _run_dash_long_read_mode(pkl,candidates,python_executable,host=host,port=port)
+    elif predicion_mode == 'short_read':
+        import dash
+        from dash import dcc,html,dash_table
+        from dash.dependencies import Input,Output,State
+        import dash_dangerously_set_inner_html
+        import plotly.graph_objects as go
+        with open(pkl,'rb') as f1:
+            results = pickle.load(f1)   # a list of sa object
+        sa, df_certain = None, None       # a binding for further nonlocal declaration 
+        with open(candidates,'r') as f2:
+            candidates = f2.readlines()   # a list of each lines, containing the newline symbol
+        collect_uid = _run_dash_prioritizer_return_events(candidates)  # a list of all uid
+        collect_gene = _run_dash_prioritizer_return_gene(candidates)   # a list of all gene symbol
+        app = dash.Dash(__name__)
+        app.layout = html.Div([
+            html.Div([html.H2('SNAF B-antigen Viewer'),html.Br(),html.Label('Splicing Event UID: ',style={'font-weight':'bold'}),dcc.Input(id='event_selection',value=collect_uid[0],type='text',style={'width':'40%'})],style={'text-align':'center'}),
+            html.Div([html.Br(),html.H2(id='exon_h2'),html.Br(),html.H2('Expression (Normal --> Tumor)'),html.Br(),dcc.Graph(id='expression')],style={'text-align':'center'}),
+            html.Div([html.H2('All Exons in AltAnalyze Gene Model'),dash_table.DataTable(id='exon',columns=[{'name':column,'id':column} for column in ['subexon','chromosome','strand','start','end']],page_size=10)]),
+            html.Div([html.H2('All related existing transcripts'),dash_table.DataTable(id='transcript',columns=[{'name':column,'id':column} for column in ['index','EnsGID','EnsTID','EnsPID','Exons']])]),
+            html.Br(),
+            html.Hr(),
+            html.Div([html.H2('Transcript index'),dcc.Dropdown(id='valid_indices')],style={'text-align':'center'}),
+            html.Div([html.H2('cDNA or peptide'),dcc.RadioItems(id='display',options=[
+                {'label':item,'value':item} for item in ['full_length','orft','orfp','junction','score']],value='peptide')],style={'text-align':'center'}),
+            html.Br(),
+            html.Div([html.Button(id='submit',n_clicks=0,children='Submit',style={'width':'10%'})],style={'text-align':'center'}),
+            html.Div([html.H2('Sequence'),html.Br(),html.P(id='sequence')]),
+            html.Div([html.H2('Ensembl Reference'),html.Br(),html.P(id='ensembl')]),
+            html.Div([html.H2('Emboss Needle Alignment (peptide)'),html.Br(),html.P(id='alignment',style={'white-space':'pre','font-family':'monospace'})]),
+            html.Br(),
+            html.Hr(),
+            html.Div([html.H2('Downstream link'),
+                    html.A(id='ensembl_link',href='http://useast.ensembl.org/Homo_sapiens/Info/Index',children='Ensembl Human'),
+                    html.Br(),
+                    html.A(id='Emboss_link',href='https://www.ebi.ac.uk/Tools/psa/emboss_needle/',children='Emboss Peptide Global Alignment'),
+                    html.Br(),
+                    html.A(id='TMHMM_link',href='https://services.healthtech.dtu.dk/service.php?TMHMM-2.0',children='TMHMM: predicting transmembrane domain'),
+                    html.Br(),
+                    html.A(id='SABLE_link',href='https://sable.cchmc.org/',children='SABLE: predicting solvebility and secondary structure'),
+                    html.Br(),
+                    html.A(id='alphafold2_link',href='https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb',children='Colab version of alphafold2'),
+                    html.Br(),
+                    html.A(id='uniprot_link',href='https://www.uniprot.org/',children='Uniprot for protein'),
+                    html.Br(),
+                    html.A(id='ModFold_link',href='https://www.reading.ac.uk/bioinf/ModFOLD/',children='ModFold: 3D model assesser')])
+
+        ])
+
+
+        # function we need to define for running the app
+        @app.callback(Output('expression','figure'),Output('exon_h2','children'),Output('exon','data'),Output('transcript','data'),Output('valid_indices','options'),Input('event_selection','value'))
+        def select_event_show_table(value):
+            nonlocal sa
+            nonlocal df_certain
+            sa = _run_dash_prioritizer_return_sa(results,value)  # the sa object that will be used for displaying sequence
+            ensg = value.split(':')[0]        
+            values = dict_exonCoords[ensg]    # {E1.1:[attrs]}
+            gene_symbol = collect_gene[collect_uid.index(value)]
+            coord = uid_to_coord(value)
+            valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)   # list of valid indices
+            # data_exon
+            data_exon = []
+            for k,v in values.items():
+                data_exon.append({'subexon':k,'chromosome':v[0],'strand':v[1],'start':v[2],'end':v[3]})
+            # sort based on coordinate
+            if data_exon[0]['strand'] == '+':
+                data_exon.sort(reverse=False,key=lambda x:x['start'])
+            elif data_exon[0]['strand'] == '-':
+                data_exon.sort(reverse=True,key=lambda x:x['end'])
+            # data transcript
+            df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensg,:]
+            df_certain = df_certain.iloc[valid_indices,:]
+            df_certain.insert(loc=0,column='index',value=valid_indices)
+            data_transcript = df_certain.to_dict(orient='records')
+            # drop down menu
+            dropdown_options = [{'label':item,'value':item} for item in valid_indices]
+            # exon_h2_value
+            exon_h2_value = '{} ({}) --- Coord: {}'.format(ensg,gene_symbol,coord)
+            # expression plot
+            expr_tumor_dict = sa.ed   # {sample:value}
+            expr_tumor_dict = {sample + ',' + 'tumor': value for sample,value in expr_tumor_dict.items()}  # {sample,tumor:value}
+            expr_tumor_dict = {k:v for k,v in sorted(expr_tumor_dict.items(),key=lambda x:x[1])}
+            expr_gtex_df = sa.df  # index is sample name, two columns: value and tissue
+            expr_gtex_dict = {row.Index + ',' + row.tissue: row.value for row in expr_gtex_df.itertuples()}   # {sample,tissue:value}
+            expr_gtex_dict = {k:v for k,v in sorted(expr_gtex_dict.items(),key=lambda x:x[1])}
+            node_x = []
+            node_y = []
+            node_text = []
+            expr_gtex_dict.update(expr_tumor_dict)
+            for i,(k,v) in enumerate(expr_gtex_dict.items()):
+                node_x.append(i)
+                node_y.append(v)
+                node_text.append(k)
+            node_trace = go.Scatter(x=node_x,y=node_y,mode='markers',marker={'color':'red','size':2},text=node_text,hoverinfo='text')
+            fig = go.Figure(data=[node_trace],layout=go.Layout(showlegend=False))
+            fig.update_xaxes(title_text='Samples(Normal -> Tumor)')
+            fig.update_yaxes(title_text='Raw Read Count')
+            return fig,exon_h2_value,data_exon,data_transcript,dropdown_options
+
+        @app.callback(Output('sequence','children'),Output('ensembl','children'),Output('alignment','children'),Input('submit','n_clicks'),State('valid_indices','value'),State('display','value'),)
+        def select_sequence_to_display(n_clicks,value_index,value_display):
+            if value_display == 'full_length':
+                sequence = sa.full_length[value_index]
+                enst = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
+                ensembl_sequence = run_ensembl(ens=enst)
+                emboss_alignment = 'only support peptide now'
+            elif value_display == 'orft':
+                sequence = sa.orft[value_index]
+                enst = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
+                ensembl_sequence = run_ensembl(ens=enst)
+                emboss_alignment = 'only support peptide now'
+            elif value_display == 'orfp':
+                sequence =  sa.orfp[value_index]
+                ensp = df_certain.loc[df_certain['index']==value_index,:]['EnsPID'].values[0]
+                ensembl_sequence = run_ensembl(ens=ensp)
+                emboss_alignment = run_emboss(asequence=ensembl_sequence,bsequence=sequence,python_executable=python_executable)
+                emboss_alignment = emboss_alignment.replace('\n','<br/>')
+            elif value_display == 'junction':
+                sequence = sa.junction
+                enst = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
+                ensembl_sequence = run_ensembl(ens=enst)
+                emboss_alignment = 'only support peptide now'
+            elif value_display == 'score':
+                sequence = 'Mean expression across GTEx: {} Expression frequency in cancer cohort: {}'.format(sa.score,sa.freq)
+                ensp = df_certain.loc[df_certain['index']==value_index,:]['EnsPID'].values[0]
+                ensembl_sequence = run_ensembl(ens=ensp)
+                emboss_alignment = 'only support peptide now'
+            return sequence,ensembl_sequence,dash_dangerously_set_inner_html.DangerouslySetInnerHTML(emboss_alignment)
+
+        if host is None:
+            host = subprocess.run(['hostname'],stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[0]
+        app.run_server(host=host,port=port)
         
 
 
@@ -331,7 +441,7 @@ def split_array_to_chunks(array,cores=None):
         sub_arrays.append(item_in_group)
     return sub_arrays
 
-def run(uids,outdir,n_stride=2,tmhmm=False,software_path=None,serialize=True):
+def run(uids,outdir,prediction_mode='short_read',n_stride=2,gtf=None,tmhmm=False,software_path=None,serialize=True):
     '''
     main function for run B antigen pipeline
 
@@ -352,15 +462,26 @@ def run(uids,outdir,n_stride=2,tmhmm=False,software_path=None,serialize=True):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
     results = []
-    for uid,score,df,ed,freq in tqdm(uids,total=len(uids)):
-        sa = SurfaceAntigen(uid,score,df,ed,freq,False)
-        sa.detect_type()
-        sa.retrieve_junction_seq()
-        sa.recovery_full_length_protein()
-        sa.find_orf()
-        sa.orf_check(n_stride=n_stride)
-        sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
-        results.append(sa)
+    if prediction_mode == 'short_read':
+        for uid,score,df,ed,freq in tqdm(uids,total=len(uids)):
+            sa = SurfaceAntigen(uid,score,df,ed,freq,False)
+            sa.detect_type()
+            sa.retrieve_junction_seq()
+            sa.recovery_full_length_protein()
+            sa.find_orf()
+            sa.orf_check(n_stride=n_stride)
+            sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
+            results.append(sa)
+    elif prediction_mode == 'long_read':
+        for uid,score,df,ed,freq in tqdm(uids,total=len(uids)):
+            sa = SurfaceAntigen(uid,score,df,ed,freq,False)
+            sa.detect_type()
+            sa.retrieve_junction_seq()
+            sa.recovery_full_length_protein_long_read(gtf)  # change
+            sa.find_orf()
+            sa.pseudo_orf_check()  # change
+            sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
+            results.append(sa)
     if serialize:
         with open(os.path.join(outdir,'surface_antigen.p'),'wb') as f:
             pickle.dump(results,f)     
@@ -421,6 +542,24 @@ def process_est_or_long_read(gtf):
                     gtf_dict.setdefault(chrom,{'+':[],'-':[]})[strand].append(composition)
                 transcript += 1
                 composition = []                
+            elif typ == 'exon':
+                composition.append((start,end))
+            else:
+                continue
+    return gtf_dict
+
+
+def process_est_or_long_read_with_id(gtf):
+    gtf_dict = {}
+    with open(gtf,'r') as f:
+        transcript = -1
+        for line in f:
+            chrom, source, typ, start, end, score, strand, phase, attrs = line.rstrip('\n').split('\t')
+            if typ == 'transcript':
+                if transcript >= 0:
+                    gtf_dict.setdefault(chrom,{'+':[],'-':[]})[strand].append(composition)
+                transcript += 1
+                composition = [attrs]                
             elif typ == 'exon':
                 composition.append((start,end))
             else:
@@ -778,11 +917,68 @@ class SurfaceAntigen(object):
                 self.comments.extend(comments)
             elif self.event_type == 'alt5' or self.event_type == 'alt3' or self.event_type == 'alt3_alt5':
                 full_transcript_store,comments = recover_alt(ensgid,exons)
+                self.comments.extend(comments)
             else:   # novel_exon and utr_event and intron retention and trans-splicing
                 full_transcript_store = ['unrecoverable']
         else:
             full_transcript_store = ['unrecoverable']
         self.full_length = full_transcript_store
+
+    def recovery_full_length_protein_long_read(self,gtf):
+        if '$' not in self.junction and '*' not in self.junction and '#' not in self.junction:
+            gtf_dict = process_est_or_long_read_with_id(gtf)
+            coord = uid_to_coord(sa.uid)
+            start_coord, end_coord = coord.split(':')[1].split('(')[0].split('-')
+            start_coord, end_coord = int(start_coord), int(end_coord)
+            ensg = sa.uid.split(':')[0]
+            values = dict_exonCoords[ensg]
+            first_key = list(values.keys())[0]
+            attrs = values[first_key]
+            chrom = attrs[0]
+            strand = attrs[1]
+            transcripts = gtf_dict[chrom][strand]
+            candidate_transcripts = []
+            for transcript in transcripts:
+                # here, each transcript is [attrs,(start,end),(start,end)]
+                transcript_start = int(transcript[1][0])
+                transcript_end = int(transcript[-1][-1])
+                if transcript_start > start_coord:
+                    break
+                elif transcript_start < start_coord and transcript_end > end_coord:
+                    candidate_transcripts.append(transcript)
+                else:
+                    continue
+            full_transcript_store = []
+            full_transcript_attrs = []
+            for cand in candidate_transcripts:
+                # here, each cand is [attrs,(start,end),(start,end)]
+                attrs = cand[0]
+                sequence = ''
+                if strand == '+':
+                    for exon in cand[1:]:
+                        sequence += query_from_dict_fa(exon[0],exon[1],ensg,strand)
+                else:
+                    for exon in cand[::-1][:-1]:
+                        sequence += query_from_dict_fa(exon[0],exon[1],ensg,strand)
+                # junction site present
+                exon_sites = []
+                for exon in cand:
+                    exon_sites.extend([int(item) for item in exon])
+                try:
+                    si = exon_sites.index(start_coord)
+                    ei = exon_sites.index(end_coord)
+                except ValueError:
+                    continue
+                if ei == si + 1:
+                    full_transcript_store.append(sequence)
+                    full_transcript_attrs.append(attrs)
+        else:
+            full_transcript_store = ['unrecoverable']
+            comments = []
+        
+        self.full_length = full_transcript_store
+        self.full_length_attrs = full_length_attrs
+                    
 
     def find_orf(self):
         orft_list = []
@@ -804,6 +1000,11 @@ class SurfaceAntigen(object):
                 orfp_list.append(sequence)
         self.orft = orft_list
         self.orfp = orfp_list
+
+    def pseudo_orf_check(self):
+        total_length = len(self.full_length)
+        self.nmd = ['#'] * total_length
+        self.translatability = ['#'] * total_length
 
     def orf_check(self,n_stride):
         set_global_env(df_exonlist,dict_exonCoords,dict_fa,dict_biotype)
