@@ -97,8 +97,8 @@ def _run_dash_long_read_mode(pkl,candidates,python_executable,host=None,port='80
         html.Br(),
         html.Hr(),
         # start
-        html.Div([html.H2('Novel transcript to display'),dcc.Dropdown(id='novel_transcript'),style={'text-align':'center'}]),
-        html.Div([html.H2('Existing isoform to display'),dcc.Dropdown(id='existing_isoform'),style={'text-align':'center'}]),
+        html.Div([html.H2('Novel transcript to display'),dcc.Dropdown(id='novel_transcript')],style={'text-align':'center'}),
+        html.Div([html.H2('Existing isoform to display'),dcc.Dropdown(id='existing_isoform')],style={'text-align':'center'}),
         html.Div([html.Button(id='submit',n_clicks=0,children='Submit',style={'width':'10%'})],style={'text-align':'center'}),
         html.Div([html.H2('Novel sequence'),html.Br(),html.P(id='sequence')]),
         html.Div([html.H2('Exist sequence'),html.Br(),html.P(id='ensembl')]),
@@ -134,6 +134,7 @@ def _run_dash_long_read_mode(pkl,candidates,python_executable,host=None,port='80
         values = dict_exonCoords[ensg]    # {E1.1:[attrs]}
         gene_symbol = collect_gene[collect_uid.index(value)]
         coord = uid_to_coord(value)
+        valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)   # list of valid indices
         # data_exon
         data_exon = []
         for k,v in values.items():
@@ -144,9 +145,9 @@ def _run_dash_long_read_mode(pkl,candidates,python_executable,host=None,port='80
         elif data_exon[0]['strand'] == '-':
             data_exon.sort(reverse=True,key=lambda x:x['end'])
         # novel transcript section
-        dropdown_options = [{'label':item,'value':item} for item in sa.full_length_attrs]
+        dropdown_options = [{'label':item,'value':item} for i, item in enumerate(sa.full_length_attrs) if i in valid_indices]
         # existing isoform section
-        isoforms = dict_uni_fa[ensgid]  # {acc1:seq,acc1-2:seq}
+        isoforms = dict_uni_fa[ensg]  # {acc1:seq,acc1-2:seq}
         dropdown_options_ei = [{'label':item,'value':item} for item in isoforms.keys()]
         # exon_h2_value
         exon_h2_value = '{} ({}) --- Coord: {}'.format(ensg,gene_symbol,coord)
@@ -473,11 +474,12 @@ def run(uids,outdir,prediction_mode='short_read',n_stride=2,gtf=None,tmhmm=False
             sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
             results.append(sa)
     elif prediction_mode == 'long_read':
+        gtf_dict = process_est_or_long_read_with_id(gtf)
         for uid,score,df,ed,freq in tqdm(uids,total=len(uids)):
             sa = SurfaceAntigen(uid,score,df,ed,freq,False)
             sa.detect_type()
             sa.retrieve_junction_seq()
-            sa.recovery_full_length_protein_long_read(gtf)  # change
+            sa.recovery_full_length_protein_long_read(gtf_dict)  # change
             sa.find_orf()
             sa.pseudo_orf_check()  # change
             sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
@@ -551,17 +553,21 @@ def process_est_or_long_read(gtf):
 
 def process_est_or_long_read_with_id(gtf):
     gtf_dict = {}
-    with open(gtf,'r') as f:
-        transcript = -1
+    with open(gtf,'r') as f: 
+        transcript = -1  # interpret as the index of the last-processed transcript
         for line in f:
+            if transcript > -1:
+                lchrom, lsource, ltyp, lstart, lend, lscore, lstrand, lphase, lattrs = chrom, source, typ, start, end, score, strand, phase, attrs
             chrom, source, typ, start, end, score, strand, phase, attrs = line.rstrip('\n').split('\t')
             if typ == 'transcript':
-                if transcript >= 0:
-                    gtf_dict.setdefault(chrom,{'+':[],'-':[]})[strand].append(composition)
-                transcript += 1
-                composition = [attrs]                
+                if transcript == -1:
+                    composition = [attrs]
+                if len(composition) > 1:
+                    gtf_dict.setdefault(lchrom,{'+':[],'-':[]})[lstrand].append(composition)    
+                    composition = [attrs] 
+                transcript += 1      
             elif typ == 'exon':
-                composition.append((start,end))
+                composition.append((int(start),int(end)))
             else:
                 continue
     return gtf_dict
@@ -667,27 +673,27 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None):
                 send = False
                 for i,(op,n,t,a) in enumerate(zip(sa.orfp,sa.nmd,sa.translatability,sa.alignment)):
                     if strigency == 5:
-                        if n == '#' and t == '#' and a:
+                        if n == '#' and t == '#' and a==True:
                             value,cand = is_support_by_est_or_long_read(sa,op,strict=True)
                             if value:
                                 send = True
                                 valid_indices.append(i)
                     elif strigency == 4:
-                        if n == '#' and t == '#' and a:
+                        if n == '#' and t == '#' and a==True:
                             value,cand = is_support_by_est_or_long_read(sa,op,strict=False)
                             if value:
                                 send = True
                                 valid_indices.append(i)
                     elif strigency == 3:
-                        if n == '#' and t == '#' and a:
+                        if n == '#' and t == '#' and a==True:
                             send = True
                             valid_indices.append(i)
                     elif strigency == 2:
-                        if t == '#' and a:
+                        if t == '#' and a==True:
                             send = True
                             valid_indices.append(i)
                     elif strigency == 1:
-                        if a:
+                        if a==True:
                             send = not send
                             valid_indices.append(i)
                 if send:
@@ -924,13 +930,12 @@ class SurfaceAntigen(object):
             full_transcript_store = ['unrecoverable']
         self.full_length = full_transcript_store
 
-    def recovery_full_length_protein_long_read(self,gtf):
+    def recovery_full_length_protein_long_read(self,gtf_dict):
         if '$' not in self.junction and '*' not in self.junction and '#' not in self.junction:
-            gtf_dict = process_est_or_long_read_with_id(gtf)
-            coord = uid_to_coord(sa.uid)
+            coord = uid_to_coord(self.uid)
             start_coord, end_coord = coord.split(':')[1].split('(')[0].split('-')
             start_coord, end_coord = int(start_coord), int(end_coord)
-            ensg = sa.uid.split(':')[0]
+            ensg = self.uid.split(':')[0]
             values = dict_exonCoords[ensg]
             first_key = list(values.keys())[0]
             attrs = values[first_key]
@@ -962,7 +967,7 @@ class SurfaceAntigen(object):
                         sequence += query_from_dict_fa(exon[0],exon[1],ensg,strand)
                 # junction site present
                 exon_sites = []
-                for exon in cand:
+                for exon in cand[1:]:
                     exon_sites.extend([int(item) for item in exon])
                 try:
                     si = exon_sites.index(start_coord)
@@ -974,10 +979,10 @@ class SurfaceAntigen(object):
                     full_transcript_attrs.append(attrs)
         else:
             full_transcript_store = ['unrecoverable']
-            comments = []
+            full_transcript_attrs = ['unrecoverable']
         
         self.full_length = full_transcript_store
-        self.full_length_attrs = full_length_attrs
+        self.full_length_attrs = full_transcript_attrs
                     
 
     def find_orf(self):
