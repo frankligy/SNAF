@@ -19,7 +19,7 @@ Simply put, user needs to supply ``a folder with bam files``, and the ``HLA type
 
 This is currently alpha version pre-release for AACR conference, I am trying to glean feedbacks from AACR attendees and improve my pipeline. If you have any confusion about my desription in the tutorial, run into troubleS while using it, Please feel free to reach out to me and I will be responsive. We are also open to any form of colloborations!
 
-AACR Poster can be found [here].(./images/AACR-Li_56x36_CCH_UC_White.pdf)
+AACR Poster can be found [here](./images/AACR-Li_56x36_CCH_UC_White.pdf).
 
 # Citation
 
