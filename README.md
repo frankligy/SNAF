@@ -19,9 +19,11 @@ Simply put, user needs to supply ``a folder with bam files``, and the ``HLA type
 
 This is currently alpha version pre-release for AACR conference, I am trying to glean feedbacks from AACR attendees and improve my pipeline. If you have any confusion about my desription in the tutorial, run into troubleS while using it, Please feel free to reach out to me and I will be responsive. We are also open to any form of colloborations!
 
+AACR Poster can be found [here].(./images/AACR-Li_56x36_CCH_UC_White.pdf)
+
 # Citation
 
-SNAF will be published in AACR annual meeting 2022 proceedings and Cancer Research Supplemental. Before the above two go into public, please cite this GitHub repository if you find this useful for your research.
+SNAF will be published in AACR annual meeting 2022 proceeding at Cancer Research Supplemental, and a preprint is in preparation. Before the above two go into public, please cite this GitHub repository if you find this useful for your research.
 
 # Contact
 
