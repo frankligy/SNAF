@@ -339,6 +339,55 @@ def run_dash_B_antigen(pkl,prediction_mode,candidates,python_executable,host=Non
         app.run_server(host=host,port=port)
         
 
+def uid_to_coord_regular_intron_retention(uid,only_intron=True):
+    # ENSG44444:E34.4-I34.1
+    tmp_list = uid.split(':')
+    ensg, exons = tmp_list
+    first, second = exons.split('-')
+    # work on start_coord
+    actual_exon = first
+    try:
+        attrs = dict_exonCoords[ensg][actual_exon]
+    except KeyError:
+        chrom = 'unkonwn'
+        strand = 'unknown'
+        start_coord = 'unknown'
+    else:
+        chrom = attrs[0]
+        strand = attrs[1]
+        if strand == '+':
+            start_coord = attrs[2]  # start, here is the differece, take the start of the first exon instead of the end
+        else:
+            start_coord = attrs[3]  # end, difference, see explanation above
+    # work on end_coord
+    actual_exon = second
+    try:
+        attrs = dict_exonCoords[ensg][actual_exon]
+    except KeyError:
+        chrom = 'unkonwn'
+        strand = 'unknown'
+        start_coord = 'unknown'        
+    else:
+        if strand == '+':
+            end_coord = attrs[3]  # end, here is the difference, see explanation above, take the end of the intron
+            backup_coord = attrs[2]
+        else:
+            end_coord = attrs[2]  # start, here is the difference, see explanation above
+            backup_coord = attrs[3]
+    # assemble
+    if strand == '+':
+        if only_intron:
+            assemble = '{}:{}-{}({})'.format(chrom,backup_coord,end_coord,strand)
+        else:
+            assemble = '{}:{}-{}({})'.format(chrom,start_coord,end_coord,strand)
+    else:
+        if only_intron:
+            assemble = '{}:{}-{}({})'.format(chrom,end_coord,backup_coord,strand)
+        else:
+            assemble = '{}:{}-{}({})'.format(chrom,end_coord,start_coord,strand)
+
+    return assemble
+
 
 def uid_to_coord(uid):
     tmp_list = uid.split(':')
@@ -535,17 +584,21 @@ def individual_check(uid,n_stride=2,tmhmm=False,software_path=None,exons=None,in
 
 def process_est_or_long_read(gtf):
     gtf_dict = {}
-    with open(gtf,'r') as f:
-        transcript = -1
+    with open(gtf,'r') as f: 
+        transcript = -1  # interpret as the index of the last-processed transcript
         for line in f:
+            if transcript > -1:
+                lchrom, lsource, ltyp, lstart, lend, lscore, lstrand, lphase, lattrs = chrom, source, typ, start, end, score, strand, phase, attrs
             chrom, source, typ, start, end, score, strand, phase, attrs = line.rstrip('\n').split('\t')
             if typ == 'transcript':
-                if transcript >= 0:
-                    gtf_dict.setdefault(chrom,{'+':[],'-':[]})[strand].append(composition)
-                transcript += 1
-                composition = []                
+                if transcript == -1:
+                    composition = []
+                if len(composition) > 1:
+                    gtf_dict.setdefault(lchrom,{'+':[],'-':[]})[lstrand].append(composition)    
+                    composition = [] 
+                transcript += 1      
             elif typ == 'exon':
-                composition.append((start,end))
+                composition.append((int(start),int(end)))
             else:
                 continue
     return gtf_dict
@@ -973,10 +1026,27 @@ class SurfaceAntigen(object):
                     si = exon_sites.index(start_coord)
                     ei = exon_sites.index(end_coord)
                 except ValueError:
-                    continue
+                    if self.event_type == 'intron_retention':   # give intron retention another chance, as in normal uid_to_coord, intron retention will only be chrx:a-a+1
+                        ir_coord = uid_to_coord_regular_intron_retention(self.uid,only_intron=True)
+                        ir_start_coord, ir_end_coord = ir_coord.split(':')[1].split('(')[0].split('-')
+                        ir_start_coord, ir_end_coord = int(ir_start_coord), int(ir_end_coord)
+                        # new way, whether a pacbio exon completely includes the intron
+                        t = len(exon_sites)
+                        for i in range(0,t,2):
+                            lr_exon_s = exon_sites[i]
+                            lr_exon_e = exon_sites[i+1]
+                            if lr_exon_s <= ir_start_coord and lr_exon_e >= ir_end_coord:
+                                full_transcript_store.append(sequence)
+                                full_transcript_attrs.append(attrs)
+                        continue
+                    else:
+                        continue
+
                 if ei == si + 1:
                     full_transcript_store.append(sequence)
                     full_transcript_attrs.append(attrs)
+
+
         else:
             full_transcript_store = ['unrecoverable']
             full_transcript_attrs = ['unrecoverable']

@@ -11,6 +11,7 @@ import anndata
 from scipy.optimize import minimize
 from scipy import stats
 from scipy.sparse import csr_matrix
+from tqdm import tqdm
 
 try:
     import pymc3 as pm   # conda install -c conda-forge pymc3 mkl-service
@@ -106,6 +107,44 @@ def mle_func(parameters,y):
     ll = np.sum(stats.halfnorm.logpdf(y,0,sigma))
     neg_ll = -1 * ll
     return neg_ll
+
+def split_df_to_chunks(df,cores=None):
+    df_index = np.arange(df.shape[0])
+    if cores is None:
+        cores = mp.cpu_count()
+    sub_indices = np.array_split(df_index,cores)
+    sub_dfs = [df.iloc[sub_index,:] for sub_index in sub_indices]
+    return sub_dfs
+
+
+def add_tumor_specificity_frequency_table(df,method='mean',remove_quote=True,cores=None):
+    from ast import literal_eval
+    import multiprocessing as mp
+    if remove_quote:
+        df['samples'] = [literal_eval(item) for item in df['samples']]
+    if cores is None:
+        cores = mp.cpu_count()
+    pool = mp.Pool(processes=cores)
+    print('{} subprocesses have been spawned'.format(cores))
+    sub_dfs = split_df_to_chunks(df,cores)
+    r = [pool.apply_async(func=add_tumor_specificity_frequency_table_atomic_func,args=(sub_df,method,)) for sub_df in sub_dfs]
+    pool.close()
+    pool.join()
+    results = []
+    for collect in r:
+        result = collect.get()
+        results.append(result)
+    new_df = pd.concat(results,axis=0)
+    return new_df
+
+def add_tumor_specificity_frequency_table_atomic_func(sub_df,method):
+    uid_list = [item.split(',')[1] for item in sub_df.index]
+    score_list = [tumor_specificity(uid,method) for uid in tqdm(uid_list,total=len(uid_list))]
+    sub_df['tumor_specificity_{}'.format(method)] = score_list
+    return sub_df
+
+
+    
 
 def tumor_specificity(uid,method,return_df=False):
     try:
