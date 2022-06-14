@@ -175,7 +175,7 @@ def survival_analysis(burden,survival,n,stratification_plot,survival_plot,
     results = logrank_test(low_os[survival_duration],high_os[survival_duration],low_os[survival_event],high_os[survival_event])
     ax.text(x=1000,y=0.05,s='Log-rank test: p-value is {:.2f}'.format(results.p_value),weight='bold')
     plt.savefig(survival_plot,bbox_inches='tight');plt.close()
-    return burden,burden_encode,be_vc
+    return burden,burden_encode,be_vc,quantiles
 
 def stage0_compatible_results(jcmq,outdir='.',name_burden='burden_stage0.txt',name_frequency='frequency_stage0.txt'):
     # for burden
