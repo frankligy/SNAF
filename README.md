@@ -23,7 +23,9 @@ AACR Poster can be found [here](./images/AACR-Li_56x36_CCH_UC_White.pdf).
 
 # Citation
 
-SNAF will be published in AACR annual meeting 2022 proceeding at Cancer Research Supplemental, and a preprint is in preparation. Before the above two go into public, please cite this GitHub repository if you find this useful for your research.
+[Guangyuan Li, Nathan Salomonis. SNAF: Accurate and compatible computational framework for identifying splicing derived neoantigens [abstract]. In: Proceedings of the American Association for Cancer Research Annual Meeting 2022; 2022 Apr 8-13. Philadelphia (PA): AACR; Cancer Res 2022;82(12_Suppl):Abstract nr 1898.](https://aacrjournals.org/cancerres/article/82/12_Supplement/1898/701846/Abstract-1898-SNAF-Accurate-and-compatible)
+
+A preprint will be released soon.
 
 # Contact
 
