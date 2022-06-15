@@ -18,17 +18,17 @@ mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
 
-# # preprocess the dataframe
-# df = pd.read_csv('./counts.original.txt',sep='\t',index_col=0)
-# df.index = [item.split('=')[0] for item in df.index]
-# df = df.loc[np.logical_not(df.index.duplicated()).tolist(),:]
+# preprocess the dataframe
+df = pd.read_csv('./counts.original.txt',sep='\t',index_col=0)
+df.index = [item.split('=')[0] for item in df.index]
+df = df.loc[np.logical_not(df.index.duplicated()).tolist(),:]
 
-# # run SNAF
-# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-# db_dir = '/data/salomonis2/LabFiles/Frank-Li/refactor/data'
+# run SNAF
+netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+db_dir = '/data/salomonis2/LabFiles/Frank-Li/refactor/data'
 
-# snaf.initialize(db_dir=db_dir,gtex_mode='count',binding_method='netMHCpan',software_path=netMHCpan_path)
-# surface.initialize(db_dir=db_dir)
+snaf.initialize(db_dir=db_dir,gtex_mode='count',binding_method='netMHCpan',software_path=netMHCpan_path)
+surface.initialize(db_dir=db_dir)
 
 
 # schuster dataset
@@ -46,6 +46,19 @@ mpl.rcParams['font.family'] = 'Arial'
 #                                       fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
 #                                       write_unique2=True,prefix='{}_'.format(sample))
 
+
+# df = pd.read_csv('result/frequency_stage2_verbosity1_uid.txt',sep='\t',index_col=0)
+# df = snaf.add_gene_symbol_frequency_table(df,remove_quote=True)
+# df = snaf.add_coord_frequency_table(df,False)
+# df.to_csv('result/frequency_stage2_verbosity1_uid_gene_coord.txt',sep='\t')
+# df = pd.read_csv('result/frequency_stage2_verbosity1_uid_gene_coord.txt',sep='\t',index_col=0)
+# df = snaf.add_tumor_specificity_frequency_table(df,'mean',True)
+# df = snaf.add_tumor_specificity_frequency_table(df,'mle',False)
+# df.to_csv('result/frequency_stage2_verbosity1_uid_gene_coord_mean_mle.txt',sep='\t')
+df = pd.read_csv('result/frequency_stage2_verbosity1_uid_gene_coord_mean_mle.txt',sep='\t',index_col=0)
+df = snaf.add_tumor_specificity_frequency_table(df,'bayesian',True)
+df.to_csv('result/frequency_stage2_verbosity1_uid_gene_coord_mean_mle_bayesian.txt',sep='\t')
+sys.exit('stop')
 
 
 # # configure maxquant
@@ -235,14 +248,18 @@ rate = np.array(ms_supported) / np.array(total)
  0.06342733852873801
 '''
 
+# /Volumes/salomonis-archive/BAMs/PublicDatasets/E-MTAB-2836-Grch38_Deep-Healthy-PanTissue/ERR315460_1.bam
 
 
 # FOR figure2 specific examples
-# uid = 'ENSG00000189180:E2.1-I2.1'
-# print(snaf.uid_to_coord(uid))
-# snaf.gtex_visual_combine(uid=uid,norm=True,outdir='result',tumor=df,ylim=None)
-# print(snaf.tumor_specificity(uid=uid,method='mean'))
-# snaf.JunctionCountMatrixQuery.deserialize(name='result/after_prediction.p').visualize(uid,'SRR5947646.Aligned.sortedByCoord.out.bed','result')
+uid = 'ENSG00000170421:E27.1_52900032-E27.3_52899983'    # ENSG00000189180:E2.1-I2.1
+print(snaf.uid_to_coord(uid))
+snaf.gtex_visual_combine(uid=uid,norm=True,outdir='result',tumor=df,ylim=None)
+snaf.gtex_visual_combine(uid=uid,norm=False,outdir='result',tumor=df,ylim=None)
+print(snaf.tumor_specificity(uid=uid,method='mean'))
+snaf.JunctionCountMatrixQuery.deserialize(name='result/after_prediction.p').visualize(uid,'SRR5947645.Aligned.sortedByCoord.out.bed','result')
+
+
 
 
 
