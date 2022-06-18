@@ -16,12 +16,30 @@ mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
 '''
-First, we need to request the permission on dbGAP to download the 472 TCGA SKCM patients' BAM files. 
+First, we need to download the fastq files from original PNAS study, and also the MS files as decribed in manuscript method section,
+we run STAR 2.6.1 to get the bam files, the command we used for running STAR is as below:
+
+module load STAR/2.6.1# module load STAR/2.6.1
+declare -a index_array
+index_array+=(SRR5933736 SRR5933737)
+for srr in ${index_array[@]}
+do
+    STAR --genomeDir /data/salomonis2/Genomes/Star-Index-GRCH38/Grch38-STAR-index \
+        --readFilesIn $(pwd)/$srr.fastq \
+        --outFileNamePrefix $(pwd)/$srr. \
+        --runThreadN 4 \
+        --outSAMstrandField intronMotif \
+        --outSAMtype BAM SortedByCoordinate \
+        --sjdbGTFfile /data/salomonis2/Genomes/Star-Index-GRCH38/Homo_sapiens.GRCh38.85.gtf \
+        --limitBAMsortRAM 97417671648
+done
+
 Then we can run the first step of AltAnalyze, which has been detailed in the tutorial, after that, you will have a count matrix,
 we provide this count matrix in synapse so that we can start the following analysis
 The correponding input files and example output files are in https://www.synapse.org/#!Synapse:syn32057190
 '''
 
+df = pd.read_csv('count_matrix_ovarian.txt',sep='\t',index_col=0)
 
 # run SNAF-T to get T antigens, all the results will be in /result folder
 netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'  # REPLACE WITH YOUR NETMHCPAN PATH
