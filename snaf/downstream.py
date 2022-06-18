@@ -12,7 +12,7 @@ from lifelines.statistics import logrank_test
 import statsmodels.stats.multitest as ssm
 from scipy.stats import mannwhitneyu,pearsonr,spearmanr
 from tqdm import tqdm
-
+from copy import deepcopy
 
 '''
 this script contains survival analysis, mutation analysis
@@ -154,6 +154,8 @@ def survival_analysis(burden,survival,n,stratification_plot,survival_plot,
                 identity_col.append('low')
             else:
                 identity_col.append('outlier')
+    burden_output = burden.to_frame()
+    burden_output['identity'] = identity_col
     burden_encode = pd.Series(index=burden.index,data=identity_col)
     be_vc = burden_encode.value_counts()
     # plot stratification
@@ -175,7 +177,58 @@ def survival_analysis(burden,survival,n,stratification_plot,survival_plot,
     results = logrank_test(low_os[survival_duration],high_os[survival_duration],low_os[survival_event],high_os[survival_event])
     ax.text(x=1000,y=0.05,s='Log-rank test: p-value is {:.2f}'.format(results.p_value),weight='bold')
     plt.savefig(survival_plot,bbox_inches='tight');plt.close()
-    return burden,burden_encode,be_vc,quantiles
+    return burden_output,quantiles
+
+
+def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpan_el':'binding_affinicty','deepimmuno_immunogenicity':'immunogenicity'},
+                      criterion=[('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]):
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+    from ast import literal_eval
+    if remove_quote:
+        df['samples'] = [literal_eval(item) for item in df['samples']]
+    # build dict for retrieving specificity scores and occurence
+    df_score = df.filter(like='tumor_specificity',axis=1)
+    score_dict = {}   # {tumor_specificity_mle:{aa1_uid1:0.5,aa2_uid2:0.6},tumor_specifity_bayesian:{}...}
+    for col in df_score.columns.tolist() + ['n_sample']:
+        tmp = df[col].to_dict()
+        score_dict[col] = tmp
+    # start to process jcmq
+    col_index = jcmq.subset.columns.tolist().index(sample)
+    results = jcmq.results[0]
+    hlas = jcmq.results[1]
+    selected_hla = hlas[col_index]
+    with open(os.path.join(outdir,'T_antigen_candidates_{}.txt'.format(sample)),'w') as f:
+        f.write('sample\tpeptide\tuid\thla\t')
+        metrics_stream = '\t'.join(list(metrics.values())) + '\t'
+        f.write(metrics_stream)
+        score_stream = '\t'.join(list(score_dict.keys())) + '\n'
+        f.write(score_stream)
+        for item,samples in tqdm(zip(df.index,df['samples']),total=df.shape[0]):
+            if sample in samples:
+                stream = '{}\t'.format(sample)
+                aa,uid = item.split(',')
+                stream += '{}\t{}\t'.format(aa,uid)
+                row_index = jcmq.subset.index.tolist().index(uid)
+                nj = deepcopy(results[row_index])
+                nj.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=selected_hla)
+                ep = nj.enhanced_peptides.filter_based_on_criterion(criterion,True)  # only report valid hla
+                for hla in ep[len(aa)][aa].keys():
+                    if hla != 'origin':
+                        stream += '{}\t'.format(hla)
+                        for k,v in metrics.items():
+                            s = nj.enhanced_peptides[len(aa)][aa][hla][k][0]
+                            stream += '{}\t'.format(s)
+                        for k,v in score_dict.items():
+                            s = v[item]
+                            stream += '{}\t'.format(s)
+                        f.write(stream + '\n')
+                        stream = '\t'.join(stream.split('\t')[:3]) + '\t'
+
+
+
+    
+
 
 def stage0_compatible_results(jcmq,outdir='.',name_burden='burden_stage0.txt',name_frequency='frequency_stage0.txt'):
     # for burden

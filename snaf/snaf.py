@@ -256,7 +256,7 @@ class JunctionCountMatrixQuery():
         self.serialize(outdir=outdir,name=name)
 
     @staticmethod
-    def generate_results(path,outdir):
+    def generate_results(path,outdir,criterion=None):
         '''
         wrapper function to automatically generate all necessary output
 
@@ -272,9 +272,9 @@ class JunctionCountMatrixQuery():
         jcmq = JunctionCountMatrixQuery.deserialize(name=path)
         stage0_compatible_results(jcmq,outdir=outdir)
         for stage in [3,2,1]:
-            jcmq.show_neoantigen_burden(outdir=outdir,name='burden_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False)
-            jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False,plot=True,plot_name='frequency_stage{}.pdf'.format(stage))
-            jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}_verbosity1_uid.txt'.format(stage),stage=stage,verbosity=1,contain_uid=True,plot=False)
+            jcmq.show_neoantigen_burden(outdir=outdir,name='burden_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False,criterion=criterion)
+            jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False,plot=True,plot_name='frequency_stage{}.pdf'.format(stage),criterion=criterion)
+            jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}_verbosity1_uid.txt'.format(stage),stage=stage,verbosity=1,contain_uid=True,plot=False,criterion=criterion)
 
     def parallelize_run(self,kind,hlas=None):
         pool = mp.Pool(processes=self.cores)
@@ -337,7 +337,7 @@ class JunctionCountMatrixQuery():
             jcmq = pickle.load(f)
         return jcmq
 
-    def visualize(self,uid,sample,outdir,tumor=False):
+    def visualize(self,uid,sample,outdir,tumor=False,criterion=[('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]):
         '''
         Visualize certain Neojunction in certain sample
 
@@ -359,7 +359,7 @@ class JunctionCountMatrixQuery():
             hlas = self.results[1]
             nj = deepcopy(results[row_index])
             nj.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=hlas[col_index])
-            nj.visualize(outdir,'{}_{}.pdf'.format(uid.replace(':','_'),sample))
+            nj.visualize(outdir,'{}_{}.pdf'.format(uid.replace(':','_'),sample),criterion=criterion)
         if tumor:
             # in tumor sample
             fig,ax = plt.subplots()
@@ -373,10 +373,7 @@ class JunctionCountMatrixQuery():
             plt.savefig(os.path.join(outdir,'{}_tumor.pdf'.format(uid.replace(':','_'))))
             plt.close()
 
-
-
-
-    def show_neoantigen_burden(self,outdir,name,stage,verbosity,contain_uid):
+    def show_neoantigen_burden(self,outdir,name,stage,verbosity,contain_uid,criterion=None):
         if not os.path.exists(outdir):
             os.mkdir(outdir)
 
@@ -385,7 +382,7 @@ class JunctionCountMatrixQuery():
         hlas = self.results[1]
         pool = mp.Pool(processes=self.cores)
 
-        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_burden_single_run,args=(sub_array,sub_cond,hlas,stage,verbosity,contain_uid,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
+        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_burden_single_run,args=(sub_array,sub_cond,hlas,stage,verbosity,contain_uid,criterion,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
         pool.close()
         pool.join()
         results = []
@@ -418,7 +415,7 @@ class JunctionCountMatrixQuery():
         burden = burden.loc[i_list,c_list]
         burden.to_csv(os.path.join(outdir,name),sep='\t')    
 
-    def show_neoantigen_frequency(self,outdir,name,stage,verbosity,contain_uid,plot,plot_name=None,yscale='linear'):
+    def show_neoantigen_frequency(self,outdir,name,stage,verbosity,contain_uid,plot,plot_name=None,yscale='linear',criterion=None):
         if not os.path.exists(outdir):
             os.mkdir(outdir)
 
@@ -428,7 +425,7 @@ class JunctionCountMatrixQuery():
         column_names = self.subset.columns
         pool = mp.Pool(processes=self.cores)
 
-        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,sub_cond,hlas,column_names,stage,verbosity,contain_uid,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
+        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,sub_cond,hlas,column_names,stage,verbosity,contain_uid,criterion,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
         pool.close()
         pool.join()
         results = []
@@ -465,7 +462,7 @@ class JunctionCountMatrixQuery():
 
 
 
-    def show_neoantigen_as_fasta(self,outdir,name,stage,verbosity,contain_uid,sample=None):
+    def show_neoantigen_as_fasta(self,outdir,name,stage,verbosity,contain_uid,sample=None,criterion=None):
         if not os.path.exists(outdir):
             os.mkdir(outdir)
             
@@ -475,7 +472,7 @@ class JunctionCountMatrixQuery():
         column_names = self.subset.columns
         pool = mp.Pool(processes=self.cores)
 
-        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,sub_cond,hlas,column_names,stage,verbosity,contain_uid,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
+        r = [pool.apply_async(func=JunctionCountMatrixQuery.show_neoantigen_frequency_single_run,args=(sub_array,sub_cond,hlas,column_names,stage,verbosity,contain_uid,criterion,)) for sub_array,sub_cond in zip(sub_arrays,sub_conds)]
         pool.close()
         pool.join()
         results = []
@@ -511,7 +508,7 @@ class JunctionCountMatrixQuery():
 
     # let's define an atomic function inside here
     @staticmethod
-    def show_neoantigen_burden_single_run(sub_array,sub_cond,hlas,stage,verbosity,contain_uid):
+    def show_neoantigen_burden_single_run(sub_array,sub_cond,hlas,stage,verbosity,contain_uid,criterion=None):
         nj_burden_2d = []
         for nj,index in zip(sub_array,range(sub_cond.shape[0])):
             nj_burden = []
@@ -522,7 +519,7 @@ class JunctionCountMatrixQuery():
                 else:
                     nj_copy = deepcopy(nj)
                     nj_copy.enhanced_peptides = nj_copy.enhanced_peptides.filter_based_on_hla(selected_hla=hla)
-                    nj_copy.derive_candidates(stage=stage,verbosity=verbosity,contain_uid=contain_uid)
+                    nj_copy.derive_candidates(stage=stage,verbosity=verbosity,contain_uid=contain_uid,criterion=criterion)
                     nj_burden.append(len(nj_copy.candidates))
             nj_burden_2d.append(nj_burden)  
         df = pd.DataFrame(data=nj_burden_2d)
@@ -530,7 +527,7 @@ class JunctionCountMatrixQuery():
 
     # let's define the single function to run in each subprocess
     @staticmethod
-    def show_neoantigen_frequency_single_run(sub_array,sub_cond,hlas,column_names,stage,verbosity,contain_uid):
+    def show_neoantigen_frequency_single_run(sub_array,sub_cond,hlas,column_names,stage,verbosity,contain_uid,criterion=None):
         dic = {}
         for nj,index in zip(sub_array,range(sub_cond.shape[0])):
             cond_row = sub_cond.iloc[index].values
@@ -538,7 +535,7 @@ class JunctionCountMatrixQuery():
                 if nj is not None and cond:
                     nj_copy = deepcopy(nj)
                     nj_copy.enhanced_peptides = nj_copy.enhanced_peptides.filter_based_on_hla(selected_hla=hla)
-                    nj_copy.derive_candidates(stage=stage,verbosity=verbosity,contain_uid=contain_uid)
+                    nj_copy.derive_candidates(stage=stage,verbosity=verbosity,contain_uid=contain_uid,criterion=criterion)
                     for cand in nj_copy.candidates:
                         try:
                             dic[cand].append(column_name)
@@ -861,13 +858,15 @@ class NeoJunction():
             self.enhanced_peptides.register_attr(df,attr_name='deepimmuno_immunogenicity')
 
 
-    def derive_candidates(self,stage,verbosity,contain_uid=True):
+    def derive_candidates(self,stage,verbosity,contain_uid=True,criterion=None):
         if stage == 1: # all translated peptides
             self.candidates = self.enhanced_peptides.simplify_to_list(verbosity=verbosity)
         elif stage == 2: # all bound peptides
             self.candidates = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),]).simplify_to_list(verbosity=verbosity)
         elif stage == 3: # immunogenic peptides
             self.candidates = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]).simplify_to_list(verbosity=verbosity)
+        elif stage == 'custom':
+            self.candidates = self.enhanced_peptides.filter_based_on_criterion(criterion).simplify_to_list(verbosity=verbosity)
         if contain_uid:
             new = []
             for item in self.candidates:
@@ -880,8 +879,8 @@ class NeoJunction():
 
 
 
-    def visualize(self,outdir,name):
-        reduced = self.enhanced_peptides.filter_based_on_criterion([('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),],False)
+    def visualize(self,outdir,name,criterion=[('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]):
+        reduced = self.enhanced_peptides.filter_based_on_criterion(criterion,False)
         '''
         {9: [('LPSPPAQEL', 2, 0, 'HLA-B*08:01'), ('LPSPPAQEL', 2, 0, 'HLA-B*08:02'), 
              ('SLYLLLQHR', 1, 2, 'HLA-A*68:01')], 
