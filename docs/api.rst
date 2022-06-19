@@ -27,6 +27,10 @@ run_dash_T_antigen
 ~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.dash_app.app.run_dash_T_antigen
 
+report_candidates
+~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.report_candidates
+
 Surface Antigen (B antigen)
 -------------------------------
 
@@ -68,6 +72,12 @@ Add gene symbol
 Add chromsome coordinate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.snaf.add_coord_frequency_table
+
+.. _reference_to_add_specificity:
+
+Add tumor specificity scores
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.gtex.add_tumor_specificity_frequency_table
 
 
 

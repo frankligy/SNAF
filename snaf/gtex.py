@@ -118,6 +118,21 @@ def split_df_to_chunks(df,cores=None):
 
 
 def add_tumor_specificity_frequency_table(df,method='mean',remove_quote=True,cores=None):
+    '''
+    add tumor specificty to each neoantigen-uid in the frequency table produced by SNAF T pipeline
+
+    :param df: DataFrame, the frequency table produced by SNAF T pipeline
+    :param method: string, either 'mean', or 'mle', or 'bayesian'
+    :param remove quote: boolean, whether to remove the quotation or not, as one column in frequency table df is list, when loaded in memory using pandas, it will be added a quote, we can remove it
+    :param cores: int, how many cpu cores to use for this computation, default None and use all the cpu the program detected
+
+    :return new_df: a dataframe with one added column containing tumor specificity score
+
+    Example::
+
+        snaf.add_tumor_specificity_frequency_table(df,'mle',remove_quote=True)
+
+    '''
     from ast import literal_eval
     import multiprocessing as mp
     if remove_quote:

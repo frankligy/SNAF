@@ -167,6 +167,8 @@ Neoantigen frequency plot shows the distinctive pattern between shared neoantige
     :align: center
     :target: target
 
+Users can also report T cell Neoantigen associated with a speficic sample (precision medicine) by running :ref:`reference_to_add_specificity`.
+
 Visualization
 ~~~~~~~~~~~~~~~~~
 
