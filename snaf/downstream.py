@@ -180,7 +180,7 @@ def survival_analysis(burden,survival,n,stratification_plot,survival_plot,
     return burden_output,quantiles
 
 
-def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpan_el':'binding_affinicty','deepimmuno_immunogenicity':'immunogenicity'},
+def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpan_el':'binding_affinity','deepimmuno_immunogenicity':'immunogenicity'},
                       criterion=[('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]):
     '''
     this function will report a txt file for all the T antigen candidate for a specific tumor sample.
@@ -253,7 +253,7 @@ def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpa
                         for k,v in score_dict.items():
                             s = v[item]
                             stream += '{}\t'.format(s)
-                        f.write(stream + '\n')
+                        f.write(stream.rstrip('\t') + '\n')
                         stream = '\t'.join(stream.split('\t')[:3]) + '\t'
 
 
