@@ -635,10 +635,10 @@ def is_support_by_est_or_long_read(sa,op,strict=True):
     attrs = values[first_key]
     chrom = attrs[0]
     strand = attrs[1]
-    transcripts = gtf_dict[chrom][strand]
+    transcripts = gtf_dict[chrom][strand]   # the first item is attrs
     candidate_transcripts = []
     for transcript in transcripts:
-        transcript_start = int(transcript[0][0])
+        transcript_start = int(transcript[1][0])
         transcript_end = int(transcript[-1][-1])
         if transcript_start > start_coord:
             break
@@ -649,19 +649,20 @@ def is_support_by_est_or_long_read(sa,op,strict=True):
     return_value = False
     return_cand = None
     for cand in candidate_transcripts:
+        attrs = cand[0]
         sequence = ''
         if strand == '+':
-            for exon in cand:
+            for exon in cand[1:]:
                 sequence += query_from_dict_fa(exon[0],exon[1],ensg,strand)
         else:
-            for exon in cand[::-1]:
+            for exon in cand[::-1][:-1]:
                 sequence += query_from_dict_fa(exon[0],exon[1],ensg,strand)
         candidate_orfs = transcript2orf(sequence)
         max_orf = prioritize_orf(candidate_orfs)
         max_pep = orf2pep(max_orf)
         # junction site present
         exon_sites = []
-        for exon in cand:
+        for exon in cand[1:]:
             exon_sites.extend([int(item) for item in exon])
         try:
             si = exon_sites.index(start_coord)
@@ -671,19 +672,74 @@ def is_support_by_est_or_long_read(sa,op,strict=True):
         if strict:
             if ei == si + 1 and max_pep == op:
                 return_value = True
-                return_cand = cand
+                return_cand = attrs
                 break
         else:
             if ei == si + 1:
                 return_value = True
-                return_cand = cand
+                return_cand = attrs
                 break
     return return_value, return_cand
+    
+def report_candidates(pickle_path,candidates_path,validation_path,freq_df_path,mode,outdir='.',name=None):
+    with open(pickle_path,'rb') as f1:
+        results = pickle.load(f1)   # a list of sa object
+    with open(candidates_path,'r') as f2:
+        candidates = f2.readlines()
+    freq_df = pd.read_csv(freq_df_path,sep='\t',index_col=0)
+    freq_df['uid'] = [item.split(',')[1] for item in freq_df.index]
+    uid_2_ts_mean = pd.Series(index=freq_df['uid'].values,data=freq_df['tumor_specificity_mean'].values).to_dict()
+    uid_2_ts_mle = pd.Series(index=freq_df['uid'].values,data=freq_df['tumor_specificity_mle'].values).to_dict()
+    collect_uid = _run_dash_prioritizer_return_events(candidates)
+    collect_gene = _run_dash_prioritizer_return_gene(candidates)
+    candidate_count = 0
+    if mode == 'short_read':
+        with open(os.path.join(outdir,name),'w') as f3, open(validation_path,'r') as f4:
+            f3.write('Candidate_id\tNeoJunction\tmode\tevidence\tmRNA_sequence\tpeptide_sequence\tgene_symbol\tcohort_frequency\ttumor_specificity_mean\ttumor_specificity_mle\tvalidation\n')
+            lines = f4.readlines()
+            for uid,gene,line in tqdm(zip(collect_uid,collect_gene,lines),total=len(collect_uid)):
+                ts_mean = uid_2_ts_mean[uid]
+                ts_mle = uid_2_ts_mle[uid]
+                value = uid
+                sa = _run_dash_prioritizer_return_sa(results,value)
+                valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)
+                ensg = value.split(':')[0]
+                df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensg,:]
+                df_certain = df_certain.iloc[valid_indices,:]
+                df_certain.insert(loc=0,column='index',value=valid_indices)
+                for value_index in valid_indices:
+                    orft_sequence = sa.orft[value_index]
+                    orfp_sequence = sa.orfp[value_index]
+                    evidence = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
+                    candidate_count += 1
+                    stream = 'candidate{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(candidate_count,uid,mode,evidence,orft_sequence,orfp_sequence,gene,sa.freq,ts_mean,ts_mle,line.rstrip('\n'))
+                    f3.write(stream)
+    elif mode == 'long_read':
+        with open(os.path.join(outdir,name),'w') as f3, open(validation_path,'r') as f4:
+            f3.write('Candidate_id\tNeoJunction\tmode\tevidence\tmRNA_sequence\tpeptide_sequence\tgene_symbol\tcohort_frequency\ttumor_specificity_mean\ttumor_specificity_mle\tvalidation\n')
+            lines = f4.readlines()
+            for uid,gene,line in tqdm(zip(collect_uid,collect_gene,lines),total=len(collect_uid)):
+                ts_mean = uid_2_ts_mean[uid]
+                ts_mle = uid_2_ts_mle[uid]
+                value = uid
+                sa = _run_dash_prioritizer_return_sa(results,value)
+                valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)
+                for value_index in valid_indices:
+                    orft_sequence = sa.orft[value_index]
+                    orfp_sequence = sa.orfp[value_index]
+                    evidence = sa.full_length_attrs[value_index]
+                    candidate_count += 1
+                    stream = 'candidate{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(candidate_count,uid,mode,evidence,orft_sequence,orfp_sequence,gene,sa.freq,ts_mean,ts_mle,line.rstrip('\n'))
+                    f3.write(stream)        
+
+
+
+
     
 
 
 
-def generate_results(pickle_path,strigency=3,outdir='.',gtf=None):
+def generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False):
     '''
     Generate candidates for B antigen
 
@@ -697,6 +753,7 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None):
         * strigency5: novel isoform also needs to have long-read or EST support (whole ORF needs to be the same as full-length)
     :param outdir: string, path to the output folder
     :param gtf: string, if strigency>3, you need to specify the path to the long-read or EST gtf file
+    :param long_read: boolean, whether the last run was using prediction_mode as long_read or not, default to False
 
     Example::
 
@@ -710,7 +767,7 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None):
         os.mkdir(outdir)
     if gtf is not None:
         global gtf_dict
-        gtf_dict = process_est_or_long_read(gtf)
+        gtf_dict = process_est_or_long_read_with_id(gtf)
     with open(pickle_path,'rb') as f:
         results = pickle.load(f)
     count_candidates = 0
@@ -727,13 +784,13 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None):
                 for i,(op,n,t,a) in enumerate(zip(sa.orfp,sa.nmd,sa.translatability,sa.alignment)):
                     if strigency == 5:
                         if n == '#' and t == '#' and a==True:
-                            value,cand = is_support_by_est_or_long_read(sa,op,strict=True)
+                            value,cand_attrs = is_support_by_est_or_long_read(sa,op,strict=True)
                             if value:
                                 send = True
                                 valid_indices.append(i)
                     elif strigency == 4:
                         if n == '#' and t == '#' and a==True:
-                            value,cand = is_support_by_est_or_long_read(sa,op,strict=False)
+                            value,cand_attrs = is_support_by_est_or_long_read(sa,op,strict=False)
                             if value:
                                 send = True
                                 valid_indices.append(i)
@@ -741,24 +798,32 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None):
                         if n == '#' and t == '#' and a==True:
                             send = True
                             valid_indices.append(i)
+                            cand_attrs = None
                     elif strigency == 2:
                         if t == '#' and a==True:
                             send = True
                             valid_indices.append(i)
+                            cand_attrs = None
                     elif strigency == 1:
                         if a==True:
                             send = not send
                             valid_indices.append(i)
+                            cand_attrs = None
                 if send:
-                    candidates.append((sa,sa.score,sa.freq,len(valid_indices),sa.uid,valid_indices))
+                    candidates.append((sa,sa.score,sa.freq,len(valid_indices),sa.uid,valid_indices,cand_attrs))
                     count_candidates += 1
     sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2],-x[3]),reverse=False)
     uid_list = list(list(zip(*sorted_candidates))[4])
     ensg_list = [uid.split(':')[0] for uid in uid_list]
     gene_symbols = ensemblgene_to_symbol(ensg_list,'human')
-    with open(os.path.join(outdir,'candidates.txt'),'w') as f1:
-        for (sa,score,freq,hit,uid,vi),gene in zip(sorted_candidates,gene_symbols):
+    if long_read:
+        file_name_lr = '_lr'
+    else:
+        file_name_lr = ''
+    with open(os.path.join(outdir,'candidates_{}{}.txt'.format(strigency,file_name_lr)),'w') as f1, open(os.path.join(outdir,'validation_{}{}.txt'.format(strigency,file_name_lr)),'w') as f3:
+        for (sa,score,freq,hit,uid,vi,ca),gene in zip(sorted_candidates,gene_symbols):
             print(sa,'valid_indices:{}\n'.format(vi),'gene_symbol:{}\n'.format(gene),file=f1,sep='',end='\n')
+            print(ca,file=f3,sep='\n',end='\n')
     return count_candidates,count_further
 
 

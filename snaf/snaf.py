@@ -1107,6 +1107,19 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
     return exon_seq
 
 
+def enhance_frequency_table(df,remove_quote=True,save=True,outdir='',name=None):
+    print('adding gene symbol')
+    df = add_gene_symbol_frequency_table(df=df,remove_quote=remove_quote)
+    print('adding chromosome coordinates')
+    df = add_coord_frequency_table(df,remove_quote=False)
+    print('adding tumor specificity mean raw count')
+    df = add_tumor_specificity_frequency_table(df,'mean',False)
+    print('adding tumor specificity MLE score')
+    df = add_tumor_specificity_frequency_table(df,'mle',False)
+    if save:
+        df.to_csv(os.path.join(outdir,name),sep='\t')
+    return df
+
 def add_coord_frequency_table(df,remove_quote=True):
     '''
     Convert the uid to chromsome coordinates
@@ -1194,11 +1207,15 @@ def uid_to_coord(uid):
         except KeyError:
             if 'ENSG' in actual_exon:
                 ensg_second, actual_exon_second = actual_exon.split(':')
-                attrs = dict_exonCoords[ensg_second][actual_exon_second]
-                if strand == '+':
-                    end_coord = attrs[2]  # start
+                try:
+                    attrs = dict_exonCoords[ensg_second][actual_exon_second]
+                except KeyError:
+                    end_coord = 'unknown'
                 else:
-                    end_coord = attrs[3]  # end
+                    if strand == '+':
+                        end_coord = attrs[2]  # start
+                    else:
+                        end_coord = attrs[3]  # end
             else:
                 end_coord = 'unknown'
         else:
