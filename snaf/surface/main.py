@@ -205,7 +205,7 @@ def run_dash_B_antigen(pkl,prediction_mode,candidates,python_executable,host=Non
     '''
     if prediction_mode == 'long_read':
         _run_dash_long_read_mode(pkl,candidates,python_executable,host=host,port=port)
-    elif predicion_mode == 'short_read':
+    elif prediction_mode == 'short_read':
         import dash
         from dash import dcc,html,dash_table
         from dash.dependencies import Input,Output,State
