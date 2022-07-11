@@ -11,14 +11,14 @@ predict, prioritize and visualize MHC-bound neoantigen for T cell (T antigen) an
 
 [Full Documentation](https://snaf.readthedocs.io)
 
-# Interactive Viewers
+# Interactive Viewers (below, take a few seconds to load)
 
 <p float="left">
   <img src="images/T_viewer.gif" width="45%" />
   <img src="images/B_viewer.gif" width="45%" /> 
 </p>
 
-# Input and Output
+# Input and Output 
 
 Simply put, user needs to supply ``a folder with bam files``, and the ``HLA type`` assciated with each patient (using your favorite HLA typing tool). And it will generate predicted immunogenic MHC-bound peptides and altered surface protein. Moreover, there's a myriad of convenient function that enables users to conduct survival analysis, association analysis and publication-quality visualiztion. Check our tutorials for more detail.
 
