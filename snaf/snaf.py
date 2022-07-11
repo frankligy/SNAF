@@ -1108,6 +1108,20 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
 
 
 def enhance_frequency_table(df,remove_quote=True,save=True,outdir='',name=None):
+    '''
+    This is a wrapper function to add (1) gene symbol, (2) chromosome coordinate, (3) tumor specificity to the frequency table at once
+
+    :param df: the dataframe for the frequency table (freq_stage{n}_verbosity1_uid.txt)
+    :param remove_quote: boolean, depending on how your df is loaded, if directly read from the disk, certain column will contain quotation, whether to remove it or not
+    :param save: boolean, whether to save the result or not, default is True
+    :param outdir: string, the output folder.
+    :param name: string, the output file name
+
+    Example::
+
+        enhance_frequency_table(df=df,True,True,'result','freq_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt')
+
+    '''
     print('adding gene symbol')
     df = add_gene_symbol_frequency_table(df=df,remove_quote=remove_quote)
     print('adding chromosome coordinates')

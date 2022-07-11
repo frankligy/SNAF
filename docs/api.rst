@@ -27,6 +27,8 @@ run_dash_T_antigen
 ~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.dash_app.app.run_dash_T_antigen
 
+.. _reference_to_report_candidates:
+
 report_candidates
 ~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.report_candidates
@@ -45,6 +47,10 @@ generate_results
 run_dash_B_antigen
 ~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.surface.main.run_dash_B_antigen
+
+report_candidates
+~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.surface.main.report_candidates
 
 
 GTEx Viewer (tumor specificity)
@@ -79,6 +85,9 @@ Add tumor specificity scores
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.gtex.add_tumor_specificity_frequency_table
 
+Add All three info at once
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.snaf.enhance_frequency_table
 
 
 

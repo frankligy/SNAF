@@ -167,7 +167,13 @@ Neoantigen frequency plot shows the distinctive pattern between shared neoantige
     :align: center
     :target: target
 
-Users can also report T cell Neoantigen associated with a speficic sample (precision medicine) by running :ref:`reference_to_add_specificity`.
+Users can also report T cell Neoantigen associated with a speficic sample (precision medicine) by running :ref:`reference_to_report_candidates`. The candidates reported
+will look like the below table::
+
+.. csv-table:: individual report candidate
+    :file: ./_static/T_sample_candidates.csv
+    :widths: 10,10,10,10,10,10,10
+    :header-rows: 1
 
 Visualization
 ~~~~~~~~~~~~~~~~~
@@ -355,6 +361,12 @@ You can also view each tissue type separately::
     :width: 500px
     :align: center
     :target: target
+
+.. note::
+
+    SNAF also provide quantitative measurement for tumor specificity, to calculate the tumor specificity for each neojunction, 
+    we need to run :ref:`reference_to_add_specificity`. We can report mean GTEx read count, Maximum likelihood Estimation and hierarchical Bayesian estimation,
+    the detailed mathematical equations are shown in the preprint.
 
 .. _reference_to_compatibility:
 

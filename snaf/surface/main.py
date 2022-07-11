@@ -681,7 +681,25 @@ def is_support_by_est_or_long_read(sa,op,strict=True):
                 break
     return return_value, return_cand
     
-def report_candidates(pickle_path,candidates_path,validation_path,freq_df_path,mode,outdir='.',name=None):
+def report_candidates(pickle_path,candidates_path,validation_path,freq_df_path,mode='short_read',outdir='.',name=None):
+    '''
+    report SNAF-B antigen candidates, a more organized and tidy file format for all the candidate.
+
+    :param pickle_path: string ,the path to the saved pickle object from `run` command.
+    :param candidates_path: string, the path to the saved candidates.txt file which we'd like to reformat
+    :param validation_path: string, the path to the saved validation.txt file which accoompanying the candidates.txt file
+    :param freq_df_path: string, the path to the frequency table from SNAF-T pipeline, this will provide the frequency of each neojunction in whole cohort.
+    :param mode: string, either 'long_read' or 'short_read',default is short_read
+    :param outdir: string, the folder for the output directory, will create one if not exist
+    :param name: string, the name of the saved output file.
+
+    Example::
+
+        surface.report_candidates('result/surface_antigen.p','result/candidates_3.txt','result/validation_3.txt',
+                                  'result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt','short_read',
+                                  'result','sr_str3_report.txt')
+
+    '''
     with open(pickle_path,'rb') as f1:
         results = pickle.load(f1)   # a list of sa object
     with open(candidates_path,'r') as f2:
