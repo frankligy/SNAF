@@ -168,7 +168,7 @@ Neoantigen frequency plot shows the distinctive pattern between shared neoantige
     :target: target
 
 Users can also report T cell Neoantigen associated with a speficic sample (precision medicine) by running :ref:`reference_to_report_candidates`. The candidates reported
-will look like the below table::
+will look like the below table:
 
 .. csv-table:: individual report candidate
     :file: ./_static/T_sample_candidates.csv
@@ -314,7 +314,8 @@ Different strigencies are explanined below:
 * ``strigency 4``: The novel isoform also needs to have long-read or EST support (as long as the novel junction present in full-length)
 * ``strigency 5``: The novel isoform also needs to have long-read or EST support (whole ORF needs to be the same as full-length)
 
-An output called ``candidates.txt`` is what we are looking for, to facilitate the inspection of the result, let's use the B antigen viewer shown below.
+An output called ``candidates.txt`` is what we are looking for, to facilitate the inspection of the result, let's use the B antigen viewer shown below. Also, 
+we can generate a more readable and publication-quality table for the candidate by using :ref:`report_B_canadidates`.
 
 
 Interactive neoantigen viewer

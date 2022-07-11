@@ -48,6 +48,8 @@ run_dash_B_antigen
 ~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.surface.main.run_dash_B_antigen
 
+.. _reference_to_report_B_canadidates:
+
 report_candidates
 ~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.surface.main.report_candidates
