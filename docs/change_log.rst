@@ -1,6 +1,16 @@
 Change Log
 ============
 
+Version 0.6.0 (2022.07.11)
+----------------------------
+
+Adding New functionalities:
+
+#. report B and T antigen in a more readable format
+#. allow users to add all info to the frequency table at once
+#. add long_read mode for B antigen when inferring full-length isoform and update the B viewer codebase as well
+
+
 Version 0.5.2 (2022.04.17)
 ----------------------------
 
