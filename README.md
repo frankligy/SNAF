@@ -15,15 +15,16 @@ predict, prioritize and visualize MHC-bound neoantigen for T cell (T antigen) an
 
 Simply put, user needs to supply ``a folder with bam files``, and the ``HLA type`` assciated with each patient (using your favorite HLA typing tool). And it will generate predicted immunogenic MHC-bound peptides and altered surface protein. Moreover, there's a myriad of convenient function that enables users to conduct survival analysis, association analysis and publication-quality visualiztion. Check our tutorials for more detail.
 
-# Special notes 
+# Interactive Viewers
 
-This is currently alpha version pre-release for AACR conference, I am trying to glean feedbacks from AACR attendees and improve my pipeline. If you have any confusion about my desription in the tutorial, run into troubleS while using it, Please feel free to reach out to me and I will be responsive. We are also open to any form of colloborations!
-
-AACR Poster can be found [here](./images/AACR-Li_56x36_CCH_UC_White.pdf).
+<p float="left">
+  <img src="images/T_viewer.gif" width="45%" />
+  <img src="images/B_viewer.gif" width="45%" /> 
+</p>
 
 # Citation
 
-[Guangyuan Li, Nathan Salomonis. SNAF: Accurate and compatible computational framework for identifying splicing derived neoantigens [abstract]. In: Proceedings of the American Association for Cancer Research Annual Meeting 2022; 2022 Apr 8-13. Philadelphia (PA): AACR; Cancer Res 2022;82(12_Suppl):Abstract nr 1898.](https://aacrjournals.org/cancerres/article/82/12_Supplement/1898/701846/Abstract-1898-SNAF-Accurate-and-compatible)
+[Guangyuan Li, Nathan Salomonis. SNAF: Accurate and compatible computational framework for identifying splicing derived neoantigens [abstract]. Cancer Res 2022;82(12_Suppl)](https://aacrjournals.org/cancerres/article/82/12_Supplement/1898/701846/Abstract-1898-SNAF-Accurate-and-compatible)
 
 A preprint will be released soon.
 
