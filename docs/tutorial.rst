@@ -175,6 +175,52 @@ will look like the below table:
     :widths: 10,10,10,10,10,10,10
     :header-rows: 1
 
+Interface to proteomics validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now imagine we have a handful of predicted short-peptides that potentially can be therapeutically valuable targets, as a routine step, we definitely want to test
+whether they are supported by public or in-house MS (either untargeted or targetted HLA-bound immunopeptidome) datasets. We provide a set of functions that can make 
+this validation process easier.
+
+First, we want to extract all candidate and write them into a fasta file::
+
+    jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
+    sample = 'SRR5933735.Aligned.sortedByCoord.out'
+    jcmq.show_neoantigen_as_fasta(outdir='./fasta',name='neoantigen_{}.fasta'.format(sample),stage=2,verbosity=1,contain_uid=True,sample=sample)
+
+Then, we want to remove identical peptides, becasue same peptide can be generated from different junctions::
+
+    snaf.proteomics.remove_redundant('./fasta/neoantigen_{}.fasta'.format(sample),'./fasta/neoantigen_{}_unique.fasta'.format(sample))
+
+Next, we want to remove all peptides that are overlapping with human proteome, you can download any preferred human proteome database (UCSC or Uniprot), we provide
+a reference fasta `human_uniprot_proteome.fasta` downloaded from Uniprot downloaded at Jan 2020, available at `Synapse <https://www.synapse.org/#!Synapse:syn32057176/files/>`_,
+we chop them into 9 and 10 mers without duplicates. Then we remove overlapping candidates::
+
+    chop_normal_pep_db(fasta_path='human_uniprot_proteome.fasta',output_path='./fasta',mers=[9,10],allow_duplicates=False)
+    # human_proteome_uniprot_9_10_mers_unique.fasta is generated from command above
+    snaf.proteomics.compare_two_fasta(fa1_path='./fasta/human_proteome_uniprot_9_10_mers_unique.fasta', 
+                                      fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
+                                      write_unique2=True,prefix='{}_'.format(sample))
+    # here write_unique2 means we only report peptides that are unique to second fasta file, which is our candidates fasta files.
+
+Usually, MS software requires a customized fasta database, you've already had that right now. Depending on which MS software you use, the configuration steps
+can vary, but we recommend using `MaxQuant <https://www.maxquant.org/>`_ here which is highly regarded. MaxQuant requires to compile a configuration files called 
+`mqpar.xml` which stores the setting for the search engine, the databases that will be used and the input raw files, manually adjusting it can be a pain, so we provide
+a handy function to automatically do so::
+
+    dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933726.Aligned.sortedByCoord.out.bed_unique2.fasta']
+    inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#1.raw',
+              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#2.raw',
+              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#3.raw',
+              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#4.raw',
+              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#5.raw',
+              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#6.raw']
+    outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48'
+    snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
+                                               outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
+
+A automatically generated configuration file (mqpar.xml) will be shown in the outdir that you specified. More information can be found in the API page.
+
 Visualization
 ~~~~~~~~~~~~~~~~~
 

@@ -15,6 +15,18 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser
 
 ########################## Following is for manipulating fasta db files
 def chop_normal_pep_db(fasta_path,output_path,mers,allow_duplicates):
+    '''
+    chop any normal human proteome to certain mers
+
+    :param fasta_path: string, the path to the human protein fasta file
+    :param output_path: string, the path to the output directory
+    :param mers: list, like [9,10] will generate 9mer and 10mer
+    :param allow_duplicates: boolean. whether allow duplicate or not
+
+    Example::
+
+        chop_normal_pep_db(fasta_path='human_uniprot_proteome.fasta',output_path='./fasta',mers=[9,10],allow_duplicates=False)
+    '''
     # for human genome in uniprot, 9-10mer, remove duplicates will decrease from 44,741,578 to 41,638,172
     if allow_duplicates:
         with open(fasta_path,'r') as in_handle, open(output_path,'w') as out_handle:
@@ -44,6 +56,23 @@ def chop_normal_pep_db(fasta_path,output_path,mers,allow_duplicates):
                                 count += 1        
 
 def compare_two_fasta(fa1_path,fa2_path,outdir='.',write_comm=False,write_unique1=False,write_unique2=False,prefix=''):
+    '''
+    Compare arbitracy two fasta files, report unique and common ones
+
+    :param fa1_path: the first fasta file path that you want to compare with
+    :param fa2_path: the second fasta file path that you want to compare with
+    :param write_comm: boolean, whether write the common one between fa1 and fa2
+    :param write_unique1: boolean, whether write the one unique to fa1
+    :param write_unique2: boolean, whether write the one unique to fa2
+    :param prefix: string, whether to add a prefix to the output fasta file name
+
+    Example::
+
+        snaf.proteomics.compare_two_fasta(fa1_path='./fasta/human_proteome_uniprot_9_10_mers_unique.fasta', 
+                                      fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
+                                      write_unique2=True,prefix='{}_'.format(sample))
+
+    '''
     seq1,seq2 = set(),set()
     seq1_l,seq2_l = [],[]
     seq1_t,seq2_t = [],[]
@@ -90,6 +119,16 @@ def compare_two_fasta(fa1_path,fa2_path,outdir='.',write_comm=False,write_unique
 
 
 def remove_redundant(fasta_path,out_path):
+    '''
+    remove redundant entries in any fasta files
+
+    :param fasta_path: string, the path to the input fasta file
+    :param out_path: string, the path to the output folder
+
+    Example::
+
+        snaf.proteomics.remove_redundant('./fasta/neoantigen_{}.fasta'.format(sample),'./fasta/neoantigen_{}_unique.fasta'.format(sample))
+    '''
     existing = set()
     original_count = 0
     with open(fasta_path,'r') as f1, open(out_path,'w') as f2:
@@ -219,6 +258,39 @@ def change_length(doc,minPepLen,maxPeptideMass,minPeptideLengthForUnspecificSear
 def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
                                outname='mqpar.xml',protein_fdr=0.01,peptide_fdr=0.01,site_fdr=0.01,include_contaminants=True,
                                minPepLen=9,maxPeptideMass=4600,minPeptideLengthForUnspecificSearch=9,maxPeptideLengthForUnspecificSearch=10):
+    '''
+    automatically build MaxQuant configuration file mqpar.xml
+
+    :param dbs: list, each element is the path to the database fasta file
+    :param n_threads: int, how many threads will be used for MaxQuant search
+    :param inputs: list, each element is the path to the raw file
+    :param enzymes: list, what enzymes will be used for search
+    :param enzyme_mode: int, 0 -> specific, 3 -> semi-specific, 4 -> unspecific, 5 -> no digestion
+    :param outdir: string, the output directory for the conf file
+    :param outname: string, default is mqpar.xml
+    :param protein_fdr: float, default is 0.01
+    :param peptide_fdr: float, default is 0.01
+    :param site_fdr: float, default is 0.01
+    :param include_contaminants: boolean, default is True
+    :param minPepLen: int, default is 9
+    :param maxPeptideMass: int, default is 4600
+    :param minPeptideLengthForUnspecificSearch: int, default is 9
+    :param maxPeptideLengthForUnspecificSearch: int, default is 10
+
+    Example::
+
+            dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933726.Aligned.sortedByCoord.out.bed_unique2.fasta']
+            inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#1.raw',
+                    '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#2.raw',
+                    '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#3.raw',
+                    '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#4.raw',
+                    '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#5.raw',
+                    '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#6.raw']
+            outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48'
+            snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
+                                               outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
+
+    '''
     with open (os.path.join(os.path.dirname(__file__),'mqpar.xml'),'r') as fr:
         doc = xmltodict.parse(fr.read()) 
         doc = add_database_file(doc,dbs)

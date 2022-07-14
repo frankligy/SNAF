@@ -463,6 +463,24 @@ class JunctionCountMatrixQuery():
 
 
     def show_neoantigen_as_fasta(self,outdir,name,stage,verbosity,contain_uid,sample=None,criterion=None):
+        '''
+        write the neoantigen as a fasta file for MS validation or other purpose
+
+        :param outdir: string ,the output directory for the generated fasta file
+        :param name: string, the name of the output fasta file
+        :param stage: int, either 0,1,2,3, the stage of neoantigen you want to report
+        :param verbosity: int, either 1,2,3, the verbosity of candidates
+        :param contain_uid: boolean, whether you want to contain the junction UID along with the neoantigen
+        :param sample: string, the name of the sample in which you want to extract the neoantigen
+        :param criterion: nested list, the criterion for filtering out the candidate
+
+        Examples::
+
+            jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
+            sample = 'SRR5933735.Aligned.sortedByCoord.out'
+            jcmq.show_neoantigen_as_fasta(outdir='./fasta',name='neoantigen_{}.fasta'.format(sample),stage=2,verbosity=1,contain_uid=True,sample=sample)
+
+        '''
         if not os.path.exists(outdir):
             os.mkdir(outdir)
             

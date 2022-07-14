@@ -9,7 +9,7 @@ MHC bound peptides (T antigen)
 JunctionCountMatrixQuery class
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: snaf.snaf.JunctionCountMatrixQuery
-    :members: get_membrane_tuples, run, generate_results, visualize
+    :members: get_membrane_tuples, run, generate_results, visualize, show_neoantigen_as_fasta
 
 mutation_analysis
 ~~~~~~~~~~~~~~~~~~~~~
@@ -32,6 +32,25 @@ run_dash_T_antigen
 report_candidates
 ~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.report_candidates
+
+Interface to proteomics
+----------------------------
+
+chop_normal_pep_db
+~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.proteomics.chop_normal_pep_db
+
+compare_two_fasta
+~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.proteomics.compare_two_fasta
+
+remove_redundant
+~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.proteomics.remove_redundant
+
+set_maxquant_configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.proteomics.set_maxquant_configuration
 
 Surface Antigen (B antigen)
 -------------------------------
