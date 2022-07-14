@@ -219,7 +219,7 @@ a handy function to automatically do so::
     snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
                                                outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
 
-A automatically generated configuration file (mqpar.xml) will be shown in the outdir that you specified. More information can be found in the API page.
+A automatically generated configuration file (mqpar.xml) will be shown in the outdir that you specified. More information can be found in the :ref:`reference_to_proteomics`.
 
 Visualization
 ~~~~~~~~~~~~~~~~~

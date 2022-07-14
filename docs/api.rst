@@ -33,6 +33,8 @@ report_candidates
 ~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.report_candidates
 
+.. _reference_to_proteomics:
+
 Interface to proteomics
 ----------------------------
 
