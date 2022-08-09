@@ -12,6 +12,7 @@ from scipy.optimize import minimize
 from scipy import stats
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
+import re
 
 try:
     import pymc3 as pm   # conda install -c conda-forge pymc3 mkl-service
@@ -58,7 +59,7 @@ def gtex_configuration(gtex_db,t_min_arg,n_max_arg,add_control=None):
 
 
 
-def multiple_crude_sifting(junction_count_matrix,add_control=None):   # for JunctionCountMatrixQuery class, only consider gtex
+def multiple_crude_sifting(junction_count_matrix,add_control=None,dict_exonlist=None):   # for JunctionCountMatrixQuery class, only consider gtex
     df = pd.DataFrame(index=junction_count_matrix.index,data = {'max':junction_count_matrix.max(axis=1).values})
     # consider gtex
     junction_to_mean = adata_gtex.obs.loc[adata_gtex.obs_names.isin(junction_count_matrix.index),'mean'].to_dict()
@@ -66,6 +67,26 @@ def multiple_crude_sifting(junction_count_matrix,add_control=None):   # for Junc
     df['diff'] = df['max'] - df['mean']
     df['cond'] = (df['mean'] < n_max) & (df['diff'] > t_min)
     valid = df.loc[df['cond']].index.tolist()
+    if dict_exonlist is not None:   # a valid junction can not be present in any ensembl documented transcript
+        updated_valid = []
+        for uid in tqdm(valid):
+            ensg = uid.split(':')[0]
+            exons = ':'.join(uid.split(':')[1:])
+            if '_' in exons or 'U' in exons or 'ENSG' in exons or 'I' in exons:
+                updated_valid.append(uid)
+            else:
+                exonlist = dict_exonlist[ensg]
+                exonstring = '|'.join(exonlist)
+                e1,e2 = exons.split('-')
+                pattern1 = re.compile(r'^{}\|{}\|'.format(e1,e2))  # ^E1.1|E2.3|
+                pattern2 = re.compile(r'\|{}\|{}$'.format(e1,e2))  # |E1.1|E2.3$
+                pattern3 = re.compile(r'\|{}\|{}\|'.format(e1,e2)) # |E1.1|E2.3|
+                if re.search(pattern3,exonstring) or re.search(pattern2,exonstring) or re.search(pattern1,exonstring):   # as long as match one pattern, should be eliminated
+                    continue
+                else:
+                    updated_valid.append(uid)
+        print('reduce valid Neojunction from {} to {}'.format(len(valid),len(updated_valid)))
+        valid = updated_valid
     # consider add_control
     if add_control is not None:
         junction_to_mean = add_control.mean(axis=1).to_dict()

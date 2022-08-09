@@ -61,6 +61,13 @@ def exonCoords_to_dict(path):
     return dict_exonCoords
 
 
+def construct_dict_exonlist(transcript_db):
+    # this will take the mRNA-exonid file, construct to a lookup table
+    # ENSG: [E1.1|E3.4|E4.5,E1.1|E3.4|E4.6]
+    df_exonlist = pd.read_csv(transcript_db,sep='\t',header=None,names=['EnsGID','EnsTID','EnsPID','Exons'])  # index is number
+    dic = df_exonlist.groupby(by='EnsGID')['Exons'].apply(lambda x:x.tolist()).to_dict()
+    return dic
+
 
 
 

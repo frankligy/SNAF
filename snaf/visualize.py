@@ -19,7 +19,7 @@ mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
-def show_candicates(ax,aa,extra,n_from_first,hla,first,second,dna_first,dna_second,binding_score,immunogenicity_score):
+def show_candicates(ax,aa,extra,n_from_first,hla,phase,evidences,first,second,dna_first,dna_second,binding_score,immunogenicity_score):
     # set lim
     ax.set_xlim(0,100)
     ax.set_ylim(0,100)
@@ -50,7 +50,7 @@ def show_candicates(ax,aa,extra,n_from_first,hla,first,second,dna_first,dna_seco
     ax.text(x=barcontainer[0].get_x() + barcontainer[0].get_width()/2,y=barcontainer[0].get_y() + barcontainer[0].get_height(),s='{}'.format(round(binding_score,3)),fontsize=3,va='top',ha='center')
     ax.text(x=barcontainer[1].get_x() + barcontainer[1].get_width()/2,y=barcontainer[1].get_y() + barcontainer[1].get_height(),s='{}'.format(round(immunogenicity_score,3)),fontsize=3,va='top',ha='center')
     # annotate HLA and score
-    ax.set_title('{}'.format(hla),fontsize=3)
+    ax.set_title('{}\n{}\n{}'.format(hla,phase,evidences),fontsize=3)
     # remove tick and labels
     ax.set_xticks([])
     ax.set_yticks([])

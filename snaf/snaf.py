@@ -21,6 +21,7 @@ import multiprocessing as mp
 import functools
 from tqdm import tqdm
 from itertools import compress
+from ast import literal_eval
 
 
 # for biopython, pip install biopython
@@ -44,15 +45,23 @@ mpl.rcParams['font.family'] = 'Arial'
 
 
 # configuration
-def snaf_configuration(exon_table,fasta,software_path_arg=None,binding_method_arg=None):
+def snaf_configuration(exon_table,transcript_db,db_dir,fasta,software_path_arg=None,binding_method_arg=None):
     global dict_exonCoords
     global dict_fa
     global software_path
     global binding_method
+    global dict_exonlist
+    global dict_start_codon
     dict_exonCoords = exonCoords_to_dict(exon_table)
+    dict_exonlist = construct_dict_exonlist(transcript_db)
     dict_fa = fasta_to_dict(fasta)
     software_path = software_path_arg
     binding_method = binding_method_arg
+
+    df_start_codon = pd.read_csv(os.path.join(db_dir,'df_start_codon.txt'),sep='\t',index_col=0)
+    df_start_codon['start_codon'] = [literal_eval(item) for item in df_start_codon['start_codon']]
+    df_start_codon['non_redundant'] = [literal_eval(item) for item in df_start_codon['non_redundant']]
+    dict_start_codon = df_start_codon['start_codon'].to_dict()
 
 
 
@@ -73,12 +82,15 @@ class JunctionCountMatrixQuery():
         
     '''
 
-    def __init__(self,junction_count_matrix,cores=None,add_control=None):
+    def __init__(self,junction_count_matrix,cores=None,add_control=None,not_in_db=False):
         self.junction_count_matrix = junction_count_matrix
         if cores is None:
             cores = mp.cpu_count()
         self.cores = cores
-        self.get_neojunctions(add_control=add_control)
+        if not_in_db:
+            self.get_neojunctions(add_control=add_control,dict_exonlist=dict_exonlist)
+        else:
+            self.get_neojunctions(add_control=add_control,dict_exonlist=None)
         
 
     def __str__(self):
@@ -105,8 +117,8 @@ class JunctionCountMatrixQuery():
                'results: list of length {}'.format(self.junction_count_matrix.shape,self.cores,len(self.valid),len(self.invalid),
                                                self.cond_df.shape,self.subset.shape,len_translated,shape_cond_subset_df,len_results)
     
-    def get_neojunctions(self,add_control):
-        self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix,add_control)
+    def get_neojunctions(self,add_control,dict_exonlist):
+        self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix,add_control,dict_exonlist)
         self.subset = self.junction_count_matrix.loc[self.valid,:]
         self.cond_subset_df = self.cond_df.loc[self.valid,:]
 
@@ -176,14 +188,14 @@ class JunctionCountMatrixQuery():
         
             
     @staticmethod
-    def each_chunk_func(input_,kind,hlas=None,sub_cond_df=None,binding_method=None):
+    def each_chunk_func(input_,kind,hlas=None,strict=False,sub_cond_df=None,binding_method=None):
         if kind == 1:
             nj_list = []
             for uid in input_.index:
                 nj = NeoJunction(uid=uid,count=50,check_gtex=False)
                 nj.detect_type()
                 nj.retrieve_junction_seq()
-                nj.in_silico_translation()    
+                nj.in_silico_translation(strict=strict)    
                 nj_list.append(nj) 
         elif kind == 2:   # out of development
             nj_list = []
@@ -238,11 +250,12 @@ class JunctionCountMatrixQuery():
                 nj_list.append(nj)                 
         return nj_list
 
-    def run(self,hlas,outdir='.',name='after_prediction.p'):
+    def run(self,hlas,strict=False,outdir='.',name='after_prediction.p'):
         '''
         main function to run mhc bound peptide T antigen pipeline
 
         :param hlas: list, each item is a list of 6 HLA types associated with each sample, the order of this list must be consistent with the sample name in the df column
+        :param strict: boolean, default is False, determine whether to filter out peptide which doesn't have canonical start codon support
         :param outdir: string, the path where all the results will go into
         :param name: string, the name of the generated pickle result object
 
@@ -250,7 +263,7 @@ class JunctionCountMatrixQuery():
 
             jcmq.run(hlas=hlas,outdir='result',name='after_prediction.p')
         '''
-        self.parallelize_run(kind=1)
+        self.parallelize_run(kind=1,strict=strict)
         print(self)
         self.parallelize_run(kind=3,hlas=hlas)
         self.serialize(outdir=outdir,name=name)
@@ -276,11 +289,11 @@ class JunctionCountMatrixQuery():
             jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False,plot=True,plot_name='frequency_stage{}.pdf'.format(stage),criterion=criterion)
             jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}_verbosity1_uid.txt'.format(stage),stage=stage,verbosity=1,contain_uid=True,plot=False,criterion=criterion)
 
-    def parallelize_run(self,kind,hlas=None):
+    def parallelize_run(self,kind,hlas=None,strict=False):
         pool = mp.Pool(processes=self.cores)
         if kind == 1 or kind == 2:
             sub_dfs = JunctionCountMatrixQuery.split_df_to_chunks(self.subset,self.cores)
-            r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(sub_df,kind,)) for sub_df in sub_dfs]
+            r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(sub_df,kind,None,strict,)) for sub_df in sub_dfs]
             pool.close()
             pool.join()
             results = []
@@ -291,7 +304,7 @@ class JunctionCountMatrixQuery():
         elif kind == 3:
             sub_arrays = JunctionCountMatrixQuery.split_array_to_chunks(self.translated,self.cores)
             sub_cond_dfs = JunctionCountMatrixQuery.split_df_to_chunks(self.cond_subset_df,self.cores)
-            r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(sub_array,kind,hlas,sub_cond_df,binding_method,)) for sub_array,sub_cond_df in zip(sub_arrays,sub_cond_dfs)]
+            r = [pool.apply_async(func=JunctionCountMatrixQuery.each_chunk_func,args=(sub_array,kind,hlas,False,sub_cond_df,binding_method,)) for sub_array,sub_cond_df in zip(sub_arrays,sub_cond_dfs)]
             pool.close()
             pool.join()
             results = []
@@ -565,7 +578,7 @@ class JunctionCountMatrixQuery():
 class EnhancedPeptides():
     def __init__(self,peptides,hlas,kind):
         # kind means how to instantiate the EnhancedPeptides object
-        if kind == 2:  # hla-reduced enhanced peptide
+        if kind == 2:  # hla-reduced enhanced peptide, this mode is used when filtsre_based_on_hla
             self.mers = peptides
             self.info = hlas
         else:
@@ -573,20 +586,20 @@ class EnhancedPeptides():
             self.info = []
             for k,v in peptides.items():
                 self.mers.append(k)
-                phlas = {}  # {pep1:{origin:(extra,n_from_first),hla1:{},hla2:{}}}
+                phlas = {}  # {pep1:{origin:(extra,n_from_first,phase,evidences),hla1:{},hla2:{}}}
                 for pep in v:
-                    if kind == 0:  # each pep is (pep,extra,n_from_first)
+                    if kind == 0:  # each pep is (pep,extra,n_from_first,phase,evidences), this mode is used before binding_prediction
                         pairs = {}
-                        pairs['origin'] = (pep[1],pep[2])
+                        pairs['origin'] = (pep[1],pep[2],pep[3],pep[4])
                         for hla in hlas:
                             pairs[hla] = {}
                         phlas[pep[0]] = pairs
-                    elif kind == 1:   # each pep is (pep,extra,n_from_first,hla)
+                    elif kind == 1:   # each pep is (pep,extra,n_from_first,hla,phase,evidences), this mode is used when filter_based_on_criterion
                         try:
-                            phlas[pep[0]]['origin'] = (pep[1],pep[2])
+                            phlas[pep[0]]['origin'] = (pep[1],pep[2],pep[4],pep[5])
                         except KeyError:
                             phlas[pep[0]] = {}
-                            phlas[pep[0]]['origin'] = (pep[1],pep[2])
+                            phlas[pep[0]]['origin'] = (pep[1],pep[2],pep[4],pep[5])
                         phlas[pep[0]][pep[3]] = {}
                 self.info.append(phlas)
 
@@ -623,7 +636,7 @@ class EnhancedPeptides():
             result_list = []
             for mer in self.mers:
                 for pep,hla_complex in self[mer].items():
-                    extra,n_from_first = hla_complex['origin']
+                    extra,n_from_first,phase,evidences = hla_complex['origin']
                     for hla in hla_complex.keys():
                         if hla != 'origin':
                             result_list.append((pep,hla,extra,n_from_first))
@@ -671,7 +684,7 @@ class EnhancedPeptides():
         peptides = {k:[] for k in self.mers}
         for i,k in enumerate(self.mers):
             for pep,hla_complex in self.info[i].items():
-                extra,n_from_first = hla_complex['origin']
+                extra,n_from_first,phase,evidences = hla_complex['origin']
                 for hla,attrs in hla_complex.items():
                     if hla == 'origin':
                         continue
@@ -688,7 +701,7 @@ class EnhancedPeptides():
                         boolean_list.append(boolean)
                     boolean_final = all(boolean_list)
                     if boolean_final:
-                        peptides[k].append((pep,extra,n_from_first,hla))   # if not reinstantiate, this format is called reduced form
+                        peptides[k].append((pep,extra,n_from_first,hla,phase,evidences))   # if not reinstantiate, this format is called reduced form
         if reinstantiate:
             return EnhancedPeptides(peptides,None,1)
         else:
@@ -823,14 +836,59 @@ class NeoJunction():
         else:
             self.junction = '$' * 10   # indicating invalid uid
 
-    def in_silico_translation(self,ks=[9,10]):
+    def in_silico_translation(self,ks=[9,10],strict=False):
         peptides = {k:[] for k in ks}
-        if '$' not in self.junction and '*' not in self.junction and '#' not in self.junction:
+        coord = uid_to_coord(self.uid)  # chr1:555-666(+)
+        if '$' not in self.junction and '*' not in self.junction and '#' not in self.junction and 'unknown' not in coord:
             first,second = self.junction.split(',')
+            # annotate peptide based on starting codon evidence
+            ensg = self.uid.split(':')[0]
+            coord_first_exon_last_base = coord.split(':')[1].split('-')[0]
+            strand = coord.split('(')[1].rstrip(')')
+            possible_start_codon_coord = dict_start_codon.get(ensg,[])   # [333,444] or []
+            support_phases_dict = {}   # {0:[333]} or {}
+            for pssc in possible_start_codon_coord:
+                if strand == '+':
+                    support_phase = (int(coord_first_exon_last_base) - len(first) + 1 - int(pssc)) % 3
+                elif strand == '-':
+                    support_phase = (int(pssc) - (int(coord_first_exon_last_base) + len(first) - 1)) % 3
+                if support_phase == 0:
+                    support_phase = 0
+                elif support_phase == 1:
+                    support_phase = 2
+                elif support_phase == 2:
+                    support_phase = 1
+                '''
+                scenario where strand is +:
+
+                A  T  G  *  *  *  *  |*  T  C  T
+                8  9 10 11  12 13 14 |15 16 17 18
+
+                Say the coord_first_exon_last_base is T (18), pssc is A (8), the first exon is of length 4 (*TCT) 
+                18 - 4 + 1 = 15 means the coord of the first base of first exon (*).
+                (15 - 8) % 3 = 1 means the first base in first exon is the index 1 of the codon (second bases, as python index is 0-based)
+                so that two bases of the first exon involved in forming the last codon, the phase start at index 2 
+                de_facto_first = first[2:], starting from CT......
+
+
+                scenario where strand is -:
+                
+                C  *  *  *|  *  %  %  G  T  A
+                5  6  7  8|  9 10  11 12 13 14
+
+                you first get the coord of the first base of first exon * (8) by 5 + 4 - 1 = 8
+                now you use 14 - 8 = 6, 6 % 3 = 0, meaning the first base of the first exon is involved in the index0 nt of the last codon, same interpretation
+                from here as the strand + scenario
+
+                '''
+                support_phases_dict.setdefault(support_phase,[]).append(pssc)
             for phase in [0,1,2]:  # tranlation starts with index "phase"
+                evidences = tuple(support_phases_dict.get(phase,[]))
+                if strict and len(evidences)==0:  # in strict mode, without start_codon evidence, let's skip this phase
+                    continue
                 de_facto_first = first[phase:]
-                pep_dict = get_peptides(de_facto_first,second,ks)
-                for k in ks:
+                pep_dict = get_peptides(de_facto_first,second,ks,phase,evidences)   # (pep,extra,n_from_first,phase,evidences)
+                for k in ks:  
                     peptides[k].extend(pep_dict[k])
                     peptides[k] = list(set(peptides[k]))
         self.peptides = peptides
@@ -898,7 +956,7 @@ class NeoJunction():
 
 
     def visualize(self,outdir,name,criterion=[('netMHCpan_el',0,'<=',2),('deepimmuno_immunogenicity',1,'==','True'),]):
-        reduced = self.enhanced_peptides.filter_based_on_criterion(criterion,False)
+        reduced = self.enhanced_peptides.filter_based_on_criterion(criterion,False) # now each element should add phase and evidences as well
         '''
         {9: [('LPSPPAQEL', 2, 0, 'HLA-B*08:01'), ('LPSPPAQEL', 2, 0, 'HLA-B*08:02'), 
              ('SLYLLLQHR', 1, 2, 'HLA-A*68:01')], 
@@ -926,14 +984,14 @@ class NeoJunction():
         for i,ax in enumerate(axes_list):
             if i < n_axes:
                 # info
-                aa, extra, n_from_first, hla = to_draw[i]
+                aa, extra, n_from_first, hla, phase, evidences = to_draw[i]
                 first,second = self.junction.split(',')
                 dna_first = extra + n_from_first * 3
                 dna_second = -extra + (len(aa)-n_from_first) * 3
                 binding_score = self.enhanced_peptides[len(aa)][aa][hla]['netMHCpan_el'][0]
                 immunogenicity_score = self.enhanced_peptides[len(aa)][aa][hla]['deepimmuno_immunogenicity'][0]   
                 # draw     
-                ax = show_candicates(ax,aa,extra,n_from_first,hla,first,second,dna_first,dna_second,binding_score,immunogenicity_score) 
+                ax = show_candicates(ax,aa,extra,n_from_first,hla,phase,evidences,first,second,dna_first,dna_second,binding_score,immunogenicity_score) 
             else:
                 ax.axis('off') 
         fig.subplots_adjust(top=0.9)             
@@ -959,7 +1017,7 @@ def hla_formatting(pre,pre_type,post_type):
 
 
 
-def get_peptides(de_facto_first,second,ks):
+def get_peptides(de_facto_first,second,ks,phase,evidences):
     peptides = {k:[] for k in ks}
     extra = len(de_facto_first) % 3  # how many base left in first assuming no stop condon in front of it.
     num = len(de_facto_first) // 3   # how many set of codons in the first.
@@ -996,7 +1054,7 @@ def get_peptides(de_facto_first,second,ks):
                             pep = aa_first[-n_from_first:] + aa_second[:n_from_second]
                         elif n_from_first == 0:
                             pep = aa_second[:n_from_second]
-                        peptides[k].append((pep,extra,n_from_first))
+                        peptides[k].append((pep,extra,n_from_first,phase,evidences))
     return peptides
                         
 

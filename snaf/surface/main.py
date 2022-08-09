@@ -10,6 +10,7 @@ from ast import literal_eval
 import requests
 import xmltodict
 from tqdm import tqdm
+from bisect import bisect
 from .data_io import *
 from .orf_finder import *
 from .orf_check import *
@@ -30,12 +31,13 @@ def initialize(db_dir):
     global dict_biotype
     global df_membrane_proteins
     global dict_uni_fa
+    global df_topology
     print('{} {} starting surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
     transcript_db = os.path.join(db_dir,'mRNA-ExonIDs.txt')
     exon_table = os.path.join(db_dir,'Hs_Ensembl_exon_add_col.txt')
     fasta = os.path.join(db_dir,'Hs_gene-seq-2000_flank.fa')
     biotype_db = os.path.join(db_dir,'Hs_Ensembl_transcript-biotypes.txt')
-    membrane_db = os.path.join(db_dir,'human_membrane_proteins.txt')
+    membrane_db = os.path.join(db_dir,'human_membrane_proteins_acc2ens.txt')
     membrane_fasta_db = os.path.join(db_dir,'uniprot_isoform_enhance.fasta')
     df_exonlist = pd.read_csv(transcript_db,sep='\t',header=None,names=['EnsGID','EnsTID','EnsPID','Exons'])  # index is number
     dict_exonCoords = exonCoords_to_dict(exon_table) 
@@ -43,6 +45,7 @@ def initialize(db_dir):
     dict_biotype = biotype(pd.read_csv(biotype_db,sep='\t'))  # index is number
     df_membrane_proteins = pd.read_csv(membrane_db,sep='\t',index_col=0)
     dict_uni_fa = read_uniprot_seq(membrane_fasta_db)
+    df_topology = pd.read_csv(os.path.join(db_dir,'ENSP_topology.txt'),sep='\t')
     print('{} {} finished surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
 
 
@@ -681,7 +684,7 @@ def is_support_by_est_or_long_read(sa,op,strict=True):
                 break
     return return_value, return_cand
     
-def report_candidates(pickle_path,candidates_path,validation_path,freq_df_path,mode='short_read',outdir='.',name=None):
+def report_candidates(pickle_path,candidates_path,validation_path,freq_df_path,mode,outdir='.',name=None):
     '''
     report SNAF-B antigen candidates, a more organized and tidy file format for all the candidate.
 
@@ -751,13 +754,69 @@ def report_candidates(pickle_path,candidates_path,validation_path,freq_df_path,m
                     f3.write(stream)        
 
 
+def overlap_with_extracellular(sa):
+    uid = sa.uid
+    ensg = uid.split(':')[0]
+    event_type = sa.event_type
+    is_overlap = False
+    if event_type != 'intron_retention':
+        junction_span = uid_to_coord(uid)
+    else:
+        junction_span = uid_to_coord_regular_intron_retention(uid)
+    if 'unknown' in junction_span:  # give it a chance for manual inspection, since not too many unknown
+        return True
+    else:
+        junction_span = junction_span.split('(')[0].split(':')[1].split('-')
+        ensps = ensg2ensps[ensg]
+        for ensp in ensps:
+            try:
+                regions = ensp2regions[ensp]
+            except KeyError:
+                continue
+            coords = []
+            for item in regions:
+                coords.extend(list(item))
+            coords.sort()  # ascending, forward string 
+            left_insert_index = bisect(coords,int(junction_span[0]))
+            right_insert_index = bisect(coords,int(junction_span[1]))
+            if left_insert_index % 2 == 0:  # even number, not in extracellular
+                if right_insert_index > left_insert_index:
+                    is_overlap = True
+            else:
+                is_overlap = True
+        return is_overlap
+
+
 
 
     
+def send_or_not(op,ref_seq,style,overlap_extracellular,sa):
+    # compare length
+    if len(op) > len(ref_seq):
+        result = 'insertion'
+    else:
+        result = 'deletion'
+    # whether overlap
+    if overlap_extracellular:
+        is_overlap = overlap_with_extracellular(sa)
+    # default send 
+    send = False
+    if style is None:
+        if overlap_extracellular:
+            if is_overlap:
+                send = True
+        else:
+            send = True
+    elif style == result:
+        if overlap_extracellular:
+            if is_overlap:
+                send = True
+        else:
+            send = True
+    return send
 
 
-
-def generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False):
+def generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False,style=None,overlap_extracellular=False):
     '''
     Generate candidates for B antigen
 
@@ -772,6 +831,8 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False
     :param outdir: string, path to the output folder
     :param gtf: string, if strigency>3, you need to specify the path to the long-read or EST gtf file
     :param long_read: boolean, whether the last run was using prediction_mode as long_read or not, default to False
+    :param style: None or string, can either be 'deletion' or 'insertion' meaning only generate result with deleted or inserted region
+    :param overlap_extracellular: boolean, default is True, only generate result whose junction overlap with extracellular domain
 
     Example::
 
@@ -786,6 +847,12 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False
     if gtf is not None:
         global gtf_dict
         gtf_dict = process_est_or_long_read_with_id(gtf)
+    if overlap_extracellular:   # have to load some database
+        global ensg2ensps
+        global ensp2regions
+        ensg2ensps = pd.Series(index=df_exonlist['EnsGID'].values,data=df_exonlist['EnsPID'].values).groupby(level=0).apply(lambda x:x.tolist()).to_dict()
+        df_topology['region'] = [(int(start),int(end)) for start,end in zip(df_topology['genomic_start'],df_topology['genomic_stop'])]
+        ensp2regions = df_topology.groupby(by='ensembl_prot')['region'].apply(lambda x:x.tolist()).to_dict()
     with open(pickle_path,'rb') as f:
         results = pickle.load(f)
     count_candidates = 0
@@ -793,41 +860,52 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False
     candidates = []
     with open(os.path.join(outdir,'further.txt'),'w') as f2:
         for sa in results:
+            uid = sa.uid
+            ensg = sa.uid.split(':')[0]
+            ref_seq = list(dict_uni_fa[ensg].items())[0][1]
             valid_indices = []
             if len(sa.comments) > 0:
                 print(sa,file=f2)
                 count_further += 1
             else:
-                send = False
+                sends = []
                 for i,(op,n,t,a) in enumerate(zip(sa.orfp,sa.nmd,sa.translatability,sa.alignment)):
                     if strigency == 5:
                         if n == '#' and t == '#' and a==True:
                             value,cand_attrs = is_support_by_est_or_long_read(sa,op,strict=True)
                             if value:
-                                send = True
-                                valid_indices.append(i)
+                                send = send_or_not(op,ref_seq,style,overlap_extracellular,sa)
+                                sends.append(send)
+                                if send:
+                                    valid_indices.append(i)
                     elif strigency == 4:
                         if n == '#' and t == '#' and a==True:
                             value,cand_attrs = is_support_by_est_or_long_read(sa,op,strict=False)
                             if value:
-                                send = True
-                                valid_indices.append(i)
+                                send = send_or_not(op,ref_seq,style,overlap_extracellular,sa)
+                                sends.append(send)
+                                if send:
+                                    valid_indices.append(i)
                     elif strigency == 3:
                         if n == '#' and t == '#' and a==True:
-                            send = True
-                            valid_indices.append(i)
-                            cand_attrs = None
-                    elif strigency == 2:
+                            send = send_or_not(op,ref_seq,style,overlap_extracellular,sa)
+                            sends.append(send)
+                            if send:
+                                valid_indices.append(i)
+                                cand_attrs = None
+                    elif strigency == 2:    # out of development
                         if t == '#' and a==True:
-                            send = True
-                            valid_indices.append(i)
-                            cand_attrs = None
-                    elif strigency == 1:
+                            send = compare_length(op,ref_seq,style)
+                            if send:
+                                valid_indices.append(i)
+                                cand_attrs = None
+                    elif strigency == 1:   # out of development
                         if a==True:
-                            send = not send
-                            valid_indices.append(i)
-                            cand_attrs = None
-                if send:
+                            send = compare_length(op,ref_seq,style)
+                            if send:
+                                valid_indices.append(i)
+                                cand_attrs = None
+                if any(sends):
                     candidates.append((sa,sa.score,sa.freq,len(valid_indices),sa.uid,valid_indices,cand_attrs))
                     count_candidates += 1
     sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2],-x[3]),reverse=False)
@@ -838,7 +916,7 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False
         file_name_lr = '_lr'
     else:
         file_name_lr = ''
-    with open(os.path.join(outdir,'candidates_{}{}.txt'.format(strigency,file_name_lr)),'w') as f1, open(os.path.join(outdir,'validation_{}{}.txt'.format(strigency,file_name_lr)),'w') as f3:
+    with open(os.path.join(outdir,'candidates_{}{}_{}_{}.txt'.format(strigency,file_name_lr,style,overlap_extracellular)),'w') as f1, open(os.path.join(outdir,'validation_{}{}_{}_{}.txt'.format(strigency,file_name_lr,style,overlap_extracellular)),'w') as f3:
         for (sa,score,freq,hit,uid,vi,ca),gene in zip(sorted_candidates,gene_symbols):
             print(sa,'valid_indices:{}\n'.format(vi),'gene_symbol:{}\n'.format(gene),file=f1,sep='',end='\n')
             print(ca,file=f3,sep='\n',end='\n')
