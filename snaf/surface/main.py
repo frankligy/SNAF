@@ -511,7 +511,9 @@ def run(uids,outdir,prediction_mode='short_read',n_stride=2,gtf=None,tmhmm=False
 
     :param uids: list, the membrane tuples
     :param outdir: string, the path where all the output will go into
+    :param prediction_mode: string, either 'short_read' or 'long_read'
     :param n_stride: int, how many exons define a early stop codon, for NMD check
+    :param gtf: None or string, if prediction mode is long_read, supply the path to the gtf file
     :param tmhmm: bool, use tmhmm or not
     :param software_path: None or string, if tmhmm=True, specify the tmhmm software path
     :param serialize: bool, serialize to the pickle file for the result

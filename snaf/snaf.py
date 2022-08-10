@@ -75,10 +75,12 @@ class JunctionCountMatrixQuery():
     :param add_control: None or pandas dataframe, SNAF will determine tumor specific junction using GTEx dataset in the downloaded reference folder,
                         however, if you have additional matched control you want to add, please add that, it is the same format as the junction count matrix, 
                         but the samples will all be normal control samples.
+    :param not_in_db: boolean, whether to remove junctions that are present in any Ensembl documented transcript, remember some of the documented transcript in
+                      Ensembl are tumor-specific as well, doing so may remove some bona fide hits. But good for reducing number of neoantigens for validation.
 
     Example::
 
-        jcmq = JunctionCountMatrixQuery(junction_count_matrix=df,cores=50,add_control=control_df)
+        jcmq = JunctionCountMatrixQuery(junction_count_matrix=df,cores=50,add_control=control_df,not_in_db=True)
         
     '''
 
@@ -129,12 +131,14 @@ class JunctionCountMatrixQuery():
 
 
     @staticmethod
-    def get_membrane_tuples(df):
+    def get_membrane_tuples(df,**kwargs):
         '''
         this function is used by SurfaceAntigen pipeline to filter out splicing evnets that are not tumor-specific and also compute
         useful informations for each membrane protein.
 
         :param df: pandas dataframe, the junction count matrix
+        :param **kwargs: will be passed to __init__ of JunctionCountMatrixQuery class function
+
         :return membrane_tuples: a list, in which each item is a tuple (uid,mean_gtex,df_gtex,ed,freq). 
 
             * uid: the uid of the splicing evnet
@@ -149,7 +153,8 @@ class JunctionCountMatrixQuery():
 
         '''
         from .surface import filter_to_membrane_protein
-        jcmq = JunctionCountMatrixQuery(junction_count_matrix=df)
+        jcmq = JunctionCountMatrixQuery(junction_count_matrix=df,**kwargs)
+        print(jcmq)
         neojunctions = jcmq.valid
         membrane_uid = filter_to_membrane_protein(neojunctions)
         membrane_tuples = []
