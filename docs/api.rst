@@ -3,8 +3,13 @@ API
 
 API reference manual
 
+
 MHC bound peptides (T antigen)
 ---------------------------------
+
+initialize
+~~~~~~~~~~~
+.. autofunction:: snaf.__init__.initialize
 
 JunctionCountMatrixQuery class
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,6 +61,10 @@ set_maxquant_configuration
 
 Surface Antigen (B antigen)
 -------------------------------
+
+initialize
+~~~~~~~~~~~~~
+.. autofunction:: snaf.surface.main.initialize
 
 run
 ~~~~~~

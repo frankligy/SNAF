@@ -25,6 +25,17 @@ mpl.rcParams['font.family'] = 'Arial'
 
 
 def initialize(db_dir):
+    '''
+    setting up additional global variables for running B antigen program
+
+    :param db_dir: string, the path to the database folder
+
+    Examples::
+
+        from snaf import surface
+        surface.initialize(db_dir=db_dir)
+
+    '''
     global df_exonlist
     global dict_exonCoords
     global dict_fa
