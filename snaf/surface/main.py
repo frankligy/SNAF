@@ -62,6 +62,8 @@ def initialize(db_dir):
 
 
 
+
+
 def _run_dash_prioritizer_return_events(candidates):
     # candidates is a list of each lines, containing the newline symbol
     collect = []

@@ -293,6 +293,19 @@ class JunctionCountMatrixQuery():
             jcmq.show_neoantigen_burden(outdir=outdir,name='burden_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False,criterion=criterion)
             jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}.txt'.format(stage),stage=stage,verbosity=1,contain_uid=False,plot=True,plot_name='frequency_stage{}.pdf'.format(stage),criterion=criterion)
             jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}_verbosity1_uid.txt'.format(stage),stage=stage,verbosity=1,contain_uid=True,plot=False,criterion=criterion)
+            # add additional attributes
+            df = pd.read_csv(os.path.join(outdir,'frequency_stage{}_verbosity1_uid.txt'.format(stage)),sep='\t',index_col=0)
+            enhance_frequency_table(df,True,True,'result','frequency_stage_{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage))
+            # report candidates
+            dff = pd.read_csv(os.path.join(outdir,'frequency_stage{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage)),sep='\t',index_col=0)
+            for sample in tqdm(jcmq.junction_count_matrix.columns,total=jcmq.junction_count_matrix.shape[1]):
+                report_candidates(jcmq,dff,sample,os.path.join(outdir,'T_candidates'),True)
+        # add additional attributes to stage0
+        df = pd.read_csv(os.path.join(outdir,'frequency_stage0.txt'),sep='\t',index_col=0)
+        df.index = [','.join([item,item]) for item in df.index]
+        df.to_csv(os.path.join(outdir,'frequency_stage0_verbosity1_uid.txt'),sep='\t')
+        df = pd.read_csv(os.path.join(outdir,'frequency_stage0_verbosity1_uid.txt'),sep='\t',index_col=0)
+        enhance_frequency_table(df,True,True,outdir,'frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt')        
 
     def parallelize_run(self,kind,hlas=None,strict=False):
         pool = mp.Pool(processes=self.cores)

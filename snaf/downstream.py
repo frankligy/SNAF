@@ -216,6 +216,7 @@ def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpa
     '''
     if not os.path.exists(outdir):
         os.mkdir(outdir)
+    df = df.copy()
     from ast import literal_eval
     if remove_quote:
         df['samples'] = [literal_eval(item) for item in df['samples']]
