@@ -223,16 +223,17 @@ def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpa
     # build dict for retrieving specificity scores and occurence
     df_score = df.filter(like='tumor_specificity',axis=1)
     score_dict = {}   # {tumor_specificity_mle:{aa1_uid1:0.5,aa2_uid2:0.6},tumor_specifity_bayesian:{}...}
-    for col in df_score.columns.tolist() + ['n_sample']:
+    for col in df_score.columns.tolist() + ['n_sample','coord']:
         tmp = df[col].to_dict()
         score_dict[col] = tmp
     # start to process jcmq
+    junction_count_dict = jcmq.junction_count_matrix[sample].to_dict()
     col_index = jcmq.subset.columns.tolist().index(sample)
     results = jcmq.results[0]
     hlas = jcmq.results[1]
     selected_hla = hlas[col_index]
     with open(os.path.join(outdir,'T_antigen_candidates_{}.txt'.format(sample)),'w') as f:
-        f.write('sample\tpeptide\tuid\thla\t')
+        f.write('sample\tpeptide\tuid\tjunction_count\tphase\tevidences\thla\t')
         metrics_stream = '\t'.join(list(metrics.values())) + '\t'
         f.write(metrics_stream)
         score_stream = '\t'.join(list(score_dict.keys())) + '\n'
@@ -241,12 +242,15 @@ def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpa
             if sample in samples:
                 stream = '{}\t'.format(sample)
                 aa,uid = item.split(',')
-                stream += '{}\t{}\t'.format(aa,uid)
+                jc = junction_count_dict[uid]
+                stream += '{}\t{}\t{}\t'.format(aa,uid,jc)
                 row_index = jcmq.subset.index.tolist().index(uid)
                 nj = deepcopy(results[row_index])
                 nj.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=selected_hla)
                 ep = nj.enhanced_peptides.filter_based_on_criterion(criterion,True)  # only report valid hla
                 for hla in ep[len(aa)][aa].keys():
+                    origin = ep[len(aa)][aa]['origin']
+                    stream += '{}\t{}\t'.format(origin[2],origin[3])  # phase, evidences
                     if hla != 'origin':
                         stream += '{}\t'.format(hla)
                         for k,v in metrics.items():
