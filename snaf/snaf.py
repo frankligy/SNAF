@@ -96,6 +96,7 @@ def process_gtf(gtf):
     return gtf_dict
 
 def get_support_phase(ensg, coord_first_exon_last_base, pssc, strand, length_first):
+    coord_first_exon_last_base, pssc, length_first = int(coord_first_exon_last_base), int(pssc), int(length_first)
     all_trans = phase_inferer_gtf_dict[ensg]
     supports = []
     if strand == '+':
@@ -1000,7 +1001,7 @@ class NeoJunction():
             if strand == '+':
                 coord_first_exon_last_base = coord.split(':')[1].split('-')[0]
             elif strand == '-':
-                coord_first_exon_last_base = coord.split(':')[1].split('-')[1]
+                coord_first_exon_last_base = coord.split(':')[1].split('(')[0].split('-')[1]
             possible_start_codon_coord = dict_start_codon.get(ensg,[])   # [333,444] or []
             support_phases_dict = {}   # {0:[(333,enst,+)]} or {}
             for pssc in possible_start_codon_coord:

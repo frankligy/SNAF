@@ -248,9 +248,9 @@ def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpa
                 nj = deepcopy(results[row_index])
                 nj.enhanced_peptides = nj.enhanced_peptides.filter_based_on_hla(selected_hla=selected_hla)
                 ep = nj.enhanced_peptides.filter_based_on_criterion(criterion,True)  # only report valid hla
+                origin = ep[len(aa)][aa]['origin']
+                stream += '{}\t{}\t'.format(origin[2],origin[3])  # phase, evidences
                 for hla in ep[len(aa)][aa].keys():
-                    origin = ep[len(aa)][aa]['origin']
-                    stream += '{}\t{}\t'.format(origin[2],origin[3])  # phase, evidences
                     if hla != 'origin':
                         stream += '{}\t'.format(hla)
                         for k,v in metrics.items():
@@ -260,7 +260,7 @@ def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpa
                             s = v[item]
                             stream += '{}\t'.format(s)
                         f.write(stream.rstrip('\t') + '\n')
-                        stream = '\t'.join(stream.split('\t')[:3]) + '\t'
+                        stream = '\t'.join(stream.split('\t')[:6]) + '\t'
 
 
 
