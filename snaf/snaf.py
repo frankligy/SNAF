@@ -22,6 +22,7 @@ import functools
 from tqdm import tqdm
 from itertools import compress
 from ast import literal_eval
+from bisect import bisect, bisect_left
 
 
 # for biopython, pip install biopython
@@ -52,6 +53,7 @@ def snaf_configuration(exon_table,transcript_db,db_dir,fasta,software_path_arg=N
     global binding_method
     global dict_exonlist
     global dict_start_codon
+    global phase_inferer_gtf_dict
     dict_exonCoords = exonCoords_to_dict(exon_table)
     dict_exonlist = construct_dict_exonlist(transcript_db)
     dict_fa = fasta_to_dict(fasta)
@@ -62,6 +64,137 @@ def snaf_configuration(exon_table,transcript_db,db_dir,fasta,software_path_arg=N
     df_start_codon['start_codon'] = [literal_eval(item) for item in df_start_codon['start_codon']]
     df_start_codon['non_redundant'] = [literal_eval(item) for item in df_start_codon['non_redundant']]
     dict_start_codon = df_start_codon['start_codon'].to_dict()
+
+    phase_inferer_gtf_dict = process_gtf(os.path.join(db_dir,'Homo_sapiens.GRCh38.91.gtf'))
+
+    
+
+
+def process_gtf(gtf):
+    # any official ensembl release gtf format
+    '''
+    gtf_dict['ENSG00000186092']
+
+        {'ENST00000641515': [(65419, 65433), (65520, 65573), (69037, 71585)],
+        'ENST00000335137': [(69055, 70108)]}
+    '''
+    gtf_dict = {}
+    with open(gtf,'r') as f:
+        for line in f:
+            try:
+                chrom, source, typ, start, end, score, strand, phase, attrs = line.rstrip('\n').split('\t')
+            except ValueError:  # the header line
+                continue
+            if typ == 'gene':
+                ensg = attrs.split(';')[0].split(' ')[1].strip('"')
+                gtf_dict[ensg] = {}
+            elif typ == 'transcript':
+                enst = attrs.split(';')[2].split(' ')[2].strip('"')
+                gtf_dict[ensg][enst] = []
+            elif typ == 'exon':
+                gtf_dict[ensg][enst].append((int(start),int(end)))
+    return gtf_dict
+
+def get_support_phase(ensg, coord_first_exon_last_base, pssc, strand, length_first):
+    all_trans = phase_inferer_gtf_dict[ensg]
+    supports = []
+    if strand == '+':
+        for enst, tran in all_trans.items():
+            lis = []
+            [lis.extend(list(exon)) for exon in tran]
+            pssc_insert_pos = bisect(lis, pssc)
+            coord_first_exon_first_base = coord_first_exon_last_base - length_first + 1
+            junction_insert_pos = bisect(lis, coord_first_exon_first_base)
+
+            if junction_insert_pos % 2 == 1 and pssc_insert_pos % 2 == 1:
+                if junction_insert_pos == pssc_insert_pos:
+                    n_bases = coord_first_exon_first_base - pssc + 1
+                elif junction_insert_pos > pssc_insert_pos:
+                    start_exon_index = (pssc_insert_pos - 1) // 2
+                    end_exon_index = (junction_insert_pos - 1) // 2
+                    n_bases = 0
+                    for i, exon in enumerate(tran):
+                        if i == start_exon_index:
+                            n_bases += (exon[1] - pssc + 1)
+                        elif i == end_exon_index:
+                            n_bases += (coord_first_exon_first_base - exon[0] + 1)
+                        else:
+                            if i > start_exon_index and i < end_exon_index:
+                                n_bases += (exon[1] - exon[0] + 1)
+                else:
+                    continue
+            else:
+                continue
+
+
+            remainder = n_bases % 3
+            '''
+            *   *   *   *   |*   *   *    *    *
+                            |6   7   8    9    10
+
+            remainder means a fragment including the first base in the first exon, how many left. 1 left means 6 should be the first base of new codon
+            2 left means 6 should be 6 is the second in last codon, 7 will be the last base in the last codon, have to start with 8
+            0 left means 6 should be the last base in the last codon, so that we start with 7
+            '''
+            if remainder == 1:
+                phase = 0
+            elif remainder == 2:
+                phase = 2
+            elif remainder == 0:
+                phase = 1
+            supports.append((phase, pssc, enst,strand))
+
+    elif strand == '-':
+        for enst, tran in all_trans.items():
+            tran.sort(
+                key=lambda x: x[0])  # because negative strand looks like [(5,7),(2,4)], we change it to [(2,4),(5,7)]
+            lis = []
+            [lis.extend(list(exon)) for exon in tran]
+            pssc_insert_pos = bisect_left(lis, pssc)
+            coord_first_exon_first_base = coord_first_exon_last_base + length_first - 1
+            junction_insert_pos = bisect_left(lis, coord_first_exon_first_base)
+
+            if junction_insert_pos % 2 == 1 and pssc_insert_pos % 2 == 1:
+                if junction_insert_pos == pssc_insert_pos:
+                    n_bases = pssc - coord_first_exon_first_base + 1
+                elif junction_insert_pos < pssc_insert_pos:
+                    start_exon_index = (pssc_insert_pos - 1) // 2
+                    end_exon_index = (junction_insert_pos - 1) // 2
+                    n_bases = 0
+                    for i, exon in enumerate(tran):
+                        if i == start_exon_index:
+                            n_bases += (pssc - exon[0] + 1)
+                        elif i == end_exon_index:
+                            n_bases += (exon[1] - coord_first_exon_first_base + 1)
+                        else:
+                            if i > end_exon_index and i < start_exon_index:
+                                n_bases += (exon[1] - exon[0] + 1)
+                else:
+                    continue
+            else:
+                continue
+
+
+
+            remainder = n_bases % 3  # same idea as above forward strand, see explanation above
+            if remainder == 1:
+                phase = 0
+            elif remainder == 2:
+                phase = 2
+            elif remainder == 0:
+                phase = 1
+            supports.append((phase, pssc, enst, strand))
+
+    return supports   
+
+
+
+    
+
+
+
+
+
 
 
 
@@ -295,11 +428,12 @@ class JunctionCountMatrixQuery():
             jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}_verbosity1_uid.txt'.format(stage),stage=stage,verbosity=1,contain_uid=True,plot=False,criterion=criterion)
             # add additional attributes
             df = pd.read_csv(os.path.join(outdir,'frequency_stage{}_verbosity1_uid.txt'.format(stage)),sep='\t',index_col=0)
-            enhance_frequency_table(df,True,True,'result','frequency_stage_{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage))
+            enhance_frequency_table(df,True,True,'result','frequency_stage{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage))
             # report candidates
-            dff = pd.read_csv(os.path.join(outdir,'frequency_stage{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage)),sep='\t',index_col=0)
-            for sample in tqdm(jcmq.junction_count_matrix.columns,total=jcmq.junction_count_matrix.shape[1]):
-                report_candidates(jcmq,dff,sample,os.path.join(outdir,'T_candidates'),True)
+            if stage == 3:
+                dff = pd.read_csv(os.path.join(outdir,'frequency_stage{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage)),sep='\t',index_col=0)
+                for sample in tqdm(jcmq.junction_count_matrix.columns,total=jcmq.junction_count_matrix.shape[1]):
+                    report_candidates(jcmq,dff,sample,os.path.join(outdir,'T_candidates'),True)
         # add additional attributes to stage0
         df = pd.read_csv(os.path.join(outdir,'frequency_stage0.txt'),sep='\t',index_col=0)
         df.index = [','.join([item,item]) for item in df.index]
@@ -854,6 +988,7 @@ class NeoJunction():
         else:
             self.junction = '$' * 10   # indicating invalid uid
 
+
     def in_silico_translation(self,ks=[9,10],strict=False):
         peptides = {k:[] for k in ks}
         coord = uid_to_coord(self.uid)  # chr1:555-666(+)
@@ -861,45 +996,17 @@ class NeoJunction():
             first,second = self.junction.split(',')
             # annotate peptide based on starting codon evidence
             ensg = self.uid.split(':')[0]
-            coord_first_exon_last_base = coord.split(':')[1].split('-')[0]
             strand = coord.split('(')[1].rstrip(')')
+            if strand == '+':
+                coord_first_exon_last_base = coord.split(':')[1].split('-')[0]
+            elif strand == '-':
+                coord_first_exon_last_base = coord.split(':')[1].split('-')[1]
             possible_start_codon_coord = dict_start_codon.get(ensg,[])   # [333,444] or []
-            support_phases_dict = {}   # {0:[333]} or {}
+            support_phases_dict = {}   # {0:[(333,enst,+)]} or {}
             for pssc in possible_start_codon_coord:
-                if strand == '+':
-                    support_phase = (int(coord_first_exon_last_base) - len(first) + 1 - int(pssc)) % 3
-                elif strand == '-':
-                    support_phase = (int(pssc) - (int(coord_first_exon_last_base) + len(first) - 1)) % 3
-                if support_phase == 0:
-                    support_phase = 0
-                elif support_phase == 1:
-                    support_phase = 2
-                elif support_phase == 2:
-                    support_phase = 1
-                '''
-                scenario where strand is +:
-
-                A  T  G  *  *  *  *  |*  T  C  T
-                8  9 10 11  12 13 14 |15 16 17 18
-
-                Say the coord_first_exon_last_base is T (18), pssc is A (8), the first exon is of length 4 (*TCT) 
-                18 - 4 + 1 = 15 means the coord of the first base of first exon (*).
-                (15 - 8) % 3 = 1 means the first base in first exon is the index 1 of the codon (second bases, as python index is 0-based)
-                so that two bases of the first exon involved in forming the last codon, the phase start at index 2 
-                de_facto_first = first[2:], starting from CT......
-
-
-                scenario where strand is -:
-                
-                C  *  *  *|  *  %  %  G  T  A
-                5  6  7  8|  9 10  11 12 13 14
-
-                you first get the coord of the first base of first exon * (8) by 5 + 4 - 1 = 8
-                now you use 14 - 8 = 6, 6 % 3 = 0, meaning the first base of the first exon is involved in the index0 nt of the last codon, same interpretation
-                from here as the strand + scenario
-
-                '''
-                support_phases_dict.setdefault(support_phase,[]).append(pssc)
+                supports = get_support_phase(ensg,coord_first_exon_last_base,pssc,strand,len(first))
+                for (phase_, pssc_, enst_, strand_) in supports:
+                    support_phases_dict.setdefault(phase_,[]).append((pssc_,enst_,strand_))
             for phase in [0,1,2]:  # tranlation starts with index "phase"
                 evidences = tuple(support_phases_dict.get(phase,[]))
                 if strict and len(evidences)==0:  # in strict mode, without start_codon evidence, let's skip this phase
