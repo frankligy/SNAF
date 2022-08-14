@@ -49,7 +49,7 @@ def initialize(db_dir,gtex_mode,software_path=None,binding_method=None,t_min=20,
         os.mkdir(scratch_dir)
 
 
-def get_reduced_junction_matrix(pc,pea,frac=None,n=None):
+def get_reduced_junction_matrix(pc,pea,frac=None,n=None,samples=None):
     # preprocess the dataframe
     df = pd.read_csv(pc,sep='\t',index_col=0)
     df.index = [item.split('=')[0] for item in df.index]
@@ -65,6 +65,10 @@ def get_reduced_junction_matrix(pc,pea,frac=None,n=None):
         df = df.sample(frac=frac)
     if n is not None:
         df = df.sample(n=n)
+
+    # if need filtering out samples
+    if samples is not None:
+        df = df.loc[:,df.columns.isin(samples)] 
     print('current shape: {}'.format(df.shape))
     return df
 
