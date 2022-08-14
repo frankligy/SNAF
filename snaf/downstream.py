@@ -223,7 +223,7 @@ def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpa
     # build dict for retrieving specificity scores and occurence
     df_score = df.filter(like='tumor_specificity',axis=1)
     score_dict = {}   # {tumor_specificity_mle:{aa1_uid1:0.5,aa2_uid2:0.6},tumor_specifity_bayesian:{}...}
-    for col in df_score.columns.tolist() + ['n_sample','coord']:
+    for col in df_score.columns.tolist() + ['n_sample','coord','symbol']:
         tmp = df[col].to_dict()
         score_dict[col] = tmp
     # start to process jcmq
