@@ -435,6 +435,13 @@ class JunctionCountMatrixQuery():
                 dff = pd.read_csv(os.path.join(outdir,'frequency_stage{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage)),sep='\t',index_col=0)
                 for sample in tqdm(jcmq.junction_count_matrix.columns,total=jcmq.junction_count_matrix.shape[1]):
                     report_candidates(jcmq,dff,sample,os.path.join(outdir,'T_candidates'),True)
+                print('concatenating all T antigen files into one')
+                df_list = []
+                for sample in jcmq.junction_count_matrix.columns:
+                    df_list.append(pd.read_csv(os.path.join(outdir,'T_candidates','T_antigen_candidates_{}.txt'.format(sample)),sep='\t',index_col=0))
+                final_df = pd.concat(df_list,axis=0)
+                final_df.to_csv(os.path.join(outdir,'T_candidates','T_antigen_candidates_all.txt'),sep='\t')
+
         # add additional attributes to stage0
         df = pd.read_csv(os.path.join(outdir,'frequency_stage0.txt'),sep='\t',index_col=0)
         df.index = [','.join([item,item]) for item in df.index]

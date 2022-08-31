@@ -238,7 +238,7 @@ def report_candidates(jcmq,df,sample,outdir,remove_quote=True,metrics={'netMHCpa
         f.write(metrics_stream)
         score_stream = '\t'.join(list(score_dict.keys())) + '\n'
         f.write(score_stream)
-        for item,samples in tqdm(zip(df.index,df['samples']),total=df.shape[0]):
+        for item,samples in zip(df.index,df['samples']):
             if sample in samples:
                 stream = '{}\t'.format(sample)
                 aa,uid = item.split(',')
@@ -330,13 +330,16 @@ def ensemblgene_to_symbol(query,species):
     import mygene
     mg = mygene.MyGeneInfo()
     out = mg.querymany(query,scopes='ensemblgene',fileds='symbol',species=species,returnall=True,as_dataframe=True,df_index=True)
-    result = out['out']['symbol'].fillna('unknown_gene').tolist()
-    try:
-        assert len(query) == len(result)
-    except AssertionError:    # have duplicate results
-        df = out['out']
-        df_unique = df.loc[~df.index.duplicated(),:]
-        result = df_unique['symbol'].fillna('unknown_gene').tolist()
+
+    df = out['out']
+    df_unique = df.loc[~df.index.duplicated(),:]
+    df_unique['symbol'].fillna('unknown_gene',inplace=True)
+    mapping = df_unique['symbol'].to_dict()
+
+    result = []
+    for item in query:
+        result.append(mapping[item])
+
     return result
 
 
