@@ -191,6 +191,26 @@ def get_support_phase(ensg, coord_first_exon_last_base, pssc, strand, length_fir
 
 
     
+def is_in_db(valid):
+    # provide a list with uid without repeats
+    mapping = {}
+    for uid in tqdm(valid):
+        ensg = uid.split(':')[0]
+        exons = ':'.join(uid.split(':')[1:])
+        if '_' in exons or 'U' in exons or 'ENSG' in exons or 'I' in exons:
+            mapping[uid] = False
+        else:
+            exonlist = dict_exonlist[ensg]
+            exonstring = '|'.join(exonlist)
+            e1,e2 = exons.split('-')
+            pattern1 = re.compile(r'^{}\|{}\|'.format(e1,e2))  # ^E1.1|E2.3|
+            pattern2 = re.compile(r'\|{}\|{}$'.format(e1,e2))  # |E1.1|E2.3$
+            pattern3 = re.compile(r'\|{}\|{}\|'.format(e1,e2)) # |E1.1|E2.3|
+            if re.search(pattern3,exonstring) or re.search(pattern2,exonstring) or re.search(pattern1,exonstring):   # as long as match one pattern, should be eliminated
+                mapping[uid] = True
+            else:
+                mapping[uid] = False
+    return mapping
 
 
 
@@ -435,11 +455,14 @@ class JunctionCountMatrixQuery():
                 dff = pd.read_csv(os.path.join(outdir,'frequency_stage{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage)),sep='\t',index_col=0)
                 for sample in tqdm(jcmq.junction_count_matrix.columns,total=jcmq.junction_count_matrix.shape[1]):
                     report_candidates(jcmq,dff,sample,os.path.join(outdir,'T_candidates'),True)
-                print('concatenating all T antigen files into one')
+                print('concatenating all T antigen files into one & indicate whether in AltAnalyze database')
                 df_list = []
                 for sample in jcmq.junction_count_matrix.columns:
                     df_list.append(pd.read_csv(os.path.join(outdir,'T_candidates','T_antigen_candidates_{}.txt'.format(sample)),sep='\t',index_col=0))
                 final_df = pd.concat(df_list,axis=0)
+                all_uid = final_df['uid'].unique().tolist()
+                mapping = is_in_db(all_uid)
+                final_df['in_db'] = final_df['uid'].map(mapping).values
                 final_df.to_csv(os.path.join(outdir,'T_candidates','T_antigen_candidates_all.txt'),sep='\t')
 
         # add additional attributes to stage0
