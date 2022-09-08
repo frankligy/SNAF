@@ -85,16 +85,18 @@ def multiple_crude_sifting(junction_count_matrix,add_control=None,dict_exonlist=
                     continue
                 else:
                     updated_valid.append(uid)
-        print('reduce valid Neojunction from {} to {}'.format(len(valid),len(updated_valid)))
+        print('reduce valid Neojunction from {} to {} because they are present in Ensembl db'.format(len(valid),len(updated_valid)))
         valid = updated_valid
     # consider add_control
     if add_control is not None:
+        n_previous_valid = len(valid)
         junction_to_mean = add_control.mean(axis=1).to_dict()
         df['mean_add'] = df.index.map(junction_to_mean).fillna(value=0)
         df['diff_add'] = df['max'] - df['mean_add']
         df['cond_add'] = (df['mean_add'] < n_max) & (df['diff_add'] > t_min)
         valid_add = df.loc[df['cond_add']].index.tolist()
         valid = list(set(valid).intersection(set(valid_add)))
+        print('reduce valid Neojunction from {} to {} because they are present in added control'.format(n_previous_valid,len(valid)))
     invalid = list(set(junction_count_matrix.index).difference(set(valid)))
     # now, consider each entry
     gtex_df = pd.concat([df['mean']]*junction_count_matrix.shape[1],axis=1)

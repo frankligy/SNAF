@@ -55,6 +55,7 @@ def get_reduced_junction_matrix(pc,pea,frac=None,n=None,samples=None):
     df.index = [item.split('=')[0] for item in df.index]
     df = df.loc[np.logical_not(df.index.duplicated()).tolist(),:]
     print('original shape: {}'.format(df.shape))
+    print('{} samples have HLA type info'.format(len(samples)))
 
     # filter to EventAnnotation file
     ee = [':'.join(item.split('|')[0].split(':')[1:]) for item in pd.read_csv(pea,sep='\t')['UID']]
@@ -66,10 +67,17 @@ def get_reduced_junction_matrix(pc,pea,frac=None,n=None,samples=None):
     if n is not None:
         df = df.sample(n=n)
 
-    # if need filtering out samples
+    # if need filtering out or rearranging samples
     if samples is not None:
         df = df.loc[:,df.columns.isin(samples)] 
     print('current shape: {}'.format(df.shape))
+    return df
+
+
+def remove_trailing_coord(count,sep='\t'):
+    df = pd.read_csv(count,sep=sep,index_col=0)
+    df.index = [item.split('=')[0] for item in df.index]
+    df = df.loc[np.logical_not(df.index.duplicated()).tolist(),:]
     return df
 
 
