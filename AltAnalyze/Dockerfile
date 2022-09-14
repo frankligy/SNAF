@@ -30,4 +30,4 @@ ENTRYPOINT ["/usr/src/app/AltAnalyze.sh"]
 
 ## To check -- docker images
 ## To check -- docker ps
-## To check -- docker images rm -f altanalyze
+## To check -- docker image rm -f altanalyze
