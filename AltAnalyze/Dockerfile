@@ -15,7 +15,7 @@ RUN curl -o requirements.txt https://raw.githubusercontent.com/frankligy/SNAF/ma
     && chmod 777 /usr/src/app/AltAnalyze.sh \
     && mkdir run \
     && chmod -R 777 /usr/src/app/altanalyze   
-ENTRYPOINT ["/usr/src/app/AltAnalyze.sh"]
+ENTRYPOINT ["/usr/src/app/AltAnalyze.sh"]  # must double quote
 
 ## To build -- docker build --no-cache -t altanalyze .
 
