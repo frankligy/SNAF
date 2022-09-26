@@ -33,6 +33,7 @@ ENTRYPOINT ["/usr/src/app/AltAnalyze.sh"]  # must double quote
 
 ## To check -- docker images
 ## To check -- docker ps
+## To check -- docker stop container_id
 ## To check -- docker image rm -f altanalyze
 
 ## We are building a Debian system
