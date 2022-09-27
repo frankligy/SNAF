@@ -48,10 +48,10 @@ TCGA-A1-A0SN-01A-11R-A144-07.bam
 
 ```bash
 # build initial index
-module load STAR/2.6.1
+module load STAR/2.4.0h
 STAR --runMode genomeGenerate \
      --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/human_gencode_v36_all_scaffold_star_index_v2.6.1 \
-     --genomeFastaFiles GRCh38.p13.genome.fa \
+     --genomeFastaFiles GRCh38.d1.vd1.fa \
      --runThreadN 8 \
      --sjdbGTFfile gencode.v36.annotation.gtf \
      --sjdbOverhang 100
@@ -59,9 +59,8 @@ STAR --runMode genomeGenerate \
 
 **Notes**
 
-1. Hard to figure out STAR version they used
-2. using gencode v36 as they mentioned
-3. include other scaffold as suggested in STAR manual
+1. Please use 2.4.0 version
+2. using gencode v36 and fasta file downloaded from [GDC website](https://gdc.cancer.gov/about-data/gdc-data-processing/gdc-reference-files)
 
 
 ```bash
@@ -95,7 +94,7 @@ STAR --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/hu
 # build second index
 STAR --runMode genomeGenerate \
      --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/human_gencode_v36_all_scaffold_star_index_v2.6.1_$1 \
-     --genomeFastaFiles GRCh38.p13.genome.fa \
+     --genomeFastaFiles GRCh38.d1.vd1.fa \
      --sjdbOverhang 100 \
      --runThreadN 8 \
      --sjdbFileChrStartEnd ${1}SJ.out.tab \
