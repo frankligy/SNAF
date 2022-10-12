@@ -77,7 +77,7 @@ run like that::
 But what if you only have bam files, no worreis, just convert them to fastq first::
 
     # this step is required, have to sort by chromsome name
-    samtools sort -n $BAM $SAMPLE.qsort
+    samtools sort -n $BAM -o $SAMPLE.qsort.bam
     # then just convert, more please look at bedtools bamtofastq docs, super easy
     bedtools bamtofastq -i $SAMPLE.qsort.bam -fq $SAMPLE.1.fastq -fq2 $SAMPLE.2.fastq
 
