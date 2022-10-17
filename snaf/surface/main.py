@@ -44,23 +44,20 @@ def initialize(db_dir):
     global dict_uni_fa
     global df_topology
     print('{} {} starting surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
-    transcript_db = os.path.join(db_dir,'mRNA-ExonIDs.txt')
-    exon_table = os.path.join(db_dir,'Hs_Ensembl_exon_add_col.txt')
-    fasta = os.path.join(db_dir,'Hs_gene-seq-2000_flank.fa')
-    biotype_db = os.path.join(db_dir,'Hs_Ensembl_transcript-biotypes.txt')
-    membrane_db = os.path.join(db_dir,'human_membrane_proteins_acc2ens.txt')
-    membrane_fasta_db = os.path.join(db_dir,'uniprot_isoform_enhance.fasta')
+    transcript_db = os.path.join(db_dir,'Alt91_db','mRNA-ExonIDs.txt')
+    exon_table = os.path.join(db_dir,'Alt91_db','Hs_Ensembl_exon_add_col.txt')
+    fasta = os.path.join(db_dir,'Alt91_db','Hs_gene-seq-2000_flank.fa')
+    biotype_db = os.path.join(db_dir,'Alt91_db','Hs_Ensembl_transcript-biotypes.txt')
+    membrane_db = os.path.join(db_dir,'Alt91_db','human_membrane_proteins_acc2ens.txt')
+    membrane_fasta_db = os.path.join(db_dir,'Alt91_db','uniprot_isoform_enhance.fasta')
     df_exonlist = pd.read_csv(transcript_db,sep='\t',header=None,names=['EnsGID','EnsTID','EnsPID','Exons'])  # index is number
     dict_exonCoords = exonCoords_to_dict(exon_table) 
     dict_fa = fasta_to_dict(fasta)
     dict_biotype = biotype(pd.read_csv(biotype_db,sep='\t'))  # index is number
     df_membrane_proteins = pd.read_csv(membrane_db,sep='\t',index_col=0)
     dict_uni_fa = read_uniprot_seq(membrane_fasta_db)
-    df_topology = pd.read_csv(os.path.join(db_dir,'ENSP_topology.txt'),sep='\t')
+    df_topology = pd.read_csv(os.path.join(db_dir,'Alt91_db','ENSP_topology.txt'),sep='\t')
     print('{} {} finished surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
-
-
-
 
 
 

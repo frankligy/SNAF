@@ -60,12 +60,12 @@ def snaf_configuration(exon_table,transcript_db,db_dir,fasta,software_path_arg=N
     software_path = software_path_arg
     binding_method = binding_method_arg
 
-    df_start_codon = pd.read_csv(os.path.join(db_dir,'df_start_codon.txt'),sep='\t',index_col=0)
+    df_start_codon = pd.read_csv(os.path.join(db_dir,'Alt91_db','df_start_codon.txt'),sep='\t',index_col=0)
     df_start_codon['start_codon'] = [literal_eval(item) for item in df_start_codon['start_codon']]
     df_start_codon['non_redundant'] = [literal_eval(item) for item in df_start_codon['non_redundant']]
     dict_start_codon = df_start_codon['start_codon'].to_dict()
 
-    phase_inferer_gtf_dict = process_gtf(os.path.join(db_dir,'Homo_sapiens.GRCh38.91.gtf'))
+    phase_inferer_gtf_dict = process_gtf(os.path.join(db_dir,'Alt91_db','Homo_sapiens.GRCh38.91.gtf'))
 
     
 
@@ -226,9 +226,10 @@ class JunctionCountMatrixQuery():
 
     :param junction_count_matrix: The pandas dataframe for the junction_count_matrix, outputted by AltAnalyze
     :param cores: int, how many cores you'd like to use, if None, then will automatically detect the maximum amount of cores in the OS
-    :param add_control: None or pandas dataframe, SNAF will determine tumor specific junction using GTEx dataset in the downloaded reference folder,
-                        however, if you have additional matched control you want to add, please add that, it is the same format as the junction count matrix, 
-                        but the samples will all be normal control samples.
+    :param add_control: None or a dictionary containing additional controls, additional controls can a dataframe or anndata, for instance, if adding two controls asides from internal GTEx,
+                        {'tcga_matched_control':df,'gtex_skin':adata}, when added database contains multiple tissue types, it is recommended to pass as a AnnData with the tissue
+                        information stored as adata.var['tissue'], otherwise, if passed as a dataframe, or samples will be recognized as a single tissue type, it will affect tumor specifcity
+                        score calculation if using MLE or bayesian hierarchical models.
     :param not_in_db: boolean, whether to remove junctions that are present in any Ensembl documented transcript, remember some of the documented transcript in
                       Ensembl are tumor-specific as well, doing so may remove some bona fide hits. But good for reducing number of neoantigens for validation.
 

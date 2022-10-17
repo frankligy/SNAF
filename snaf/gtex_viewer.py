@@ -22,9 +22,9 @@ mpl.rcParams['font.family'] = 'Arial'
 
 # gtex viewer
 
-def gtex_viewer_configuration(gtex_db):
+def gtex_viewer_configuration(adata_passed_in):
     global adata
-    adata = ad.read_h5ad(gtex_db)
+    adata = adata_passed_in
 
 def gtex_visual_norm_count_combined(query,out_folder='.'):
     data = adata[query,:].X.toarray().squeeze() / adata.var['total_count'].values
@@ -41,6 +41,49 @@ def gtex_visual_per_tissue_count(query,out_folder='.'):
     sns.histplot(np.array(per_tissue_count),binwidth=1)
     plt.savefig(os.path.join(out_folder,'poisson_{}.pdf'.format(query.replace(':','_'))),bbox_inches='tight')
     plt.close()
+
+
+def gtex_visual_combine_plotly(uid,outdir='',norm=False,tumor=None):
+    import plotly.graph_objects as go
+    query = uid
+    try:
+        info = adata[[query],:]
+    except:
+        print('{} not detected in gtex or added controls, impute as zero'.format(query))
+        info_tmp = adata[['ENSG00000090339:E4.3-E4.5'],:]
+        info = ad.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
+    title = query
+    identifier = query.replace(':','_')
+    df_gtex = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
+    if norm:
+        df_gtex['value'] = df_gtex['value'] / (info.var['total_count'])
+    if tumor is not None:
+        tumor_query_value = tumor.loc[query,:].values.squeeze()
+        if norm:
+            tumor_total_count = tumor.sum(axis=0)
+            tumor_query_value = tumor_query_value / (tumor_total_count.values.squeeze()/1e6)
+        tumor_sub_df = pd.DataFrame(data={'value':tumor_query_value,'tissue':['tumor']*tumor.shape[1]},index=tumor.columns)
+
+    expr_tumor_dict = tumor_sub_df['value'].to_dict()   # {sample:value}
+    expr_tumor_dict = {sample + ',' + 'tumor': value for sample,value in expr_tumor_dict.items()}  # {sample,tumor:value}
+    expr_tumor_dict = {k:v for k,v in sorted(expr_tumor_dict.items(),key=lambda x:x[1])}
+    expr_gtex_df = df_gtex  # index is sample name, two columns: value and tissue
+    expr_gtex_dict = {row.Index + ',' + row.tissue: row.value for row in expr_gtex_df.itertuples()}   # {sample,tissue:value}
+    expr_gtex_dict = {k:v for k,v in sorted(expr_gtex_dict.items(),key=lambda x:x[1])}
+    node_x = []
+    node_y = []
+    node_text = []
+    expr_gtex_dict.update(expr_tumor_dict)
+    for i,(k,v) in enumerate(expr_gtex_dict.items()):
+        node_x.append(i)
+        node_y.append(v)
+        node_text.append(k)
+    node_trace = go.Scatter(x=node_x,y=node_y,mode='markers',marker={'color':'red','size':2},text=node_text,hoverinfo='text')
+    fig = go.Figure(data=[node_trace],layout=go.Layout(showlegend=False))
+    fig.update_xaxes(title_text='Samples(Normal -> Tumor)')
+    y_axis_title = 'Count Per Million (Normalized)' if norm else 'Raw Read Count'
+    fig.update_yaxes(title_text=y_axis_title)
+    fig.write_html(os.path.join(outdir,'gtex_visual_combine_plotly_norm_{}_{}.html'.format(norm,identifier)))
 
 
 def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,ylim=None):

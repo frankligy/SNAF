@@ -7,7 +7,7 @@ import sys
 import pickle
 import h5py
 import matplotlib.pyplot as plt
-import anndata
+import anndata as ad
 from scipy.optimize import minimize
 from scipy import stats
 from scipy.sparse import csr_matrix
@@ -31,31 +31,61 @@ this script is to query the tumor specificity of the junction
 '''
 
 
-def gtex_configuration(gtex_db,t_min_arg,n_max_arg,add_control=None):
-    global adata
+def gtex_configuration(df,gtex_db,t_min_arg,n_max_arg,add_control=None):
     global adata_gtex
+    global adata
     global t_min
     global n_max
-    adata_gtex = anndata.read_h5ad(gtex_db)
+    tested_junctions = set(df.index)
+    adata = ad.read_h5ad(gtex_db)
+    adata = adata[np.logical_not(adata.obs_names.duplicated()),:] 
+    adata = adata[list(set(adata.obs_names).intersection(tested_junctions)),:]  
+    print('Current loaded gtex cohort with shape {}'.format(adata.shape))
+    tissue_dict = adata.var['tissue'].to_dict()
+    adata_gtex = adata   # already has mean and tissue variables
     if add_control is not None:
-        print('adding additional control samples {} to the database'.format(add_control.shape))
-        tissue_dict = adata_gtex.var['tissue'].to_dict()
-        tissue_dict_right = {k:'additional_control' for k in add_control.columns}
-        tissue_dict.update(tissue_dict_right)
-        df_left = adata_gtex.to_df()
-        df_right = add_control
-        df_combine = df_left.join(other=df_right,how='outer').fillna(0)
-        adata = anndata.AnnData(X=df_combine.values,obs=pd.DataFrame(index=df_combine.index),var=pd.DataFrame(index=df_combine.columns))
-        print('now the shape of control db is {}'.format(adata.shape))
-        adata.var['tissue'] = adata.var_names.map(tissue_dict).values
-        adata.obs['mean'] = np.array(adata.X.mean(axis=1)).squeeze()
-        total_count = np.array(adata.X.sum(axis=0)).squeeze() / 1e6
-        adata.var['total_count'] = total_count
-    else:
-        adata = adata_gtex
+        for id_, control in add_control.items():
+            if isinstance(control,pd.DataFrame):
+                assert len(set(control.columns).intersection(tissue_dict.keys())) == 0  # sample id can not be ambiguous
+                control = control.loc[np.logical_not(control.index.duplicated()),:]
+                control = control.loc[list(set(control.index).intersection(tested_junctions)),:]
+                print('Adding cohort {} with shape {} to the database'.format(id_,control.shape))
+                tissue_dict_right = {k:id_ for k in control.columns}
+                tissue_dict.update(tissue_dict_right)
+                df_left = adata.to_df()
+                df_right = control
+                df_combine = df_left.join(other=df_right,how='outer').fillna(0)
+                adata = ad.AnnData(X=csr_matrix(df_combine.values),obs=pd.DataFrame(index=df_combine.index),var=pd.DataFrame(index=df_combine.columns))
+
+            elif isinstance(control,ad.AnnData):
+                assert len(set(control.var_names).intersection(tissue_dict.keys())) == 0
+                control = control[np.logical_not(control.obs_names.duplicated()),:]
+                control = control[list(set(control.obs_names).intersection(tested_junctions)),:]
+                print('Adding cohort {} with shape {} to the database'.format(id_,control.shape))
+                if 'tissue' in control.var.columns:   # if tissue is in var columns, it will be used 
+                    tissue_dict_right = control.var['tissue'].to_dict()
+                else:
+                    tissue_dict_right = {k:id_ for k in control.var_names}
+                tissue_dict.update(tissue_dict_right)
+                df_left = adata.to_df()
+                df_right = control.to_df()
+                df_combine = df_left.join(other=df_right,how='outer').fillna(0)
+                adata = ad.AnnData(X=csr_matrix(df_combine.values),obs=pd.DataFrame(index=df_combine.index),var=pd.DataFrame(index=df_combine.columns))
+            
+            else:
+                raise Exception('control must be either in dataframe or anndata format')
+
+            print('now the shape of control db is {}'.format(adata.shape))
+            adata.var['tissue'] = adata.var_names.map(tissue_dict).values
+            adata.obs['mean'] = np.array(adata.X.mean(axis=1)).squeeze()
+            total_count = np.array(adata.X.sum(axis=0)).squeeze() / 1e6
+            adata.var['total_count'] = total_count
+            
+
     t_min = t_min_arg
     n_max = n_max_arg
 
+    return adata
 
 
 
@@ -67,6 +97,9 @@ def multiple_crude_sifting(junction_count_matrix,add_control=None,dict_exonlist=
     df['diff'] = df['max'] - df['mean']
     df['cond'] = (df['mean'] < n_max) & (df['diff'] > t_min)
     valid = df.loc[df['cond']].index.tolist()
+    print('reduce valid NeoJunction from {} to {} because they are present in GTEx'.format(df.shape[0],len(valid)))
+    with open('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/valid1.p','wb') as f:
+        pickle.dump(valid,f)
     if dict_exonlist is not None:   # a valid junction can not be present in any ensembl documented transcript
         updated_valid = []
         for uid in tqdm(valid):
@@ -89,14 +122,22 @@ def multiple_crude_sifting(junction_count_matrix,add_control=None,dict_exonlist=
         valid = updated_valid
     # consider add_control
     if add_control is not None:
-        n_previous_valid = len(valid)
-        junction_to_mean = add_control.mean(axis=1).to_dict()
-        df['mean_add'] = df.index.map(junction_to_mean).fillna(value=0)
-        df['diff_add'] = df['max'] - df['mean_add']
-        df['cond_add'] = (df['mean_add'] < n_max) & (df['diff_add'] > t_min)
-        valid_add = df.loc[df['cond_add']].index.tolist()
-        valid = list(set(valid).intersection(set(valid_add)))
-        print('reduce valid Neojunction from {} to {} because they are present in added control'.format(n_previous_valid,len(valid)))
+        for i,(id_,control) in enumerate(add_control.items()):
+            n_previous_valid = len(valid)
+            if isinstance(control,pd.DataFrame):
+                junction_to_mean = control.mean(axis=1).to_dict()
+            elif isinstance(control,ad.AnnData):
+                junction_to_mean = control.to_df().mean(axis=1).to_dict()
+            else:
+                raise Exception('control must be either in dataframe or anndata format')
+            df['mean_add'] = df.index.map(junction_to_mean).fillna(value=0)
+            df['diff_add'] = df['max'] - df['mean_add']
+            df['cond_add'] = (df['mean_add'] < n_max) & (df['diff_add'] > t_min)
+            valid_add = df.loc[df['cond_add']].index.tolist()
+            valid = list(set(valid).intersection(set(valid_add)))
+            print('reduce valid Neojunction from {} to {} because they are present in added control {}'.format(n_previous_valid,len(valid),id_))
+            with open('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/valid{}.p'.format(i+2),'wb') as f:
+                pickle.dump(valid,f)
     invalid = list(set(junction_count_matrix.index).difference(set(valid)))
     # now, consider each entry
     gtex_df = pd.concat([df['mean']]*junction_count_matrix.shape[1],axis=1)
@@ -113,10 +154,10 @@ def multiple_crude_sifting(junction_count_matrix,add_control=None,dict_exonlist=
 
 def crude_tumor_specificity(uid,count):    # for NeoJunction class, since we normally start from Jcmq with check_gtex=False, rarely being called.
     detail = ''
-    if uid not in set(adata_gtex.obs_names):
+    if uid not in set(adata.obs_names):
         mean_value = 0
     else:
-        mean_value = adata_gtex.obs.loc[uid,'mean']
+        mean_value = adata.obs.loc[uid,'mean']
     diff = count - mean_value
     if mean_value < n_max and diff >= t_min:
         identity = True
@@ -190,7 +231,7 @@ def tumor_specificity(uid,method,return_df=False):
     except:
         print('{} not detected in gtex, impute as zero'.format(uid))
         info_tmp = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info = anndata.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
+        info = ad.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
     df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
     if method == 'mean':
         try:
