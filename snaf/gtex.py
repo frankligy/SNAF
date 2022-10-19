@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import anndata as ad
 from scipy.optimize import minimize
 from scipy import stats
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, find
 from tqdm import tqdm
 import re
 
@@ -88,18 +88,31 @@ def gtex_configuration(df,gtex_db,t_min_arg,n_max_arg,add_control=None):
     return adata
 
 
+def multiple_crude_sifting_test(junction_count_matrix,add_control=None,dict_exonlist=None):
+    '''
+    method1: 
 
-def multiple_crude_sifting(junction_count_matrix,add_control=None,dict_exonlist=None):   # for JunctionCountMatrixQuery class, only consider gtex
-    df = pd.DataFrame(index=junction_count_matrix.index,data = {'max':junction_count_matrix.max(axis=1).values})
+        1. prevalance in normal tissue is less than 1%, we define prevalance as read count = 5
+        2. prevalance in tumor cohort is greater than 10%, we define prevalance as read count = 20
+
+
+    '''
+    df_to_write = []
+    normal_cutoff = 5
+    tumor_cutoff = 20
+    normal_prevalance_cutoff = 0.01
+    tumor_prevalance_cutoff = 0.1
+    df = pd.DataFrame(index=junction_count_matrix.index)
+    prevalance_tumor = np.count_nonzero((junction_count_matrix > tumor_cutoff).values,axis=1) / junction_count_matrix.shape[1]
+    df['prevalance_tumor'] = prevalance_tumor
     # consider gtex
-    junction_to_mean = adata_gtex.obs.loc[adata_gtex.obs_names.isin(junction_count_matrix.index),'mean'].to_dict()
-    df['mean'] = df.index.map(junction_to_mean).fillna(value=0)
-    df['diff'] = df['max'] - df['mean']
-    df['cond'] = (df['mean'] < n_max) & (df['diff'] > t_min)
+    prevalance_normal = np.count_nonzero((adata_gtex.X > normal_cutoff).toarray(),axis=1) / adata_gtex.shape[1]
+    prevalance_normal_dict = {j:v for j,v in zip(adata_gtex.obs_names,prevalance_normal)}
+    df['prevalance_normal'] = df.index.map(prevalance_normal_dict).fillna(value=0)
+    df['cond'] = (df['prevalance_tumor'] > tumor_prevalance_cutoff) & (df['prevalance_normal'] < normal_prevalance_cutoff)
     valid = df.loc[df['cond']].index.tolist()
+    df_to_write.append(df)
     print('reduce valid NeoJunction from {} to {} because they are present in GTEx'.format(df.shape[0],len(valid)))
-    with open('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/valid1.p','wb') as f:
-        pickle.dump(valid,f)
     if dict_exonlist is not None:   # a valid junction can not be present in any ensembl documented transcript
         updated_valid = []
         for uid in tqdm(valid):
@@ -125,6 +138,71 @@ def multiple_crude_sifting(junction_count_matrix,add_control=None,dict_exonlist=
         for i,(id_,control) in enumerate(add_control.items()):
             n_previous_valid = len(valid)
             if isinstance(control,pd.DataFrame):
+                prevalance_normal = np.count_nonzero((control > normal_cutoff).values,axis=1) / control.shape[1]
+                prevalance_normal_dict = {j:v for j,v in zip(control.index, prevalance_normal)}
+            elif isinstance(control,ad.AnnData):
+                prevalance_normal = np.count_nonzero((control.X > normal_cutoff).toarray(),axis=1) / control.shape[1]
+                prevalance_normal_dict = {j:v for j,v in zip(control.obs_names,prevalance_normal)}
+            else:
+                raise Exception('control must be either in dataframe or anndata format')
+            df['prevalance_normal_add'] = df.index.map(prevalance_normal_dict).fillna(value=0)
+            df['cond_add'] = (df['prevalance_tumor'] > tumor_prevalance_cutoff) & (df['prevalance_normal'] < normal_prevalance_cutoff)
+            valid_add = df.loc[df['cond_add']].index.tolist()
+            valid = list(set(valid).intersection(set(valid_add)))
+            tmp = df.copy(); tmp.drop(columns=['prevalance_normal','cond'],inplace=True); tmp.rename(columns=lambda x:x+'_{}'.format(id_),inplace=True)
+            df_to_write.append(tmp)
+            print('reduce valid Neojunction from {} to {} because they are present in added control {}'.format(n_previous_valid,len(valid),id_))
+    invalid = list(set(junction_count_matrix.index).difference(set(valid)))
+    # now, consider each entry
+    t_min = tumor_cutoff
+    valid_set = set(valid)
+    cond_dict = {j:(True if j in valid_set else False) for j in junction_count_matrix.index}
+    tmp = pd.DataFrame(index=junction_count_matrix.index,data={'placeholder':junction_count_matrix.index.map(cond_dict).values})
+    first_half_cond_df = pd.concat([tmp]*junction_count_matrix.shape[1],axis=1)
+    first_half_cond_df.columns = junction_count_matrix.columns
+    cond_df = (first_half_cond_df) & (junction_count_matrix > t_min)
+    # write the df
+    df_to_write = pd.concat(df_to_write,axis=1)
+    df_to_write.to_csv('test.txt',sep='\t')
+    return valid,invalid,cond_df
+
+
+
+def multiple_crude_sifting_original(junction_count_matrix,add_control=None,dict_exonlist=None):   # for JunctionCountMatrixQuery class, only consider gtex
+    df = pd.DataFrame(index=junction_count_matrix.index,data = {'max':junction_count_matrix.max(axis=1).values})
+    # consider gtex
+    junction_to_mean = adata_gtex.obs.loc[adata_gtex.obs_names.isin(junction_count_matrix.index),'mean'].to_dict()
+    df['mean'] = df.index.map(junction_to_mean).fillna(value=0)
+    df['diff'] = df['max'] - df['mean']
+    df['cond'] = (df['mean'] < n_max) & (df['diff'] > t_min)
+    valid = df.loc[df['cond']].index.tolist()
+    print('reduce valid NeoJunction from {} to {} because they are present in GTEx'.format(df.shape[0],len(valid)))
+    if dict_exonlist is not None:   # a valid junction can not be present in any ensembl documented transcript
+        updated_valid = []
+        for uid in tqdm(valid):
+            ensg = uid.split(':')[0]
+            exons = ':'.join(uid.split(':')[1:])
+            if '_' in exons or 'U' in exons or 'ENSG' in exons or 'I' in exons:
+                updated_valid.append(uid)
+            else:
+                exonlist = dict_exonlist[ensg]
+                exonstring = '|'.join(exonlist)
+                e1,e2 = exons.split('-')
+                pattern1 = re.compile(r'^{}\|{}\|'.format(e1,e2))  # ^E1.1|E2.3|
+                pattern2 = re.compile(r'\|{}\|{}$'.format(e1,e2))  # |E1.1|E2.3$
+                pattern3 = re.compile(r'\|{}\|{}\|'.format(e1,e2)) # |E1.1|E2.3|
+                if re.search(pattern3,exonstring) or re.search(pattern2,exonstring) or re.search(pattern1,exonstring):   # as long as match one pattern, should be eliminated
+                    continue
+                else:
+                    updated_valid.append(uid)
+        print('reduce valid Neojunction from {} to {} because they are present in Ensembl db'.format(len(valid),len(updated_valid)))
+        valid = updated_valid
+    # consider add_control
+    mean_add_list = []
+    if add_control is not None:
+        for i,(id_,control) in enumerate(add_control.items()):
+            n_previous_valid = len(valid)
+            if isinstance(control,pd.DataFrame):
                 junction_to_mean = control.mean(axis=1).to_dict()
             elif isinstance(control,ad.AnnData):
                 junction_to_mean = control.to_df().mean(axis=1).to_dict()
@@ -133,11 +211,10 @@ def multiple_crude_sifting(junction_count_matrix,add_control=None,dict_exonlist=
             df['mean_add'] = df.index.map(junction_to_mean).fillna(value=0)
             df['diff_add'] = df['max'] - df['mean_add']
             df['cond_add'] = (df['mean_add'] < n_max) & (df['diff_add'] > t_min)
+            mean_add_list.append(df['mean_add'])
             valid_add = df.loc[df['cond_add']].index.tolist()
             valid = list(set(valid).intersection(set(valid_add)))
             print('reduce valid Neojunction from {} to {} because they are present in added control {}'.format(n_previous_valid,len(valid),id_))
-            with open('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/valid{}.p'.format(i+2),'wb') as f:
-                pickle.dump(valid,f)
     invalid = list(set(junction_count_matrix.index).difference(set(valid)))
     # now, consider each entry
     gtex_df = pd.concat([df['mean']]*junction_count_matrix.shape[1],axis=1)
@@ -145,10 +222,11 @@ def multiple_crude_sifting(junction_count_matrix,add_control=None,dict_exonlist=
     diff_df_gtex = junction_count_matrix - gtex_df
     cond_df = (gtex_df < n_max) & (diff_df_gtex > t_min)
     if add_control is not None:
-        add_df = pd.concat([df['mean_add']]*junction_count_matrix.shape[1],axis=1)    
-        add_df.columns = junction_count_matrix.columns
-        diff_df_add = junction_count_matrix - add_df
-        cond_df = cond_df & (add_df < n_max) & (diff_df_add > t_min)
+        for mean_add in mean_add_list:
+            add_df = pd.concat([mean_add]*junction_count_matrix.shape[1],axis=1)    
+            add_df.columns = junction_count_matrix.columns
+            diff_df_add = junction_count_matrix - add_df
+            cond_df = cond_df & (add_df < n_max) & (diff_df_add > t_min)
     return valid,invalid,cond_df
 
 

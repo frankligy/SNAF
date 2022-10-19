@@ -275,7 +275,7 @@ class JunctionCountMatrixQuery():
                                                self.cond_df.shape,self.subset.shape,len_translated,shape_cond_subset_df,len_results)
     
     def get_neojunctions(self,add_control,dict_exonlist):
-        self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix,add_control,dict_exonlist)
+        self.valid, self.invalid, self.cond_df = multiple_crude_sifting_test(self.junction_count_matrix,add_control,dict_exonlist)
         self.subset = self.junction_count_matrix.loc[self.valid,:]
         self.cond_subset_df = self.cond_df.loc[self.valid,:]
 
