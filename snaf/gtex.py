@@ -8,7 +8,7 @@ import pickle
 import h5py
 import matplotlib.pyplot as plt
 import anndata as ad
-from scipy.optimize import minimize
+from scipy.optimize import minimize, minimize_scalar
 from scipy import stats
 from scipy.sparse import csr_matrix, find
 from tqdm import tqdm
@@ -334,27 +334,16 @@ def tumor_specificity(uid,method,return_df=False):
         else:
             return sigma
     elif method == 'mle':
-        try:
-            y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
-        except KeyError:
+        scale_factor_dict = adata.var['total_count'].to_dict()
+        df['value_cpm'] = df['value'].values / df.index.map(scale_factor_dict).values
+        y = df['value_cpm'].values
+        # mle_model = minimize(mle_func,np.array([0.2]),args=(y,),bounds=((0,1),),method='Nelder-Mead')
+        mle_model = minimize_scalar(mle_func,bounds=(0,1),args=(y,),method='bounded')
+        if mle_model.success:
+            sigma = mle_model.x
+        else:   
             sigma = 0
-        else:
-            mle_model = minimize(mle_func,np.array([0.2]),args=(y,),bounds=((0,1),),method='L-BFGS-B')
-            '''
-            fun: nan
-            hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
-            jac: array([6368.36862213])
-            message: b'ABNORMAL_TERMINATION_IN_LNSRCH'
-            nfev: 42
-            nit: 0
-            status: 2
-            success: False
-            x: array([0.2])
-            '''
-            if mle_model.success:
-                sigma = mle_model.x[0]
-            else:   # usually means too many zero, so true expression is near zero
-                sigma = 0
+            print(uid,y, mle_model)
         if return_df:
             return sigma,df
         else:
