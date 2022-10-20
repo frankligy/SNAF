@@ -7,7 +7,8 @@ from datetime import datetime,date
 from .dash_app import run_dash_T_antigen,run_pweblogo
 import os,sys
 
-def initialize(df,db_dir,gtex_mode,software_path=None,binding_method=None,t_min=20,n_max=3,add_control=None):
+def initialize(df,db_dir,gtex_mode='count',software_path=None,binding_method=None,t_min=20,n_max=3,
+               normal_cutoff=5, tumor_cutoff=20, normal_prevalance_cutoff=0.01, tumor_prevalance_cutoff=0.1, add_control=None):
     '''
     Setting up global variable for running the program
 
@@ -18,6 +19,10 @@ def initialize(df,db_dir,gtex_mode,software_path=None,binding_method=None,t_min=
     :param binding_method: string or None, either 'netMHCpan' or 'MHCflurry'
     :param t_min: int, the minimum number of read count the tumor sample should be larget than average number in normal database
     :param n_max: int, the maximum number of average read count normal database count have
+    :param normal_cutoff: int, below which read count we consider a junction is not expressed in normal tissue
+    :param tumor_cutoff: int, above which read count we consider a junction is expressed in tumor tissue
+    :param normal_prevalance_cutoff: float, if below this fraction, we consider a junction is not present in normal tissue at an appreciable amount
+    :param tumor_prevalance_cutoff: float, if above this fraction, we consider a junction is present in tumor tissue at an appreciable amount
     :param add_control: None or a dictionary containing additional controls, additional controls can a dataframe or anndata, for instance, if adding two controls asides from internal GTEx,
                         {'tcga_matched_control':df,'gtex_skin':adata}, when added database contains multiple tissue types, it is recommended to pass as a AnnData with the tissue
                         information stored as adata.var['tissue'], otherwise, if passed as a dataframe, or samples will be recognized as a single tissue type, it will affect tumor specifcity
@@ -43,7 +48,7 @@ def initialize(df,db_dir,gtex_mode,software_path=None,binding_method=None,t_min=
     elif gtex_mode == 'psi':
         gtex_db = os.path.join(db_dir,'controls','GTEx_junction_psi.h5ad')
     snaf_configuration(exon_table,transcript_db,db_dir,fasta,software_path,binding_method)
-    adata = gtex_configuration(df,gtex_db,t_min,n_max,add_control)
+    adata = gtex_configuration(df,gtex_db,t_min,n_max,normal_cutoff, tumor_cutoff, normal_prevalance_cutoff, tumor_prevalance_cutoff, add_control)
     gtex_viewer_configuration(adata)
     print('{} {} finishing initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
 

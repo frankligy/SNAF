@@ -232,6 +232,9 @@ class JunctionCountMatrixQuery():
                         score calculation if using MLE or bayesian hierarchical models.
     :param not_in_db: boolean, whether to remove junctions that are present in any Ensembl documented transcript, remember some of the documented transcript in
                       Ensembl are tumor-specific as well, doing so may remove some bona fide hits. But good for reducing number of neoantigens for validation.
+    :param outdir: string, the output folder for storing results
+    :param filter_mode: string, either 'maxmin' or 'prevalance', this correspond to the parameters that will be used in snaf.initialize, if maxmin, use t_min and n_max, 
+                        if prevalance, use normal and tumor cutoff
 
     Example::
 
@@ -239,15 +242,15 @@ class JunctionCountMatrixQuery():
         
     '''
 
-    def __init__(self,junction_count_matrix,cores=None,add_control=None,not_in_db=False):
+    def __init__(self,junction_count_matrix,cores=None,add_control=None,not_in_db=False,outdir='.',filter_mode='maxmin'):
         self.junction_count_matrix = junction_count_matrix
         if cores is None:
             cores = mp.cpu_count()
         self.cores = cores
         if not_in_db:
-            self.get_neojunctions(add_control=add_control,dict_exonlist=dict_exonlist)
+            self.get_neojunctions(add_control=add_control,dict_exonlist=dict_exonlist,outdir=outdir,filter_mode=filter_mode)
         else:
-            self.get_neojunctions(add_control=add_control,dict_exonlist=None)
+            self.get_neojunctions(add_control=add_control,dict_exonlist=None,outdir=outdir,filter_mode=filter_mode)
         
 
     def __str__(self):
@@ -274,8 +277,8 @@ class JunctionCountMatrixQuery():
                'results: list of length {}'.format(self.junction_count_matrix.shape,self.cores,len(self.valid),len(self.invalid),
                                                self.cond_df.shape,self.subset.shape,len_translated,shape_cond_subset_df,len_results)
     
-    def get_neojunctions(self,add_control,dict_exonlist):
-        self.valid, self.invalid, self.cond_df = multiple_crude_sifting_test(self.junction_count_matrix,add_control,dict_exonlist)
+    def get_neojunctions(self,add_control,dict_exonlist,outdir,filter_mode):
+        self.valid, self.invalid, self.cond_df = multiple_crude_sifting(self.junction_count_matrix,add_control,dict_exonlist,outdir,filter_mode)
         self.subset = self.junction_count_matrix.loc[self.valid,:]
         self.cond_subset_df = self.cond_df.loc[self.valid,:]
 
