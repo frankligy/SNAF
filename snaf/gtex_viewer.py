@@ -190,23 +190,34 @@ def gtex_visual_subplots(uid,norm=True,outdir='.'):
     n_tissue = len(info.var['tissue'].unique())
     ncols = 5
     fig,axes = plt.subplots(figsize=(20,20),ncols=ncols,nrows=n_tissue//ncols+1,gridspec_kw={'wspace':0.5,'hspace':0.5})
+    df_data = []
     for i,ax in enumerate(axes.flat):
         if i < n_tissue:
             tissue = info.var['tissue'].unique()[i]
             psi = info[:,info.var['tissue']==tissue].X.toarray().squeeze()
+            non_zero_count = np.count_nonzero(psi)
             if norm:
                 psi = psi / info[:,info.var['tissue']==tissue].var['total_count'].values
-            ax.plot(np.arange(len(psi)),psi,marker='o',markersize=4,color='k',markerfacecolor='r',markeredgecolor='r',linestyle='--')
+            try:
+                ax.plot(np.arange(len(psi)),psi,marker='o',markersize=4,color='k',markerfacecolor='r',markeredgecolor='r',linestyle='--')
+            except:
+                psi = [psi]
+                ax.plot(np.arange(len(psi)),psi,marker='o',markersize=4,color='k',markerfacecolor='r',markeredgecolor='r',linestyle='--')
+            total_count = len(psi)
             ax.set_xticks(np.arange(len(psi)))
             ax.set_xticklabels(['s{}'.format(i) for i in np.arange(len(psi))],fontsize=4,rotation=60)
-            ax.set_title(tissue,fontsize=8)
+            ax.set_title('{}_count:{}/{}'.format(tissue,non_zero_count,total_count),fontsize=4)
             ax.set_ylim(bottom=-0.001,top=50)
             if norm:
                 ax.set_ylabel('normalized counts')
             else:
                 ax.set_ylabel('counts')
+            # write the df
+            df_data.append((tissue,total_count,non_zero_count,non_zero_count/total_count))
         else:
             ax.axis('off')
+    df = pd.DataFrame.from_records(data=df_data,columns=['tissue','total_count','non_zero_count','ratio']).set_index(keys='tissue')
+    df.to_csv(os.path.join(outdir,'tissue_specific_presence_{}.txt'.format(identifier)),sep='\t')
     fig.suptitle(title,fontsize=10)
     if norm:
         name = 'gtex_visual_subplots_norm_count_{}.pdf'.format(identifier)

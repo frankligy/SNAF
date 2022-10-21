@@ -349,27 +349,50 @@ def tumor_specificity(uid,method,return_df=False):
         else:
             return sigma
     elif method == 'bayesian':
-        try:
-            y = adata[[uid],:].X.toarray().squeeze() / adata.var['total_count'].values
-        except KeyError:
-            sigma = 0
-        else:
-            x = []
-            for tissue in adata.var['tissue'].unique():
-                sub = adata[uid,adata.var['tissue']==tissue]
-                c = np.count_nonzero(sub.X.toarray())
-                x.append(c)
-            x = np.array(x)
-            with pm.Model() as m:
-                sigma = pm.Uniform('sigma',lower=0,upper=1)
-                nc = pm.HalfNormal('nc',sigma=sigma,observed=y)
-                rate = pm.math.sum(nc)/len(y)
-                c = pm.Poisson('c',mu=rate,observed=x)
-            with m:
-                step = pm.NUTS()
-                trace = pm.sample(100,step=step,return_inferencedata=False,cores=1)
-            df = az.summary(trace,round_to=2)
-            sigma = df.iloc[0]['mean']
+        scale_factor_dict = adata.var['total_count'].to_dict()
+        df['value_cpm'] = df['value'].values / df.index.map(scale_factor_dict).values
+        y = df['value_cpm'].values
+        x = []
+        for tissue in adata.var['tissue'].unique():
+            sub = adata[uid,adata.var['tissue']==tissue]
+            total_count = sub.shape[1]
+            c = np.count_nonzero(sub.X.toarray())
+            scaled_c = round(c * (25/total_count),0)
+            x.append(c)
+        x = np.array(x)
+        with pm.Model() as m:
+            sigma = pm.Uniform('sigma',lower=0,upper=1)
+            nc = pm.HalfNormal('nc',sigma=sigma,observed=y)
+            nc_hat = pm.Deterministic('nc_hat',pm.math.sum(nc)/len(y))
+            # psi = pm.Beta('alpha',alpha=2,beta=nc_hat*10)
+            mu = pm.Gamma('mu',alpha=nc_hat*10,beta=1)
+            c = pm.Poisson('c',mu=mu,observed=x)
+            step = pm.NUTS()
+            trace = pm.sample(draws=1000,step=step,tune=1000,return_inferencedata=False,cores=1)
+            '''
+            the error of "Got error No model on context stack. trying to find log_likelihood in translation" maybe due to pymc build and how they launch multi-cores.
+            remember, my build can only work when cores=1, which further indicate there might be an issue revolving around it.
+            https://stackoverflow.com/questions/69888492/sampling-of-pymc3-in-python-gets-runtime-error-of-bootstrapping-phase
+            '''
+        df = az.summary(trace,round_to=2)
+
+        '''
+        az.summary(trace)
+
+                 mean    sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_bulk  ess_tail  r_hat
+        sigma    0.47  0.01    0.46     0.48       0.00     0.00    182.23     98.84   1.02
+        nc_hat   0.22  0.00    0.22     0.22       0.00     0.00    200.00    200.00    NaN
+        mu      22.97  0.52   21.87    23.87       0.04     0.03    196.69     94.84   1.00
+
+        az.plot_posterior(trace,var_names=['sigma','nc_hat','mu'])
+        az.plot_forest(trace,,var_names=['sigma','nc_hat','mu'])
+
+                gv = pm.model_to_graphviz(m)
+        gv.format = 'pdf'
+        gv.render(filename='model_graph');sys.exit('stop')
+
+        '''
+        sigma = df.iloc[0]['mean']
         if return_df:
             return sigma,df
         else:
