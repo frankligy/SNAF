@@ -33,6 +33,16 @@ add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
 surface.initialize(db_dir=db_dir)
 
+# test bayesian model
+# for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
+#     snaf.gtex_visual_subplots(uid=uid,norm=False,outdir='.')
+# for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
+#     snaf.tumor_specificity(uid=uid,method='bayesian',return_df=True)
+df = pd.read_csv('result/frequency_stage3_verbosity1_uid.txt',sep='\t',index_col=0)
+new_df = snaf.add_tumor_specificity_frequency_table(df,method='bayesian',remove_quote=True,cores=None)
+new_df.to_csv('test1.txt',sep='\t')
+sys.exit('stop')
+
 for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
     sigma, df = snaf.tumor_specificity(uid=uid,method='mle',return_df=True)
     fig,ax = plt.subplots()
@@ -44,9 +54,7 @@ for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','EN
     plt.close()
 sys.exit('stop')
 
-# df = pd.read_csv('test.txt',sep='\t',index_col=0)
-# new_df = snaf.add_tumor_specificity_frequency_table(df,method='mean',remove_quote=True,cores=None)
-# new_df.to_csv('test1.txt',sep='\t')
+
 
 # for uid in ['ENSG00000241343:E2.6-E2.9_101392052','ENSG00000175482:E2.22_67352741-E3.1']:
 #     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=False,tumor=df)

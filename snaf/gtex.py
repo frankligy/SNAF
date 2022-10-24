@@ -272,6 +272,22 @@ def split_df_to_chunks(df,cores=None):
     return sub_dfs
 
 
+def split_array_to_chunks(array,cores=None):
+    if not isinstance(array,list):
+        raise Exception('split_array_to_chunks function works for list, not ndarray')
+    array_index = np.arange(len(array))
+    if cores is None:
+        cores = mp.cpu_count()
+    sub_indices = np.array_split(array_index,cores)
+    sub_arrays = []
+    for sub_index in sub_indices:
+        item_in_group = []
+        for i in sub_index:
+            item_in_group.append(array[i])
+        sub_arrays.append(item_in_group)
+    return sub_arrays
+
+
 def add_tumor_specificity_frequency_table(df,method='mean',remove_quote=True,cores=None):
     '''
     add tumor specificty to each neoantigen-uid in the frequency table produced by SNAF T pipeline
@@ -294,24 +310,47 @@ def add_tumor_specificity_frequency_table(df,method='mean',remove_quote=True,cor
         df['samples'] = [literal_eval(item) for item in df['samples']]
     if cores is None:
         cores = mp.cpu_count()
-    pool = mp.Pool(processes=cores)
-    print('{} subprocesses have been spawned'.format(cores))
-    sub_dfs = split_df_to_chunks(df,cores)
-    r = [pool.apply_async(func=add_tumor_specificity_frequency_table_atomic_func,args=(sub_df,method,)) for sub_df in sub_dfs]
-    pool.close()
-    pool.join()
-    results = []
-    for collect in r:
-        result = collect.get()
-        results.append(result)
-    new_df = pd.concat(results,axis=0)
+
+    if method != 'bayesian': 
+        pool = mp.Pool(processes=cores)
+        print('{} subprocesses have been spawned'.format(cores))
+
+        all_unique_junctions = list(set([item.split(',')[1] for item in df.index]))
+        sub_arrays = split_array_to_chunks(all_unique_junctions,cores=cores)
+        r = [pool.apply_async(func=add_tumor_specificity_frequency_table_atomic_func,args=(sub_array,method,)) for sub_array in sub_arrays]  
+
+        pool.close()
+        pool.join()
+        results = []
+        for collect in r:
+            result = collect.get()
+            results.append(result)
+        all_score_dict = {}
+        for score_dict in results:
+            all_score_dict.update(score_dict)
+        col = []
+        for item in df.index:
+            col.append(all_score_dict[item.split(',')[1]])
+        new_df = df.copy()
+        new_df['tumor_specificity_{}'.format(method)] = col
+
+    else:   # seems like bayesian doesn't work well with multiprocessing
+        all_unique_junctions = list(set([item.split(',')[1] for item in df.index]))
+        score_dict = {}
+        for uid in tqdm(all_unique_junctions,total=len(all_unique_junctions)):
+            score_dict[uid] = tumor_specificity(uid,'bayesian')
+        for item in df.index:
+            col.append(score_dict[item.split(',')[1]])
+        new_df = df.copy()
+        new_df['tumor_specificity_{}'.format(method)] = col
+            
+
     return new_df
 
-def add_tumor_specificity_frequency_table_atomic_func(sub_df,method):
-    uid_list = [item.split(',')[1] for item in sub_df.index]
-    score_list = [tumor_specificity(uid,method) for uid in tqdm(uid_list,total=len(uid_list))]
-    sub_df['tumor_specificity_{}'.format(method)] = score_list
-    return sub_df
+def add_tumor_specificity_frequency_table_atomic_func(sub_array,method):
+    uid_list = sub_array
+    score_dict = {uid:tumor_specificity(uid,method) for uid in tqdm(uid_list,total=len(uid_list))}
+    return score_dict
 
 
     
@@ -343,7 +382,7 @@ def tumor_specificity(uid,method,return_df=False):
             sigma = mle_model.x
         else:   
             sigma = 0
-            print(uid,y, mle_model)
+            print(uid,y, mle_model)   # debug purpose
         if return_df:
             return sigma,df
         else:
@@ -360,40 +399,46 @@ def tumor_specificity(uid,method,return_df=False):
             scaled_c = round(c * (25/total_count),0)
             x.append(scaled_c)
         x = np.array(x)
-        with pm.Model() as m:
-            sigma = pm.Uniform('sigma',lower=0,upper=1)
-            nc = pm.HalfNormal('nc',sigma=sigma,observed=y)
-            nc_hat = pm.Deterministic('nc_hat',pm.math.sum(nc)/len(y))
-            psi = pm.Beta('psi',alpha=2,beta=nc_hat*20)
-            mu = pm.Gamma('mu',alpha=nc_hat*50,beta=1)
-            c = pm.ZeroInflatedPoisson('c',psi,mu,observed=x)
-            trace = pm.sample(draws=1000,step=pm.NUTS(target_accept=0.95),tune=1000,return_inferencedata=False,cores=1)
+        try:
+            with pm.Model() as m:
+                sigma = pm.Uniform('sigma',lower=0,upper=1)
+                nc = pm.HalfNormal('nc',sigma=sigma,observed=y)
+                nc_hat = pm.Deterministic('nc_hat',pm.math.sum(nc)/len(y))
+                psi = pm.Beta('psi',alpha=2,beta=nc_hat*20)
+                mu = pm.Gamma('mu',alpha=nc_hat*50,beta=1)
+                c = pm.ZeroInflatedPoisson('c',psi,mu,observed=x)
+                trace = pm.sample(draws=1000,step=pm.NUTS(target_accept=0.95),tune=1000,return_inferencedata=False,cores=1)
+                '''
+                the error of "Got error No model on context stack. trying to find log_likelihood in translation" maybe due to pymc build and how they launch multi-cores.
+                remember, my build can only work when cores=1, which further indicate there might be an issue revolving around it.
+                https://stackoverflow.com/questions/69888492/sampling-of-pymc3-in-python-gets-runtime-error-of-bootstrapping-phase
+                '''
+
+            df = az.summary(trace,round_to=2)
+
             '''
-            the error of "Got error No model on context stack. trying to find log_likelihood in translation" maybe due to pymc build and how they launch multi-cores.
-            remember, my build can only work when cores=1, which further indicate there might be an issue revolving around it.
-            https://stackoverflow.com/questions/69888492/sampling-of-pymc3-in-python-gets-runtime-error-of-bootstrapping-phase
+            az.summary(trace)
+
+                    mean    sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_bulk  ess_tail  r_hat
+            sigma    0.47  0.01    0.46     0.48       0.00     0.00    182.23     98.84   1.02
+            nc_hat   0.22  0.00    0.22     0.22       0.00     0.00    200.00    200.00    NaN
+            mu      22.97  0.52   21.87    23.87       0.04     0.03    196.69     94.84   1.00
+
+            az.plot_posterior(trace,var_names=['sigma','nc_hat','mu'])
+            az.plot_forest(trace,,var_names=['sigma','nc_hat','mu'])
+
+            gv = pm.model_to_graphviz(m)
+            gv.format = 'pdf'
+            gv.render(filename='model_graph');sys.exit('stop')
+            # to run the above, you need to module load graphviz so that dot is exposed to the program
+
             '''
-        df = az.summary(trace,round_to=2)
+            sigma = df.iloc[0]['mean']
 
-        '''
-        az.summary(trace)
+        except:
+            sigma = None
+            print(uid,x,y)
 
-                 mean    sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_bulk  ess_tail  r_hat
-        sigma    0.47  0.01    0.46     0.48       0.00     0.00    182.23     98.84   1.02
-        nc_hat   0.22  0.00    0.22     0.22       0.00     0.00    200.00    200.00    NaN
-        mu      22.97  0.52   21.87    23.87       0.04     0.03    196.69     94.84   1.00
-
-        az.plot_posterior(trace,var_names=['sigma','nc_hat','mu'])
-        az.plot_forest(trace,,var_names=['sigma','nc_hat','mu'])
-
-        gv = pm.model_to_graphviz(m)
-        gv.format = 'pdf'
-        gv.render(filename='model_graph');sys.exit('stop')
-        # to run the above, you need to module load graphviz so that dot is exposed to the program
-
-        '''
-        print(df)
-        sigma = df.iloc[0]['mean']
         if return_df:
             return sigma,df
         else:
