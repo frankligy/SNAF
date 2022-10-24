@@ -358,17 +358,16 @@ def tumor_specificity(uid,method,return_df=False):
             total_count = sub.shape[1]
             c = np.count_nonzero(sub.X.toarray())
             scaled_c = round(c * (25/total_count),0)
-            x.append(c)
+            x.append(scaled_c)
         x = np.array(x)
         with pm.Model() as m:
             sigma = pm.Uniform('sigma',lower=0,upper=1)
             nc = pm.HalfNormal('nc',sigma=sigma,observed=y)
             nc_hat = pm.Deterministic('nc_hat',pm.math.sum(nc)/len(y))
-            # psi = pm.Beta('alpha',alpha=2,beta=nc_hat*10)
-            mu = pm.Gamma('mu',alpha=nc_hat*10,beta=1)
-            c = pm.Poisson('c',mu=mu,observed=x)
-            step = pm.NUTS()
-            trace = pm.sample(draws=1000,step=step,tune=1000,return_inferencedata=False,cores=1)
+            psi = pm.Beta('psi',alpha=2,beta=nc_hat*20)
+            mu = pm.Gamma('mu',alpha=nc_hat*50,beta=1)
+            c = pm.ZeroInflatedPoisson('c',psi,mu,observed=x)
+            trace = pm.sample(draws=1000,step=pm.NUTS(target_accept=0.95),tune=1000,return_inferencedata=False,cores=1)
             '''
             the error of "Got error No model on context stack. trying to find log_likelihood in translation" maybe due to pymc build and how they launch multi-cores.
             remember, my build can only work when cores=1, which further indicate there might be an issue revolving around it.
@@ -387,11 +386,13 @@ def tumor_specificity(uid,method,return_df=False):
         az.plot_posterior(trace,var_names=['sigma','nc_hat','mu'])
         az.plot_forest(trace,,var_names=['sigma','nc_hat','mu'])
 
-                gv = pm.model_to_graphviz(m)
+        gv = pm.model_to_graphviz(m)
         gv.format = 'pdf'
         gv.render(filename='model_graph');sys.exit('stop')
+        # to run the above, you need to module load graphviz so that dot is exposed to the program
 
         '''
+        print(df)
         sigma = df.iloc[0]['mean']
         if return_df:
             return sigma,df
