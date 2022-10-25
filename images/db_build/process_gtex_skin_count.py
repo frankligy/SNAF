@@ -9,6 +9,7 @@ import h5py
 import matplotlib.pyplot as plt
 import anndata as ad
 from scipy.sparse import csr_matrix
+from tqdm import tqdm
 
 
 # argument
@@ -22,6 +23,10 @@ sra_data = sra_data.loc[np.logical_not(sra_data.index.duplicated()).tolist(),:]
 sra_data.columns = [item.split('_')[0] for item in sra_data.columns]  
 adata = ad.AnnData(X=csr_matrix(sra_data.values),var=pd.DataFrame(index=sra_data.columns),obs=pd.DataFrame(index=sra_data.index))   # 877509 × 313
 adata.obs_names = [item.split('=')[0] for item in adata.obs_names]
+adata.obs['mean'] = np.array(adata.X.mean(axis=1)).squeeze()
+adata.obs['std'] = adata.X.toarray().std(axis=1)
+total_count = np.array(adata.X.sum(axis=0)).squeeze() / 1e6
+adata.var['total_count'] = total_count
 ## for duplicated junction, only keep the one with highest junction counts
 junctions_dup = list(set(adata.obs_names[adata.obs_names.duplicated()]))
 junctions_not_dup = list(set(adata.obs_names).difference(set(junctions_dup)))
