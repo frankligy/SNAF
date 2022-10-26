@@ -1,8 +1,8 @@
-#BSUB -W 24:00
-#BSUB -M 250G
-#BSUB -n 1
-#BSUB -R "rusage[mem=250M] span[hosts=1]"
-#BSUB -J GTEx
+#BSUB -W 72:00
+#BSUB -M 196G
+#BSUB -n 5
+#BSUB -R "rusage[mem=196G] span[hosts=1]"
+#BSUB -J GTEx_skin
 #BSUB -o /data/salomonis2/LabFiles/Frank-Li/job_dump/%J.out
 #BSUB -e /data/salomonis2/LabFiles/Frank-Li/job_dump/%J.err
 
@@ -10,14 +10,26 @@
 module load STAR/2.4.0h
 module load samtools
 module load python/2.7.5
+module load parallel
+module load bedtools
 
 function run(){
+
+    # convert to fastq
+    SAMPLE=$1
+    ROOT=/data/salomonis-archive/BAMs/NCI-R01/GTEx/newSkin_100922
+    BAM=${ROOT}/${SAMPLE}.bam
+    samtools sort -n $BAM -o ${ROOT}/Frank/${SAMPLE}.qsort.bam
+    bedtools bamtofastq -i ${ROOT}/Frank/${SAMPLE}.qsort.bam -fq ${ROOT}/Frank/${SAMPLE}.1.fastq -fq2 ${ROOT}/Frank/${SAMPLE}.2.fastq
+    gzip ${ROOT}/Frank/${SAMPLE}.1.fastq
+    gzip ${ROOT}/Frank/${SAMPLE}.2.fastq
+
     # run STAR
-    FASTQ1=/data/salomonis-archive/FASTQs/NCI-R01/GTEx/${1}_1.fastq.gz
-    FASTQ2=/data/salomonis-archive/FASTQs/NCI-R01/GTEx/${1}_2.fastq.gz
+    FASTQ1=${ROOT}/Frank/${SAMPLE}.1.fastq.gz
+    FASTQ2=${ROOT}/Frank/${SAMPLE}.2.fastq.gz
     GENOME_DIR=/data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank_second_try/GenomeRef
     GENOME=/data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank_second_try/GRCh38.d1.vd1.fa
-    ROOT_DIR=/data/salomonis2/LabFiles/Frank-Li/refactor/GTEx_reprocess
+    ROOT_DIR=${ROOT}/Frank
 
     echo "$1 fisrt pass"
     STAR --genomeDir ${GENOME_DIR} \
@@ -62,7 +74,7 @@ function run(){
          --sjdbScore 2 \
          --alignSJDBoverhangMin 1 \
          --genomeLoad NoSharedMemory \
-         --limitBAMsortRAM 0 \
+         --limitBAMsortRAM 100000000000 \
          --readFilesCommand gunzip -c \
          --outFileNamePrefix $ROOT_DIR/${1}_second \
          --outFilterMatchNminOverLread 0.33 \
@@ -88,6 +100,10 @@ function run(){
     rm ${ROOT_DIR}/${1}SJ.out.tab
     rm ${ROOT_DIR}/${1}Log.out
 
+    rm ${ROOT}/Frank/${SAMPLE}.1.fastq.gz
+    rm ${ROOT}/Frank/${SAMPLE}.2.fastq.gz
+    rm ${ROOT}/Frank/${SAMPLE}.qsort.bam
+
 
 
     echo "$1 run BAMtoBED"
@@ -108,8 +124,9 @@ function run(){
 }
 
 
-
-run SRR1069141
+export -f run
+export TMPDIR=/scratch/ligk2e
+cat xaj.txt | parallel -P 5 run {}
 
 
 
