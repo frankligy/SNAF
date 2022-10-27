@@ -105,6 +105,9 @@ def multiple_crude_sifting(junction_count_matrix,add_control,dict_exonlist,outdi
 
 def multiple_crude_sifting_prevalance(junction_count_matrix,add_control=None,dict_exonlist=None,outdir='.'):
 
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
     df_to_write = []
     df = pd.DataFrame(index=junction_count_matrix.index)
     prevalance_tumor = np.count_nonzero((junction_count_matrix > tumor_cutoff).values,axis=1) / junction_count_matrix.shape[1]
