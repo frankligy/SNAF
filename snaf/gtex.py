@@ -177,6 +177,9 @@ def multiple_crude_sifting_prevalance(junction_count_matrix,add_control=None,dic
 
 
 def multiple_crude_sifting_maxmin(junction_count_matrix,add_control=None,dict_exonlist=None,outdir='.'):   # for JunctionCountMatrixQuery class, only consider gtex
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+        
     df = pd.DataFrame(index=junction_count_matrix.index,data = {'max':junction_count_matrix.max(axis=1).values})
     df_to_write = []
     # consider gtex
