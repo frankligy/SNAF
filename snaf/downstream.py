@@ -13,6 +13,7 @@ import statsmodels.stats.multitest as ssm
 from scipy.stats import mannwhitneyu,pearsonr,spearmanr
 from tqdm import tqdm
 from copy import deepcopy
+import multiprocessing as mp
 
 '''
 this script contains survival analysis, mutation analysis
@@ -33,6 +34,102 @@ def plot_umap_neoantigen(df_path,outdir):
     ax.set_ylabel('umap_y')
     plt.savefig(os.path.join(outdir,'mer_umap.pdf'),bbox_inches='tight')
     plt.close()
+
+def survival_regression(freq,remove_quote,rename_func,survival,pea,outdir='.',cores=None,survival_duration='OS.time',survival_event='OS',n_effective_obs=3):
+    '''
+    conduct cox regression to identify neoantigens whose parental junctions expression is significantly associated with survival
+
+    :param freq: string, path to the T antigen generated frequency dataframe
+    :param remove_quote: bool, whether to remove the quote of samples column for freq df or not
+    :param rename_func: function, a function to rename columns in freq and event annotation file to be consistent with survival file
+    :param survival: string, the path to the survival dataframe
+    :param pea: string, the path to the altanalyze generated event annotation file
+    :param outdir: string, the output directory
+    :param cores: None or int, how many cores to use for computation
+    :param survival_duration: string, the column name for duration in survival dataframe
+    :param survival_event: string, the column name for event in survival dataframe
+    :param n_effective_obs: int, default is 3, at least three obs whose event=1, otherwise all obs are right-sensored
+
+    Examples::
+
+        snaf.downstream.survival_regression(freq='result/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',remove_quote=True,
+                                            rename_func=lambda x:'-'.join(x.split('-')[:4]),survival='TCGA-SKCM.survival.tsv',
+                                            pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',outdir='result/survival')
+    '''
+    # reformat psi matrix for further extraction
+    ea = pd.read_csv(pea,sep='\t',index_col='UID').iloc[:,10:]
+    ea.index = [':'.join(item.split('|')[0].split(':')[1:]) for item in ea.index]
+    ea = ea.loc[np.logical_not(ea.index.duplicated()).tolist(),:]
+    ea.rename(columns=rename_func,inplace=True)
+    # format freq matrix
+    freq = pd.read_csv(freq,index_col=0,sep='\t')
+    from ast import literal_eval
+    if remove_quote:
+        freq['samples'] = [literal_eval(item) for item in freq['samples']]
+    # read in survival data
+    survival = pd.read_csv(survival,index_col=0,sep='\t')
+    survival = survival.loc[:,[survival_duration,survival_event]]
+    # start to calculate association for each neoantigen 
+    # before spawn, let's rename all the samples
+    freq['samples'] = [[rename_func(s) for s in ss] for ss in freq['samples']]
+    if cores is None:
+        cores = mp.cpu_count()
+    pool = mp.Pool(processes=cores)
+    print('{} subprocesses have been spawned'.format(cores))
+    sub_dfs = split_df_to_chunks(freq,cores=cores)
+    r = [pool.apply_async(func=survival_regression_atomic,args=(sub_df,ea,survival,survival_duration,survival_event,n_effective_obs,)) for sub_df in sub_dfs]  
+    pool.close()
+    pool.join()
+    df_data = []
+    for collect in r:
+        result = collect.get()
+        df_data.extend(result)
+    final_df = pd.DataFrame.from_records(data=df_data,columns=['uid','pep','junc','n_valid_sample','wald_z_score','wald_p_value'])
+    final_df.set_index(keys='uid',inplace=True)
+    final_df.to_csv(os.path.join(outdir,'survival_regression_final_results.txt'),sep='\t')
+
+def split_df_to_chunks(df,cores=None):
+    df_index = np.arange(df.shape[0])
+    if cores is None:
+        cores = mp.cpu_count()
+    sub_indices = np.array_split(df_index,cores)
+    sub_dfs = [df.iloc[sub_index,:] for sub_index in sub_indices]
+    return sub_dfs
+
+def survival_regression_atomic(freq,ea,survival,survival_duration,survival_event,n_effective_obs):
+    df_data = []
+    from lifelines import CoxPHFitter
+    for uid,ss in tqdm(zip(freq.index,freq['samples']),total=freq.shape[0]):
+        pep,junc = uid.split(',')
+        tmp = ea.loc[junc,ss].to_frame()
+        tmp.columns = ['psi']
+        operation_df = tmp.join(other=survival,how='inner')
+        operation_df = operation_df.dropna()  # actually unneccessary, because if a neojunction can give rise to neoantigen, so neojunction psi should be above an appreciable level
+        n_valid_sample = operation_df.shape[0]
+        try:
+            assert operation_df.loc[operation_df[survival_event]==1,:].shape[0] >= n_effective_obs
+        except AssertionError:
+            wald_z_score, wald_p_value = 'n_effective_obs<3','n_effective_obs<3'
+            df_data.append((uid,pep,junc,n_valid_sample,wald_z_score,wald_p_value))
+        else:
+            cph = CoxPHFitter()
+            try:
+                cph.fit(operation_df,duration_col=survival_duration,event_col=survival_event)
+                summary = cph.summary
+                wald_z_score, wald_p_value = summary.loc['psi',['z','p']].tolist()
+            except:
+                wald_z_score, wald_p_value = 'convergence_error','convergence_error'
+            df_data.append((uid,pep,junc,n_valid_sample,wald_z_score,wald_p_value))
+    return df_data
+
+
+
+
+
+    
+    
+
+
 
 def mutation_analysis(mode,burden,mutation,output,n_sample_cutoff=10,gene_column='gene',genes_to_plot=None):
     '''

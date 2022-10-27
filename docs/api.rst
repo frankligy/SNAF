@@ -24,6 +24,10 @@ survival_analysis
 ~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.survival_analysis
 
+survival_regression_cox_model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.survival_regression
+
 analyze_neoantigens
 ~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.analyze_neoantigens

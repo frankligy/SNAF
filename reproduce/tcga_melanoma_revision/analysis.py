@@ -20,40 +20,38 @@ mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
 
-# get reduced junction
-df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# # get reduced junction
+# df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
-# run SNAF
-netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
-tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
-gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
-add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+# # run SNAF
+# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 
-snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
-surface.initialize(db_dir=db_dir)
+# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+# surface.initialize(db_dir=db_dir)
 
 # test bayesian model
 # for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
 #     snaf.gtex_visual_subplots(uid=uid,norm=False,outdir='.')
 # for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
 #     snaf.tumor_specificity(uid=uid,method='bayesian',return_df=True)
-df = pd.read_csv('result/frequency_stage3_verbosity1_uid.txt',sep='\t',index_col=0)
-new_df = snaf.add_tumor_specificity_frequency_table(df,method='bayesian',remove_quote=True,cores=None)
-new_df.to_csv('test1.txt',sep='\t')
-sys.exit('stop')
+# df = pd.read_csv('result/frequency_stage3_verbosity1_uid.txt',sep='\t',index_col=0)
+# new_df = snaf.add_tumor_specificity_frequency_table(df,method='bayesian',remove_quote=True,cores=None)
+# new_df.to_csv('test1.txt',sep='\t')
+# sys.exit('stop')
 
-for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
-    sigma, df = snaf.tumor_specificity(uid=uid,method='mle',return_df=True)
-    fig,ax = plt.subplots()
-    sns.histplot(df['value_cpm'],bins=100,kde=True,ax=ax,stat='density')
-    from scipy.stats import halfnorm
-    r = halfnorm.rvs(loc=0,scale=sigma,size=2000)
-    sns.kdeplot(r,ax=ax,color='orange',clip=(-0.01,5))
-    plt.savefig('{}.pdf'.format(uid),bbox_inches='tight')
-    plt.close()
-sys.exit('stop')
-
+# for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
+#     sigma, df = snaf.tumor_specificity(uid=uid,method='mle',return_df=True)
+#     fig,ax = plt.subplots()
+#     sns.histplot(df['value_cpm'],bins=100,kde=True,ax=ax,stat='density')
+#     from scipy.stats import halfnorm
+#     r = halfnorm.rvs(loc=0,scale=sigma,size=2000)
+#     sns.kdeplot(r,ax=ax,color='orange',clip=(-0.01,5))
+#     plt.savefig('{}.pdf'.format(uid),bbox_inches='tight')
+#     plt.close()
 
 
 # for uid in ['ENSG00000241343:E2.6-E2.9_101392052','ENSG00000175482:E2.22_67352741-E3.1']:
@@ -64,19 +62,39 @@ sys.exit('stop')
 #     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=False,tumor=df)
 #     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=True,tumor=df)   
 
-sys.exit('stop')
 # for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
 #     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=False,tumor=df)
 #     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=True,tumor=df)
 
 '''T cell neoantigen'''
-jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result',filter_mode='maxmin')
-sample_to_hla = pd.read_csv('sample_hla.txt',sep='\t',index_col=0)['hla'].to_dict()
-hlas = [hla_string.split(',') for hla_string in df.columns.map(sample_to_hla)]
-jcmq.run(hlas=hlas,outdir='./result')
-snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
+# jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result',filter_mode='maxmin')
+# sample_to_hla = pd.read_csv('sample_hla.txt',sep='\t',index_col=0)['hla'].to_dict()
+# hlas = [hla_string.split(',') for hla_string in df.columns.map(sample_to_hla)]
+# jcmq.run(hlas=hlas,outdir='./result')
+# snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
+
+# do survival and mutation analysis
+# survival = pd.read_csv('TCGA-SKCM.survival.tsv',sep='\t',index_col=0)
+# for stage in [0,2,3]:
+#     burden_df = pd.read_csv('result/burden_stage{}.txt'.format(stage),sep='\t',index_col=0)
+#     burden_df.rename(columns=lambda x:'-'.join(x.split('-')[:4]),inplace=True)
+#     burden_output,_ = snaf.survival_analysis(burden_df,survival,2,stratification_plot='result/survival/stage{}_stratify.pdf'.format(stage),
+#                                              survival_plot='result/survival/stage{}_survival.pdf'.format(stage))
+#     if stage == 3:
+#         burden_output.to_csv('result/survival/burden3_patient_high_low_group.txt',sep='\t')
+
+# mutation = pd.read_csv('TCGA-SKCM.mutect2_snv.tsv',sep='\t',index_col=0)
+# burden3 = pd.read_csv('result/burden_stage3.txt',sep='\t',index_col=0)
+# burden3.rename(columns=lambda x:'-'.join(x.split('-')[:4]),inplace=True)
+# snaf.mutation_analysis(mode='compute',burden=burden3,mutation=mutation,output='result/survival/mutation.txt')
+# snaf.mutation_analysis(mode='plot',burden=burden3,mutation=mutation,output='result/survival/CAMKK2_mutation.txt',genes_to_plot=['CAMKK2'])
+
+snaf.downstream.survival_regression(freq='result/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',remove_quote=True,
+                                    rename_func=lambda x:'-'.join(x.split('-')[:4]),survival='TCGA-SKCM.survival.tsv',
+                                    pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',outdir='result/survival')
 
 sys.exit('stop')
+
 
 '''B cell neoantigen'''
 # membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df)
