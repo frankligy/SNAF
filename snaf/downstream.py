@@ -35,7 +35,7 @@ def plot_umap_neoantigen(df_path,outdir):
     plt.savefig(os.path.join(outdir,'mer_umap.pdf'),bbox_inches='tight')
     plt.close()
 
-def survival_regression(freq,remove_quote,rename_func,survival,pea,outdir='.',cores=None,survival_duration='OS.time',survival_event='OS',n_effective_obs=3):
+def survival_regression(freq,remove_quote,rename_func,survival,pea,outdir='.',cores=None,mode='binary',survival_duration='OS.time',survival_event='OS',n_effective_obs=3):
     '''
     conduct cox regression to identify neoantigens whose parental junctions expression is significantly associated with survival
 
@@ -46,6 +46,7 @@ def survival_regression(freq,remove_quote,rename_func,survival,pea,outdir='.',co
     :param pea: string, the path to the altanalyze generated event annotation file
     :param outdir: string, the output directory
     :param cores: None or int, how many cores to use for computation
+    :param mode: binary or psi, if binary, we test whether having a neoantigen can predict survival, psi means whether its parental junction's psi value is associated with survival
     :param survival_duration: string, the column name for duration in survival dataframe
     :param survival_event: string, the column name for event in survival dataframe
     :param n_effective_obs: int, default is 3, at least three obs whose event=1, otherwise all obs are right-sensored
@@ -77,16 +78,25 @@ def survival_regression(freq,remove_quote,rename_func,survival,pea,outdir='.',co
     pool = mp.Pool(processes=cores)
     print('{} subprocesses have been spawned'.format(cores))
     sub_dfs = split_df_to_chunks(freq,cores=cores)
-    r = [pool.apply_async(func=survival_regression_atomic,args=(sub_df,ea,survival,survival_duration,survival_event,n_effective_obs,)) for sub_df in sub_dfs]  
-    pool.close()
-    pool.join()
-    df_data = []
-    for collect in r:
-        result = collect.get()
-        df_data.extend(result)
+    if mode == 'binary':
+        r = [pool.apply_async(func=survival_regression_binary_atomic,args=(sub_df,ea,survival,survival_duration,survival_event,n_effective_obs,)) for sub_df in sub_dfs]  
+        pool.close()
+        pool.join()
+        df_data = []
+        for collect in r:
+            result = collect.get()
+            df_data.extend(result)
+    elif mode == 'psi':
+        r = [pool.apply_async(func=survival_regression_psi_atomic,args=(sub_df,ea,survival,survival_duration,survival_event,n_effective_obs,)) for sub_df in sub_dfs]  
+        pool.close()
+        pool.join()
+        df_data = []
+        for collect in r:
+            result = collect.get()
+            df_data.extend(result)    
     final_df = pd.DataFrame.from_records(data=df_data,columns=['uid','pep','junc','n_valid_sample','wald_z_score','wald_p_value'])
     final_df.set_index(keys='uid',inplace=True)
-    final_df.to_csv(os.path.join(outdir,'survival_regression_final_results.txt'),sep='\t')
+    final_df.to_csv(os.path.join(outdir,'survival_regression_{}_final_results.txt'.format(mode)),sep='\t')
 
 def split_df_to_chunks(df,cores=None):
     df_index = np.arange(df.shape[0])
@@ -96,7 +106,37 @@ def split_df_to_chunks(df,cores=None):
     sub_dfs = [df.iloc[sub_index,:] for sub_index in sub_indices]
     return sub_dfs
 
-def survival_regression_atomic(freq,ea,survival,survival_duration,survival_event,n_effective_obs):
+def survival_regression_binary_atomic(freq,ea,survival,survival_duration,survival_event,n_effective_obs):
+    df_data = []
+    from lifelines import CoxPHFitter
+    for uid,ss in tqdm(zip(freq.index,freq['samples']),total=freq.shape[0]):
+        pep,junc = uid.split(',')
+        tmp = ea.loc[junc,:].to_frame()
+        tmp.columns = ['psi']
+        # binary, as psi is variable, we just want to know if they are present or not
+        tmp.loc[ss,['psi']] = 1
+        not_ss = list(set(tmp.index).difference(set(ss)))
+        tmp.loc[not_ss,['psi']] = 0
+        operation_df = tmp.join(other=survival,how='inner')
+        operation_df = operation_df.dropna()  # actually unneccessary, because if a neojunction can give rise to neoantigen, so neojunction psi should be above an appreciable level
+        n_valid_sample = len(ss)
+        try:
+            assert operation_df.loc[operation_df[survival_event]==1,:].shape[0] >= n_effective_obs
+        except AssertionError:
+            wald_z_score, wald_p_value = 'n_effective_obs<3','n_effective_obs<3'
+            df_data.append((uid,pep,junc,n_valid_sample,wald_z_score,wald_p_value))
+        else:
+            cph = CoxPHFitter()
+            try:
+                cph.fit(operation_df,duration_col=survival_duration,event_col=survival_event)
+                summary = cph.summary
+                wald_z_score, wald_p_value = summary.loc['psi',['z','p']].tolist()
+            except:
+                wald_z_score, wald_p_value = 'convergence_error','convergence_error'
+            df_data.append((uid,pep,junc,n_valid_sample,wald_z_score,wald_p_value))
+    return df_data    
+
+def survival_regression_psi_atomic(freq,ea,survival,survival_duration,survival_event,n_effective_obs):
     df_data = []
     from lifelines import CoxPHFitter
     for uid,ss in tqdm(zip(freq.index,freq['samples']),total=freq.shape[0]):
@@ -104,6 +144,8 @@ def survival_regression_atomic(freq,ea,survival,survival_duration,survival_event
         tmp = ea.loc[junc,ss].to_frame()
         tmp.columns = ['psi']
         operation_df = tmp.join(other=survival,how='inner')
+        if uid == 'RETDFKMKF,ENSG00000167291:E38.6-E39.1':
+            operation_df.to_csv('tmp_test_old.txt',sep='\t');sys.exit('stop')
         operation_df = operation_df.dropna()  # actually unneccessary, because if a neojunction can give rise to neoantigen, so neojunction psi should be above an appreciable level
         n_valid_sample = operation_df.shape[0]
         try:
