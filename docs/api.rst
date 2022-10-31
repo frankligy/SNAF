@@ -125,6 +125,23 @@ Add All three info at once
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.snaf.enhance_frequency_table
 
+Prepare DEG analysis
+~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.prepare_DEG_analysis
+
+Visuliaze DEG result (Volcano)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.visualize_DEG_result
+
+Prepare GO analysis
+~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.prepare_GO_analysis
+
+Visualize GO result
+~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.visualize_GO_result
+
+
 
 
 
