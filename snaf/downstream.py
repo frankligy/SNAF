@@ -217,7 +217,7 @@ def visualize_DEG_result(result_path,mode,outdir='.',genes_to_highlight=[],up_cu
     :param xlims: None or tuple, force the xlims of the volcano plot, only for static mode
     :param ylims: None or tuple, force the ylims of the volcano plot, only for static mode
 
-    Examples:
+    Examples::
 
         snaf.downstream.visualize_DEG_result('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result/survival/DEGs-LogFold_0.58_adjp/GE.low_vs_high.txt',
                                              mode='static',outdir='.',genes_to_highlight=['LST1','HCST','IL32','CD3D','S100A8','MZB1','IGLC4','ADAM10','ARFGEF2','MIB1','KIF3B','TNPO1','PTPN11','ANKRD52','TGFBR1'])
@@ -281,8 +281,8 @@ def prepare_GO_analysis(result_path,lc_cutoff=0.5,adjp_cutoff=0.05,n=None,sortby
     Generate gene list for GO analysis
 
     :param result_path: string, the path to the AltAnalyze generated DEG result
-    :param lc_cutoff, float, the cutoff above which will be considered desirable genes
-    :param adjp_cutoff, float, the cutoff below which will be considered desirable genes
+    :param lc_cutoff: float, the cutoff above which will be considered desirable genes
+    :param adjp_cutoff: float, the cutoff below which will be considered desirable genes
     :param n: None or int, the number of genes to contrain for GO analysis
     :param sortby: string, 'adjp' or 'LogFold'
     :param ascending: bool, sort in ascending order or not
@@ -319,7 +319,7 @@ def visualize_GO_result(path_list,category_list=['Gene-Set Name','Ontology Name(
     Visualize the GO analysis rssults
 
     :param path_list: list, each element points to the GO-Elite result txt file
-    :param category_list, list, each element points to the column name in each result file that represent GO terms
+    :param category_list: list, each element points to the column name in each result file that represent GO terms
     :param mode: string, interactive or static
     :param outdir: string, the output directory
     :param ontology_to_highlight: dict, key is the GO terms in the result, values are the corresponding text you want them to be displayed on the plot
