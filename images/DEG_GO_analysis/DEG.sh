@@ -9,7 +9,7 @@
 
 module load python/2.7.5
 
-python /data/salomonis2/software/AltAnalyze-91/AltAnalyze/stats_scripts/metaDataAnalysis.py --p RNASeq --s Hs --adjp yes --pval 0.05 --f 2 \
+python /data/salomonis2/software/AltAnalyze-91/AltAnalyze/stats_scripts/metaDataAnalysis.py --p RNASeq --s Hs --adjp yes --pval 1 --f 1 \
        --i /data/salomonis2/NCI-R01/TCGA-SKCM/TCGA_SKCM_hg38/ExpressionInput/exp.TCGA-SKCM.txt \
        --m /data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result/survival/groups.txt 
 

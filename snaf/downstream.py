@@ -383,7 +383,22 @@ def visualize_GO_result(path_list,skiprows_list,category_list,mode='interactive'
             
 
         
+def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir):
+    '''
+    This function will conduct a few tasks:
 
+    1. copy bam and bai file to the outdir /bams
+    2. create input_bams.tsv file the outdir
+    3. create palette.txt file automatically based on the number of bam file being visualized
+
+    In terms of the actual sashimi plot generation, we used ggsashimi docker image (singularity)::
+
+        singularity build ggsashimi.sif docker://gencode.v36.annotation.gtf
+        # make sure to use gencode v36 downloaded from their website
+        singularity run -W $PWD -B $PWD:$PWD ggsashimi.sif -b input_bam.tsv -c chr10:27040584-27048100 -C 3 -M 5 --width 10 --fix-y-scale -g gencode.v36.annotation.gtf --ann-height=4 --height=2 -P palette.txt
+    '''
+
+    pass
 
 
 

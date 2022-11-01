@@ -89,10 +89,28 @@ mpl.rcParams['font.family'] = 'Arial'
 # snaf.mutation_analysis(mode='compute',burden=burden3,mutation=mutation,output='result/survival/mutation.txt')
 # snaf.mutation_analysis(mode='plot',burden=burden3,mutation=mutation,output='result/survival/CAMKK2_mutation.txt',genes_to_plot=['CAMKK2'])
 
-snaf.downstream.survival_regression(freq='result/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',remove_quote=True,
-                                    rename_func=lambda x:'-'.join(x.split('-')[:4]),survival='TCGA-SKCM.survival.tsv',
-                                    pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',outdir='result/survival')
+# snaf.downstream.survival_regression(freq='result/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',remove_quote=True,
+#                                     rename_func=lambda x:'-'.join(x.split('-')[:4]),survival='TCGA-SKCM.survival.tsv',
+#                                     pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',outdir='result/survival',mode='binary')
 
+# do DEG and GO
+# snaf.downstream.prepare_DEG_analysis('result/burden_stage3.txt','result/survival/burden3_patient_high_low_group.txt',
+#                                      '/data/salomonis2/NCI-R01/TCGA-SKCM/TCGA_SKCM_hg38/ExpressionInput/exp.TCGA-SKCM.txt',
+#                                      outdir='result/survival',encoding={'low':'1','high':'2'})
+# snaf.downstream.visualize_DEG_result('result/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',up_cutoff=0.58,down_cutoff=-0.58,
+#                                      mode='static',outdir='result/survival',genes_to_highlight=['LST1','HCST','IL32','CD3D','S100A8','MZB1','IGLC4','ADAM10','ARFGEF2','MIB1','KIF3B','TNPO1','PTPN11','ANKRD52','TGFBR1'])
+# snaf.downstream.prepare_GO_analysis('result/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',outdir='result/survival',lc_cutoff=0.58,adjp_cutoff=0.05)
+snaf.downstream.visualize_GO_result(path_list=['result/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20221101-142116/gene_list-GO.txt','result/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20221101-142037/gene_list-BioMarkers.txt'],
+                                    skiprows_list=[17,16],category_list=['Ontology Name','Gene-Set Name'],outdir='result/survival',
+                                    mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-50,10e-1))
+
+# debug
+# uid = 'RETDFKMKF,ENSG00000167291:E38.6-E39.1'
+# pep,junc = uid.split(',')
+# jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
+# jcmq.cond_df.loc[junc,:].to_csv('test_new.txt',sep='\t')
+# jcmq = snaf.JunctionCountMatrixQuery.deserialize('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/result/after_prediction.p')
+# jcmq.cond_df.loc[junc,:].to_csv('test_old.txt',sep='\t')
 sys.exit('stop')
 
 
