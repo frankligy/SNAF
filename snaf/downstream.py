@@ -313,12 +313,13 @@ def prepare_GO_analysis(result_path,lc_cutoff=0.5,adjp_cutoff=0.05,n=None,sortby
                 f.write('{}\n'.format(gene))
                 c += 1
 
-def visualize_GO_result(path_list,category_list=['Gene-Set Name','Ontology Name(Ontology-ID)'],mode='interactive',outdir='',ontology_to_highlight={},
+def visualize_GO_result(path_list,skiprows_list,category_list,mode='interactive',outdir='',ontology_to_highlight={},
                         xlims=None,ylims=None):
     '''
     Visualize the GO analysis rssults
 
-    :param path_list: list, each element points to the GO-Elite result txt file
+    :param path_list: list, each element points to the GO-Elite result txt file under ORA folder
+    :param skiprows_list: list, each element represents the number of lines needing to be skipped for each result file
     :param category_list: list, each element points to the column name in each result file that represent GO terms
     :param mode: string, interactive or static
     :param outdir: string, the output directory
@@ -328,14 +329,15 @@ def visualize_GO_result(path_list,category_list=['Gene-Set Name','Ontology Name(
 
     Examples::
 
-        snaf.downstream.visualize_GO_result(path_list=['result/survival/GO_Elite_result_BioMarkers/GO-Elite_results/pruned-results_z-score_elite.txt','result/survival/GO_Elite_result_GeneOntology/GO-Elite_results/pruned-results_z-score_elite.txt'],
-                                    mode='static',ontology_to_highlight={'Placenta T cells2 (PMID32214235 top 100)':'Placenta T cell','Fetal Liver DC2 (PMC6861135 markers)':'Fetal Liver DC','complement activation(GO:0006956)':'Complement Activation'},ylims=(-0.05,0.1))
+        snaf.downstream.visualize_GO_result(path_list=['result/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20221101-142116/gene_list-GO.txt','result/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20221101-142037/gene_list-BioMarkers.txt'],
+                                    skiprows_list=[17,16],category_list=['Ontology Name','Gene-Set Name'],outdir='result/survival',
+                                    mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-50,10e-1))
 
     '''
     dfs = []
-    for path,column in zip(path_list,category_list):
-        df = pd.read_csv(path,sep='\t',index_col=0).loc[:,[column,'Z Score','AdjustedP']]
-        df.rename(columns={column:'gene_set_name','Z Score':'z_score'},inplace=True)
+    for path,skiprows,column in zip(path_list,skiprows_list,category_list):
+        df = pd.read_csv(path,sep='\t',index_col=column,skiprows=skiprows).loc[:,['Z Score','AdjustedP']]
+        df.rename(columns={'Z Score':'z_score'},inplace=True)
         dfs.append(df)
     df_all = pd.concat(dfs,axis=0)
     if mode == 'interactive':
@@ -346,7 +348,7 @@ def visualize_GO_result(path_list,category_list=['Gene-Set Name','Ontology Name(
         for row in df_all.itertuples():
             node_x.append(float(row.z_score))
             node_y.append(float(row.AdjustedP))
-            node_text.append(row.gene_set_name)
+            node_text.append(row.Index)
         node_trace = go.Scatter(name='nodes',x=node_x,y=node_y,mode='markers',hoverinfo='text',text=node_text,marker={'color':'blue','size':5})
         fig_layout = go.Layout(showlegend=False,title='DEG',xaxis=dict(title_text='z_score',range=xlims),yaxis=dict(title_text='FDR_p',range=ylims))
         fig = go.Figure(data=[node_trace],layout=fig_layout)
@@ -360,7 +362,7 @@ def visualize_GO_result(path_list,category_list=['Gene-Set Name','Ontology Name(
         for row in df_all.itertuples():
             node_x.append(float(row.z_score))
             node_y.append(float(row.AdjustedP))
-            node_text.append(row.gene_set_name)
+            node_text.append(row.Index)
         fig,ax = plt.subplots()
         ax.scatter(node_x,node_y,s=2,c='#3D52A3')  
         ax.spines['left'].set_position(('axes',0.3))
@@ -368,6 +370,7 @@ def visualize_GO_result(path_list,category_list=['Gene-Set Name','Ontology Name(
         ax.spines['top'].set_visible(False)
         ax.set_xlabel('GO-Elite Z-Score')
         ax.set_ylabel('FDR_p')
+        ax.set_yscale('log')
         if xlims is not None:
             ax.set_xlim(xlims)
         if ylims is not None:
