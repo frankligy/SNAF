@@ -141,6 +141,10 @@ Visualize GO result
 ~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.visualize_GO_result
 
+Prepare Sashimi plot
+~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.prepare_sashimi_plot
+
 
 
 

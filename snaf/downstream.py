@@ -14,6 +14,7 @@ from scipy.stats import mannwhitneyu,pearsonr,spearmanr
 from tqdm import tqdm
 from copy import deepcopy
 import multiprocessing as mp
+import subprocess
 
 '''
 this script contains survival analysis, mutation analysis
@@ -383,22 +384,75 @@ def visualize_GO_result(path_list,skiprows_list,category_list,mode='interactive'
             
 
         
-def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir):
+def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, query_region, min_junction=3, width=10, ann_height=4, height=2):
     '''
-    This function will conduct a few tasks:
-
-    1. copy bam and bai file to the outdir /bams
-    2. create input_bams.tsv file the outdir
-    3. create palette.txt file automatically based on the number of bam file being visualized
-
-    In terms of the actual sashimi plot generation, we used ggsashimi docker image (singularity)::
+    Given a bunch of bam file and cognate bai files, we want to generate sashimi plot in an automatic way using ggsashimi package singularity image, this image is pulled using::
 
         singularity build ggsashimi.sif docker://gencode.v36.annotation.gtf
-        # make sure to use gencode v36 downloaded from their website
-        singularity run -W $PWD -B $PWD:$PWD ggsashimi.sif -b input_bam.tsv -c chr10:27040584-27048100 -C 3 -M 5 --width 10 --fix-y-scale -g gencode.v36.annotation.gtf --ann-height=4 --height=2 -P palette.txt
-    '''
+    
+    Now specifiy a folder (outdir), we are going to copy bam and bai to a subdirectory called ggsashimi_bams, automatically generate input_bams.tsv and palette.txt file,
+    and then return a string to run singularity images::
 
-    pass
+        singularity run -W $PWD -B $PWD:$PWD ggsashimi.sif -b input_bam.tsv -c chr10:27040584-27048100 -C 3 -M 5 --width 10 --fix-y-scale -g gencode.v36.annotation.gtf --ann-height=4 --height=2 -P palette.txt
+
+    :param bam_path_list: list, each element represents the path to the bam file
+    :param bai_path_list: list, each element represents the path to the bai file
+    :param outdir: string, the output directory where we are going to execute singularity run and get the plot, we prefer non-existing path or empty existing folder
+    :param sif_anno_path: string, the folder where ggsashimi.sif and gencode.v36.annotation.gtf reside
+    :param query_region: string, format like chr10:27040584-27048100
+    :param min_junction: int, the minimum number of junction to show sashimi line
+    :param width: float, the width in pct for the plot
+    :param ann_height: float, the height in pct for the annotation
+    :param height: float, the height in pct for the sashimi plot
+
+    :return cmd: string, the singularity cmd that you should type in the console when cd to the outdir
+
+    Examples::
+
+        root_dir = '/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-SKCM/TCGA_SKCM-BAMs/bams'
+        bam_file_path = [root_dir+'/'+item+'.bam' for item in ['TCGA-3N-A9WB-06A-11R-A38C-07','TCGA-3N-A9WC-06A-11R-A38C-07','TCGA-3N-A9WD-06A-11R-A38C-07']]
+        bai_file_path = [root_dir+'/'+item+'.bam.bai' for item in ['TCGA-3N-A9WB-06A-11R-A38C-07','TCGA-3N-A9WC-06A-11R-A38C-07','TCGA-3N-A9WD-06A-11R-A38C-07']]
+        sif_anno_path = '/data/salomonis2/software/ggsashimi'
+        cmd = snaf.downstream.prepare_sashimi_plot(bam_file_path,bai_file_path,'test',sif_anno_path,query_region='chr3:49099853-49099994')
+        print(cmd)
+        # singularity run -W $PWD -B $PWD:$PWD /data/salomonis2/software/ggsashimi/ggsashimi.sif -b input_bams.tsv -c chr3:49099853-49099994 -C 3 -M 3 --width 10 --fix-y-scale -g gencode.v36.annotation.gtf --ann-height=4 --height=2 -P palette.txt
+    '''
+    # copy file
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+    if not os.path.exists(os.path.join(outdir,'ggsashimi_bams')):
+        os.mkdir(os.path.join(outdir,'ggsashimi_bams'))
+    for bam in bam_path_list:
+        print('copy {}'.format(bam))
+        subprocess.run(['cp','{}'.format(bam),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
+    for bai in bai_path_list:
+        print('copy {}'.format(bai))
+        subprocess.run(['cp','{}'.format(bai),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
+    subprocess.run(['cp','{}'.format(os.path.join(sif_anno_path,'gencode.v36.annotation.gtf')),'{}'.format(outdir)])
+
+    # create input_bams.tsv file
+    with open(os.path.join(outdir,'input_bams.tsv'),'w') as f:
+        for bam in bam_path_list:
+            file_name = os.path.basename(bam)
+            identifier = file_name.split('.bam')[0]
+            path = os.path.join('ggsashimi_bams',file_name)
+            category = identifier
+            f.write('{}\t{}\t{}\n'.format(identifier,path,category))
+    
+    # create palette.txt file for standard igv color
+    n = len(bam_path_list)
+    colors = ['#FF3400','#3333FF','#00CD33','#B15117','#A445A8','#FF7700','#FF75C1','#999999']
+    with open(os.path.join(outdir,'palette.txt'),'w') as f:
+        for c in colors[:n]:
+            f.write('{}\n'.format(c))
+    cmd = 'singularity run -W $PWD -B $PWD:$PWD {} -b input_bams.tsv -c {} -C 3 -M {} --width {} --fix-y-scale -g gencode.v36.annotation.gtf --ann-height={} --height={} -P palette.txt'.format(os.path.join(sif_anno_path,'ggsashimi.sif'),query_region,min_junction,width,ann_height,height)
+    return cmd
+
+    
+
+    
+
+    
 
 
 
