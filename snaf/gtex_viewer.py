@@ -50,8 +50,7 @@ def gtex_visual_combine_plotly(uid,outdir='',norm=False,tumor=None):
         info = adata[[query],:]
     except:
         print('{} not detected in gtex or added controls, impute as zero'.format(query))
-        info_tmp = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info = ad.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
+        info = ad.AnnData(X=csr_matrix(np.full((1,adata.shape[1]),0)),obs=pd.DataFrame(data={'mean':[0]},index=[uid]),var=adata.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
     title = query
     identifier = query.replace(':','_')
     df_gtex = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
@@ -107,8 +106,7 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
         info = adata[[query],:]
     except:
         print('{} not detected in gtex, impute as zero'.format(query))
-        info_tmp = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info = ad.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
+        info = ad.AnnData(X=csr_matrix(np.full((1,adata.shape[1]),0)),obs=pd.DataFrame(data={'mean':[0]},index=[uid]),var=adata.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
     title = query
     identifier = query.replace(':','_')
     df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
@@ -183,8 +181,7 @@ def gtex_visual_subplots(uid,norm=True,outdir='.'):
         info = adata[[query],:]
     except:
         print('{} not detected in gtex, impute as zero'.format(query))
-        info_tmp = adata[['ENSG00000090339:E4.3-E4.5'],:]
-        info = ad.AnnData(X=csr_matrix(np.full((1,info_tmp.shape[1]),0)),obs=info_tmp.obs,var=info_tmp.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
+        info = ad.AnnData(X=csr_matrix(np.full((1,adata.shape[1]),0)),obs=pd.DataFrame(data={'mean':[0]},index=[uid]),var=adata.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
     title = query
     identifier = query.replace(':','_')
     n_tissue = len(info.var['tissue'].unique())

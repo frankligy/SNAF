@@ -451,7 +451,8 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, query
     
 
     
-
+def cross_survival_plot(survival1,survival2):
+    pass
     
 
 
