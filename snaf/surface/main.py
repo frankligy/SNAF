@@ -715,6 +715,8 @@ def report_candidates(pickle_path,candidates_path,validation_path,freq_df_path,m
                                   'result','sr_str3_report.txt')
 
     '''
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
     with open(pickle_path,'rb') as f1:
         results = pickle.load(f1)   # a list of sa object
     with open(candidates_path,'r') as f2:
