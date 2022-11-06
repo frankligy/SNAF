@@ -97,7 +97,7 @@ def generate_full_results(outdir,freq_path,mode,validation_gtf):
                                             validation_path=os.path.join(outdir,'validation_5_sr_{}_{}.txt'.format(style,overlap_extracellular)),
                                             freq_df_path=freq_path,
                                             mode='short_read',outdir=os.path.join(outdir,'B_candidates'),name='sr_str5_report_{}_{}.txt'.format(style,overlap_extracellular)) 
-        # first strigency 4
+        # next strigency 4
         for style in [None,'deletion','insertion']:
             for overlap_extracellular in [True,False]:
                 cc, cf = generate_results(pickle_path=os.path.join(outdir,'surface_antigen_sr.p'),strigency=4,outdir=outdir,long_read=False,style=style,overlap_extracellular=overlap_extracellular,gtf=validation_gtf)
@@ -107,6 +107,17 @@ def generate_full_results(outdir,freq_path,mode,validation_gtf):
                                             validation_path=os.path.join(outdir,'validation_4_sr_{}_{}.txt'.format(style,overlap_extracellular)),
                                             freq_df_path=freq_path,
                                             mode='short_read',outdir=os.path.join(outdir,'B_candidates'),name='sr_str4_report_{}_{}.txt'.format(style,overlap_extracellular)) 
+
+         # then strigency 3
+        for style in [None,'deletion','insertion']:
+            for overlap_extracellular in [True,False]:
+                cc, cf = generate_results(pickle_path=os.path.join(outdir,'surface_antigen_sr.p'),strigency=3,outdir=outdir,long_read=False,style=style,overlap_extracellular=overlap_extracellular,gtf=None)
+                if cc > 0:
+                    report_candidates(pickle_path=os.path.join(outdir,'surface_antigen_sr.p'),
+                                            candidates_path=os.path.join(outdir,'candidates_3_sr_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            validation_path=os.path.join(outdir,'validation_3_sr_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            freq_df_path=freq_path,
+                                            mode='short_read',outdir=os.path.join(outdir,'B_candidates'),name='sr_str3_report_{}_{}.txt'.format(style,overlap_extracellular)) 
 
 def _run_dash_prioritizer_return_events(candidates):
     # candidates is a list of each lines, containing the newline symbol
