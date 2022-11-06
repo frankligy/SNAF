@@ -59,7 +59,54 @@ def initialize(db_dir):
     df_topology = pd.read_csv(os.path.join(db_dir,'Alt91_db','ENSP_topology.txt'),sep='\t')
     print('{} {} finished surface antigen initialization'.format(date.today(),datetime.now().strftime('%H:%M:%S')))
 
+def generate_full_results(outdir,freq_path,mode,validation_gtf):
+    '''
+    preferred api for wraping both generate_results and report_candiates, good for general usage
 
+    :param outdir: string, the output folder
+    :param freq_path: string, the path to the frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt file from T antigen pipeline
+    :param mode: string, either long_read or short_read
+    :param validation_gtf: string, the path to the validation long_read gtf when mode=short_read
+
+    Examples::
+
+        # long read mode
+        surface.generate_full_results(outdir='result/surface',freq_path='result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='long_read')
+        # short read mode
+        surface.generate_full_results(outdir='result/surface',freq_path='result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='short_read',validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
+
+    '''
+    if mode == 'long_read':
+        for style in [None,'deletion','insertion']:
+            for overlap_extracellular in [True,False]:
+                cc,cf = generate_results(pickle_path=os.path.join(outdir,'surface_antigen_lr.p'),strigency=3,outdir=outdir,long_read=True,style=style,overlap_extracellular=overlap_extracellular)
+                if cc > 0:
+                    report_candidates(pickle_path=os.path.join(outdir,'surface_antigen_lr.p'),
+                                            candidates_path=os.path.join(outdir,'candidates_3_lr_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            validation_path=os.path.join(outdir,'validation_3_lr_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            freq_df_path=freq_path,
+                                            mode='long_read',outdir=os.path.join(outdir,'B_candidates'),name='lr_str3_report_{}_{}.txt'.format(style,overlap_extracellular))
+    elif mode == 'short_read':
+        # first strigency 5
+        for style in [None,'deletion','insertion']:
+            for overlap_extracellular in [True,False]:
+                cc,cf = generate_results(pickle_path=os.path.join(outdir,'surface_antigen_sr.p'),strigency=5,outdir=outdir,long_read=False,style=style,overlap_extracellular=overlap_extracellular,gtf=validation_gtf)
+                if cc > 0:
+                    report_candidates(pickle_path=os.path.join(outdir,'surface_antigen_sr.p'),
+                                            candidates_path=os.path.join(outdir,'candidates_5_sr_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            validation_path=os.path.join(outdir,'validation_5_sr_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            freq_df_path=freq_path,
+                                            mode='short_read',outdir=os.path.join(outdir,'B_candidates'),name='sr_str5_report_{}_{}.txt'.format(style,overlap_extracellular)) 
+        # first strigency 4
+        for style in [None,'deletion','insertion']:
+            for overlap_extracellular in [True,False]:
+                cc, cf = generate_results(pickle_path=os.path.join(outdir,'surface_antigen_sr.p'),strigency=4,outdir=outdir,long_read=False,style=style,overlap_extracellular=overlap_extracellular,gtf=validation_gtf)
+                if cc > 0:
+                    report_candidates(pickle_path=os.path.join(outdir,'surface_antigen_sr.p'),
+                                            candidates_path=os.path.join(outdir,'candidates_4_sr_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            validation_path=os.path.join(outdir,'validation_4_sr_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            freq_df_path=freq_path,
+                                            mode='short_read',outdir=os.path.join(outdir,'B_candidates'),name='sr_str4_report_{}_{}.txt'.format(style,overlap_extracellular)) 
 
 def _run_dash_prioritizer_return_events(candidates):
     # candidates is a list of each lines, containing the newline symbol
@@ -528,6 +575,7 @@ def run(uids,outdir,prediction_mode='short_read',n_stride=2,gtf=None,tmhmm=False
         os.mkdir(outdir)
     results = []
     if prediction_mode == 'short_read':
+        file_name = 'surface_antigen_sr.p'
         for uid,score,df,ed,freq in tqdm(uids,total=len(uids)):
             sa = SurfaceAntigen(uid,score,df,ed,freq,False)
             sa.detect_type()
@@ -538,6 +586,7 @@ def run(uids,outdir,prediction_mode='short_read',n_stride=2,gtf=None,tmhmm=False
             sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
             results.append(sa)
     elif prediction_mode == 'long_read':
+        file_name = 'surface_antigen_lr.p'
         gtf_dict = process_est_or_long_read_with_id(gtf)
         for uid,score,df,ed,freq in tqdm(uids,total=len(uids)):
             sa = SurfaceAntigen(uid,score,df,ed,freq,False)
@@ -549,7 +598,7 @@ def run(uids,outdir,prediction_mode='short_read',n_stride=2,gtf=None,tmhmm=False
             sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
             results.append(sa)
     if serialize:
-        with open(os.path.join(outdir,'surface_antigen.p'),'wb') as f:
+        with open(os.path.join(outdir,file_name),'wb') as f:
             pickle.dump(results,f)     
 
     # remove scratch
@@ -922,18 +971,21 @@ def generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False
                 if any(sends):
                     candidates.append((sa,sa.score,sa.freq,len(valid_indices),sa.uid,valid_indices,cand_attrs))
                     count_candidates += 1
-    sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2],-x[3]),reverse=False)
-    uid_list = list(list(zip(*sorted_candidates))[4])
-    ensg_list = [uid.split(':')[0] for uid in uid_list]
-    gene_symbols = ensemblgene_to_symbol(ensg_list,'human')
-    if long_read:
-        file_name_lr = '_lr'
+    if count_candidates > 0:
+        sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2],-x[3]),reverse=False)
+        uid_list = list(list(zip(*sorted_candidates))[4])
+        ensg_list = [uid.split(':')[0] for uid in uid_list]
+        gene_symbols = ensemblgene_to_symbol(ensg_list,'human')
+        if long_read:
+            file_name_lr = '_lr'
+        else:
+            file_name_lr = '_sr'
+        with open(os.path.join(outdir,'candidates_{}{}_{}_{}.txt'.format(strigency,file_name_lr,style,overlap_extracellular)),'w') as f1, open(os.path.join(outdir,'validation_{}{}_{}_{}.txt'.format(strigency,file_name_lr,style,overlap_extracellular)),'w') as f3:
+            for (sa,score,freq,hit,uid,vi,ca),gene in zip(sorted_candidates,gene_symbols):
+                print(sa,'valid_indices:{}\n'.format(vi),'gene_symbol:{}\n'.format(gene),file=f1,sep='',end='\n')
+                print(ca,file=f3,sep='\n',end='\n')
     else:
-        file_name_lr = ''
-    with open(os.path.join(outdir,'candidates_{}{}_{}_{}.txt'.format(strigency,file_name_lr,style,overlap_extracellular)),'w') as f1, open(os.path.join(outdir,'validation_{}{}_{}_{}.txt'.format(strigency,file_name_lr,style,overlap_extracellular)),'w') as f3:
-        for (sa,score,freq,hit,uid,vi,ca),gene in zip(sorted_candidates,gene_symbols):
-            print(sa,'valid_indices:{}\n'.format(vi),'gene_symbol:{}\n'.format(gene),file=f1,sep='',end='\n')
-            print(ca,file=f3,sep='\n',end='\n')
+        print('no candidates for strigency {} style {} overlap_extracellular {}'.format(strigency, style, overlap_extracellular))
     return count_candidates,count_further
 
 

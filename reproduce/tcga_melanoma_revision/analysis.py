@@ -20,18 +20,18 @@ mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
 
-# # get reduced junction
-# df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# get reduced junction
+df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
-# # run SNAF
-# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
-# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
-# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
-# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+# run SNAF
+netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 
-# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
-# surface.initialize(db_dir=db_dir)
+snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+surface.initialize(db_dir=db_dir)
 
 # test bayesian model
 # for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
@@ -100,32 +100,27 @@ mpl.rcParams['font.family'] = 'Arial'
 # snaf.downstream.visualize_DEG_result('result/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',up_cutoff=0.58,down_cutoff=-0.58,
 #                                      mode='static',outdir='result/survival',genes_to_highlight=['LST1','HCST','IL32','CD3D','S100A8','MZB1','IGLC4','ADAM10','ARFGEF2','MIB1','KIF3B','TNPO1','PTPN11','ANKRD52','TGFBR1'])
 # snaf.downstream.prepare_GO_analysis('result/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',outdir='result/survival',lc_cutoff=0.58,adjp_cutoff=0.05)
-snaf.downstream.visualize_GO_result(path_list=['result/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20221101-142116/gene_list-GO.txt','result/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20221101-142037/gene_list-BioMarkers.txt'],
-                                    skiprows_list=[17,16],category_list=['Ontology Name','Gene-Set Name'],outdir='result/survival',
-                                    mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-50,10e-1))
+# snaf.downstream.visualize_GO_result(path_list=['result/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20221101-142116/gene_list-GO.txt','result/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20221101-142037/gene_list-BioMarkers.txt'],
+#                                     skiprows_list=[17,16],category_list=['Ontology Name','Gene-Set Name'],outdir='result/survival',
+#                                     mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-50,10e-1))
 
-# debug
-# uid = 'RETDFKMKF,ENSG00000167291:E38.6-E39.1'
-# pep,junc = uid.split(',')
-# jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
-# jcmq.cond_df.loc[junc,:].to_csv('test_new.txt',sep='\t')
-# jcmq = snaf.JunctionCountMatrixQuery.deserialize('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/result/after_prediction.p')
-# jcmq.cond_df.loc[junc,:].to_csv('test_old.txt',sep='\t')
-sys.exit('stop')
 
 
 '''B cell neoantigen'''
-# membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df)
-# surface.run(membrane_tuples,prediction_mode='short_read',outdir='result',tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
-# surface.run(uids=membrane_tuples,outdir='.',prediction_mode='long_read',gtf='2021UHRRIsoSeq_SQANTI3_filtered.gtf',tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
-# surface.generate_results(pickle_path='./result/surface_antigen_lr.p',outdir='result',strigency=3,gtf=None,long_read=True)   # './SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf'
-# surface.run_dash_B_antigen(pkl='result/surface_antigen.p',prediction_mode='short_read',candidates='result/candidates_3.txt',python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
-# surface.run_dash_B_antigen(pkl='result/surface_antigen_lr.p',prediction_mode='long_read',candidates='result/candidates_3_lr.txt',python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+# long-read
+# membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df,add_control=add_control,not_in_db=False,outdir='result/surface',filter_mode='maxmin')
+# surface.run(uids=membrane_tuples,outdir='result/surface',prediction_mode='long_read',n_stride=2,
+#             gtf='/data/salomonis2/LabFiles/Frank-Li/refactor/data/2021UHRRIsoSeq_SQANTI3_filtered.gtf',
+#             tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
+# surface.generate_full_results(outdir='result/surface',freq_path='result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='long_read')
 
-
-# print(snaf.uid_to_coord('ENSG00000164175:E3.2_33963931-E4.2'))
-# snaf.gtex_visual_combine('ENSG00000057019:E5.1-I5.1_98867438',norm=False,outdir='result',tumor=df)   # ENSG00000198053:E7.2-E13.1_1915159 ENSG00000164175:E3.2_33963931-E4.2 ENSG00000092421:E22.1-E24.1_116468915 ENSG00000152558:I7.1_102419074-E8.1 ENSG00000105976:E3.1-E4.1 ENSG00000057019:E5.1-I5.1_98867438
-
+# short-read
+# membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df,add_control=add_control,not_in_db=False,outdir='result/surface',filter_mode='maxmin')
+# surface.run(uids=membrane_tuples,outdir='result/surface',prediction_mode='short_read',n_stride=2,
+#             gtf=None,
+#             tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
+surface.generate_full_results(outdir='result/surface',freq_path='result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='short_read',validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
+sys.exit('stop')
 
 '''
 output B antigen results for paper
