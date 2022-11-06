@@ -76,7 +76,7 @@ run
 
 generate_full_results
 ~~~~~~~~~~~~~~~~~~~~~~~~
-.. autofunctions:: snaf.surface.main.generate_full_results
+.. autofunction:: snaf.surface.main.generate_full_results
 
 generate_results
 ~~~~~~~~~~~~~~~~~~~
