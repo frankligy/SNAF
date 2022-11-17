@@ -261,6 +261,7 @@ def run_dash_B_antigen(pkl,prediction_mode,candidates,python_executable,host=Non
     run the dash B antigen viewer
 
     :param pkl: string, the path to the surface B pipeline pickle file
+    :param prediction_mode: string, either short_read or long_read
     :param candidates: string ,the path to the candidates.txt file
     :param python_executable: string ,the path to the python executable you are using
     :param host: None or string, string or None, if None, program will run hostname to automatically detect
@@ -268,7 +269,7 @@ def run_dash_B_antigen(pkl,prediction_mode,candidates,python_executable,host=Non
 
     Example::
 
-        surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',
+        surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',prediction_mode='long_read',
                            python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
 
 

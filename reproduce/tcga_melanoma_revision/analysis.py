@@ -119,25 +119,14 @@ surface.initialize(db_dir=db_dir)
 # surface.run(uids=membrane_tuples,outdir='result/surface',prediction_mode='short_read',n_stride=2,
 #             gtf=None,
 #             tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
-surface.generate_full_results(outdir='result/surface',freq_path='result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='short_read',validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
+# surface.generate_full_results(outdir='result/surface',freq_path='result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='short_read',validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
+
+surface.run_dash_B_antigen(pkl='result/surface/surface_antigen_lr.p',candidates='result/surface/candidates_3_lr_None_True.txt',prediction_mode='long_read',
+                           python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+
+
+
 sys.exit('stop')
-
-'''
-output B antigen results for paper
-'''
-# surface.report_candidates('result/surface_antigen.p','result/candidates_3.txt','result/validation_3.txt','result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt','short_read','result','sr_str3_report.txt')
-# surface.report_candidates('result/surface_antigen.p','result/candidates_4.txt','result/validation_4.txt','result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt','short_read','result','sr_str4_report.txt')
-# surface.report_candidates('result/surface_antigen.p','result/candidates_5.txt','result/validation_5.txt','result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt','short_read','result','sr_str5_report.txt')
-# surface.report_candidates('result/surface_antigen_lr.p','result/candidates_3_lr.txt','result/validation_3_lr.txt','result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt','long_read','result','lr_str3_report.txt')
-
-
-
-
-
-
-
-
-
 
 
 
