@@ -19,18 +19,18 @@ mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
-# get junction count matrix
-df = snaf.get_reduced_junction_matrix(pc='counts.original.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# # get junction count matrix
+# df = snaf.get_reduced_junction_matrix(pc='counts.original.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
-# run SNAF
-netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
-tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
-gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
-add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+# # run SNAF
+# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 
-snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
-surface.initialize(db_dir=db_dir)
+# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+# surface.initialize(db_dir=db_dir)
 
 # T antigen
 # jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result',filter_mode='maxmin')
@@ -78,11 +78,20 @@ surface.initialize(db_dir=db_dir)
 #     snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
 #                                                outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
 
-snaf.gtex_visual_combine_plotly(uid='ENSG00000137266:E24.7-E24.8',outdir='inspection/OvCa114',norm=False,tumor=df);sys.exit('stop')
-
-df = snaf.proteomics.summarize_ms_result(peptide='MS/OvCa114/combined/txt/peptides.txt',msms='MS/OvCa114/combined/txt/msms.txt',freq='result/frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt')
-df.to_csv('test.txt',sep='\t')
+'''specifically test OvCa114'''
+# df = snaf.proteomics.summarize_ms_result(peptide='MS/OvCa114/combined/txt/peptides.txt',msms='MS/OvCa114/combined/txt/msms.txt',freq='result/frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt')
+# df.to_csv('MS/OvCa114/summarized_ms_result.txt',sep='\t')
+# snaf.gtex_visual_combine_plotly(uid='ENSG00000137266:E24.7-E24.8',outdir='inspection/OvCa114',norm=False,tumor=df);sys.exit('stop')
+# cmd = snaf.prepare_sashimi_plot(bam_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam'],
+#                                 bai_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam.bai'],
+#                                 outdir='./sashimi',
+#                                 sif_anno_path='/data/salomonis2/software/ggsashimi',
+#                                 bam_contig_rename=True,
+#                                 query_region='chr2:70921285-70958046',
+#                                 min_junction=20)  # chr10:13446484-13446485 # chr2:70921285-70958046 # chr22:22556930-22557545 # chr6:3272865-3272865
+# print(cmd)
 sys.exit('stop')
+
 
 
 # stack barplot

@@ -384,7 +384,7 @@ def visualize_GO_result(path_list,skiprows_list,category_list,mode='interactive'
             
 
         
-def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, query_region, min_junction=3, width=10, ann_height=4, height=2):
+def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_contig_rename, query_region, min_junction=3, width=10, ann_height=4, height=2):
     '''
     Given a bunch of bam file and cognate bai files, we want to generate sashimi plot in an automatic way using ggsashimi package singularity image, this image is pulled using::
 
@@ -399,6 +399,7 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, query
     :param bai_path_list: list, each element represents the path to the bai file
     :param outdir: string, the output directory where we are going to execute singularity run and get the plot, we prefer non-existing path or empty existing folder
     :param sif_anno_path: string, the folder where ggsashimi.sif and gencode.v36.annotation.gtf reside
+    :param bam_contig_rename: boolean, whether to convert the bam contig from 10 to chr10, require the samtools are loaded
     :param query_region: string, format like chr10:27040584-27048100
     :param min_junction: int, the minimum number of junction to show sashimi line
     :param width: float, the width in pct for the plot
@@ -413,7 +414,7 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, query
         bam_file_path = [root_dir+'/'+item+'.bam' for item in ['TCGA-3N-A9WB-06A-11R-A38C-07','TCGA-3N-A9WC-06A-11R-A38C-07','TCGA-3N-A9WD-06A-11R-A38C-07']]
         bai_file_path = [root_dir+'/'+item+'.bam.bai' for item in ['TCGA-3N-A9WB-06A-11R-A38C-07','TCGA-3N-A9WC-06A-11R-A38C-07','TCGA-3N-A9WD-06A-11R-A38C-07']]
         sif_anno_path = '/data/salomonis2/software/ggsashimi'
-        cmd = snaf.downstream.prepare_sashimi_plot(bam_file_path,bai_file_path,'test',sif_anno_path,query_region='chr3:49099853-49099994')
+        cmd = snaf.downstream.prepare_sashimi_plot(bam_file_path,bai_file_path,'test',sif_anno_path,sif_anno_path=None,query_region='chr3:49099853-49099994')
         print(cmd)
         # singularity run -W $PWD -B $PWD:$PWD /data/salomonis2/software/ggsashimi/ggsashimi.sif -b input_bams.tsv -c chr3:49099853-49099994 -C 3 -M 3 --width 10 --fix-y-scale -g gencode.v36.annotation.gtf --ann-height=4 --height=2 -P palette.txt
     '''
@@ -429,6 +430,27 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, query
         print('copy {}'.format(bai))
         subprocess.run(['cp','{}'.format(bai),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
     subprocess.run(['cp','{}'.format(os.path.join(sif_anno_path,'gencode.v36.annotation.gtf')),'{}'.format(outdir)])
+    if bam_contig_rename:
+        pwd = os.getcwd()
+        os.chdir(os.path.join(outdir,'ggsashimi_bams'))
+        all_bams = subprocess.run("for file in *.bam; do echo $file; done",shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
+        for bam in all_bams:
+            cmd1 = 'samtools view -H {} | sed  -e \'s/SN:\([0-9XY]*\)/SN:chr\\1/\' -e \'s/SN:MT/SN:chrM/\' > in.header.sam'.format(bam)
+            print(cmd1)
+            subprocess.run(cmd1,shell=True)
+            cmd2 = 'samtools reheader in.header.sam {} > tmp.bam'.format(bam)
+            print(cmd2)
+            subprocess.run(cmd2,shell=True)
+            cmd3 = 'rm {}; rm {}; rm {}'.format(bam, 'in.header.sam','{}.bai'.format(bam))
+            print(cmd3)
+            subprocess.run(cmd3,shell=True)
+            cmd4 = 'mv tmp.bam {}'.format(bam)
+            print(cmd4)
+            subprocess.run(cmd4,shell=True)
+            cmd5 = 'samtools index {}'.format(bam)
+            print(cmd5)
+            subprocess.run(cmd5,shell=True)
+        os.chdir(pwd)
 
     # create input_bams.tsv file
     with open(os.path.join(outdir,'input_bams.tsv'),'w') as f:
