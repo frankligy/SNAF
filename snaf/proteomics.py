@@ -318,3 +318,43 @@ def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
 
         '''
 #######################  Here marks the end of maxQuant configuration
+
+
+def summarize_ms_result(peptide,msms,freq):
+    '''
+    After finishing running Maxquant, this function can help figuring out what peptide for further validation
+
+    :param peptide: string, the path to MaxQuant peptide.txt file
+    :param msms: string, the path to the MaxQuant msms.txt file
+    :param freq: string, the path to the SNAF frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt file
+
+    :return df_peptide: dataframe, the valid MS-evidenced neoantigens with associated properties
+
+    Examples::
+
+        df = snaf.proteomics.summarize_ms_result(peptide='MS/OvCa114/combined/txt/peptides.txt',msms='MS/OvCa114/combined/txt/msms.txt',freq='result/frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt')
+
+    '''
+    df_peptide = pd.read_csv(peptide,sep='\t',index_col=0)
+    df_peptide = df_peptide.loc[df_peptide['Proteins'].notna(),:].sort_values(by='PEP')
+    # add msms
+    df_msms = pd.read_csv(msms,sep='\t',index_col='id')
+    dic_msms_matches = df_msms['Matches'].to_dict()
+    dic_msms_intensities = df_msms['Intensities'].to_dict()
+    df_peptide['best_msms_matches'] = df_peptide['Best MS/MS'].map(dic_msms_matches)
+    df_peptide['best_msms_intensities'] = df_peptide['Best MS/MS'].map(dic_msms_intensities)
+    # add freq
+    df_freq = pd.read_csv(freq,sep='\t',index_col=0)
+    df_freq['pep'] = [item.split(',')[0] for item in df_freq.index]
+    df_freq['uid'] = [item.split(',')[1] for item in df_freq.index]
+    from ast import literal_eval
+    df_freq['samples'] = [literal_eval(item) for item in df_freq['samples']]
+    dic_pep_uid = {}
+    dic_uid_property = {}
+    for row in df_freq.itertuples():
+        dic_pep_uid.setdefault(row.pep,[]).append(row.uid)
+        dic_uid_property[row.uid] = (row.samples,row.n_sample,row.symbol,row.coord,row.tumor_specificity_mean,row.tumor_specificity_mle)
+    df_peptide['uids'] = df_peptide.index.map(dic_pep_uid).values
+    df_peptide['properties'] = [[dic_uid_property[uid] for uid in row] for row in df_peptide['uids']]
+    return df_peptide
+

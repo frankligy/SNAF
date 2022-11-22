@@ -39,200 +39,50 @@ surface.initialize(db_dir=db_dir)
 # jcmq.run(hlas=hlas,outdir='./result')
 # snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
 # proteome
-jcmq = snaf.JunctionCountMatrixQuery.deserialize('./result/after_prediction.p')
-for sample in jcmq.junction_count_matrix.columns:
-    print('polishing {} results'.format(sample))
-    jcmq.show_neoantigen_as_fasta(outdir='./fasta',name='neoantigen_{}.fasta'.format(sample),stage=2,verbosity=1,contain_uid=False,sample=sample)
-    snaf.proteomics.remove_redundant('./fasta/neoantigen_{}.fasta'.format(sample),'./fasta/neoantigen_{}_unique.fasta'.format(sample))
-    snaf.proteomics.compare_two_fasta(fa1_path='/data/salomonis2/LabFiles/Frank-Li/clinical/ovarian/MS/database/human_proteome_uniprot_9_10_mers_unique.fasta',
-                                      fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
-                                      write_unique2=True,prefix='{}_'.format(sample))
-sys.exit('stop')
-
-# schuster dataset
-# paper: 
-# jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30)
-# sample_to_hla = pd.read_csv('./sample_hla.txt',sep='\t',index_col=2)['HLA'].to_dict()
-# hlas = [hla_string.split(',') for hla_string in df.columns.map(sample_to_hla)]
-# jcmq.run(hlas=hlas,outdir='result')
-# snaf.JunctionCountMatrixQuery.generate_results(path='result/after_prediction.p',outdir='./result')
+# jcmq = snaf.JunctionCountMatrixQuery.deserialize('./result/after_prediction.p')
 # for sample in jcmq.junction_count_matrix.columns:
 #     print('polishing {} results'.format(sample))
 #     jcmq.show_neoantigen_as_fasta(outdir='./fasta',name='neoantigen_{}.fasta'.format(sample),stage=2,verbosity=1,contain_uid=False,sample=sample)
 #     snaf.proteomics.remove_redundant('./fasta/neoantigen_{}.fasta'.format(sample),'./fasta/neoantigen_{}_unique.fasta'.format(sample))
-#     snaf.proteomics.compare_two_fasta(fa1_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/chopped_uniprot.fasta',
+#     snaf.proteomics.compare_two_fasta(fa1_path='/data/salomonis2/LabFiles/Frank-Li/clinical/ovarian/MS/database/human_proteome_uniprot_9_10_mers_unique.fasta',
 #                                       fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
 #                                       write_unique2=True,prefix='{}_'.format(sample))
+# configure maxquant
+# fasta_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ovarian/fasta'
+# raw_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ovarian/MS'
+# root_dir = os.path.dirname(os.path.abspath(__file__))
+# dic = {
+#     'OvCa48':'SRR5933726',
+#     'OvCa53':'SRR5933729',
+#     'OvCa58':'SRR5933728',
+#     'OvCa64':'SRR5933735',
+#     'OvCa65':'SRR5933734',
+#     'OvCa70':'SRR5933738',
+#     'OvCa80':'SRR5947644',
+#     'OvCa84':'SRR5947645',
+#     'OvCa99':'SRR5947646',
+#     'OvCa104':'SRR5947647',
+#     'OvCa105':'SRR5933743',
+#     'OvCa109':'SRR5933745',
+#     'OvCa111':'SRR5933736',
+#     'OvCa114':'SRR5933737'
+# }
 
+# for k,v in dic.items():
+#     dbs = [os.path.join(fasta_dir,'{}_secondAligned.sortedByCoord.out.bed_unique2.fasta'.format(v))]
+#     os.chdir(os.path.join(raw_dir,k))
+#     inputs = subprocess.run("for file in *.raw; do echo $file; done",shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
+#     os.chdir(root_dir)
+#     inputs = [os.path.join(raw_dir,k,inp) for inp in inputs]
+#     outdir = os.path.join(raw_dir,k)
+#     snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
+#                                                outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
 
-# df = pd.read_csv('result/frequency_stage2_verbosity1_uid.txt',sep='\t',index_col=0)
-# df = snaf.add_gene_symbol_frequency_table(df,remove_quote=True)
-# df = snaf.add_coord_frequency_table(df,False)
-# df.to_csv('result/frequency_stage2_verbosity1_uid_gene_coord.txt',sep='\t')
-# df = pd.read_csv('result/frequency_stage2_verbosity1_uid_gene_coord.txt',sep='\t',index_col=0)
-# df = snaf.add_tumor_specificity_frequency_table(df,'mean',True)
-# df = snaf.add_tumor_specificity_frequency_table(df,'mle',False)
-# df.to_csv('result/frequency_stage2_verbosity1_uid_gene_coord_mean_mle.txt',sep='\t')
-# df = pd.read_csv('result/frequency_stage2_verbosity1_uid_gene_coord_mean_mle.txt',sep='\t',index_col=0)
-# df = snaf.add_tumor_specificity_frequency_table(df,'bayesian',True)
-# df.to_csv('result/frequency_stage2_verbosity1_uid_gene_coord_mean_mle_bayesian.txt',sep='\t')
-# jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
-# df = pd.read_csv('result/frequency_stage2_verbosity1_uid_gene_coord_mean_mle.txt',sep='\t',index_col=0)
-# snaf.report_candidates(jcmq,df,sample='SRR5933726.Aligned.sortedByCoord.out.bed',outdir='result',criterion=[('netMHCpan_el',0,'<=',2),])
+snaf.gtex_visual_combine_plotly(uid='ENSG00000137266:E24.7-E24.8',outdir='inspection/OvCa114',norm=False,tumor=df);sys.exit('stop')
 
-
-
-
-# # configure maxquant
-# ## OvCa48
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933726.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#4.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#5.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#6.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# ## OvCa53
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933729.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa53/OvCa53_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa53/OvCa53_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa53/OvCa53_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa53/OvCa53_classI_Rep#4.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa53/OvCa53_classI_Rep#5.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa53'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# ## OvCa58
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933728.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa58/OvCa58_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa58/OvCa58_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa58/OvCa58_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa58/OvCa58_classI_Rep#4.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa58/OvCa58_classI_Rep#5.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa58'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# ## OvCa64
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933735.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa64/OvCa64_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa64/OvCa64_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa64/OvCa64_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa64/OvCa64_classI_Rep#4.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa64/OvCa64_classI_Rep#5.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa64'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# ## OvCa65
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933734.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa65/OvCa65_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa65/OvCa65_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa65/OvCa65_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa65/OvCa65_classI_Rep#4.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa65/OvCa65_classI_Rep#5.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa65'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# ## OvCa70
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933738.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa70/OvCa70_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa70/OvCa70_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa70/OvCa70_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa70/OvCa70_classI_Rep#4.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa70/OvCa70_classI_Rep#5.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa70'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# # OvCa80
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5947644.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa80/OvCa80_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa80/OvCa80_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa80/OvCa80_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa80/OvCa80_classI_Rep#4.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa80'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# # OvCa84
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5947645.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa84/OvCa84_classI_Rep#1.RAW',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa84/OvCa84_classI_Rep#2.RAW',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa84/OvCa84_classI_Rep#3.RAW',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa84/OvCa84_classI_Rep#4.RAW',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa84/OvCa84_classI_Rep#5.RAW']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa84'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# # OvCa99
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5947646.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa99/OvCa99_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa99/OvCa99_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa99/OvCa99_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa99/OvCa99_classI_Rep#4.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa99/OvCa99_classI_Rep#5.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa99'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# # OvCa104
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5947647.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa104/OvCa104_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa104/OvCa104_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa104/OvCa104_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa104/OvCa104_classI_Rep#4.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa104'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# # OvCa105
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933743.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa105/OvCa105_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa105/OvCa105_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa105/OvCa105_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa105/OvCa105_classI_Rep#4.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa105/OvCa105_classI_Rep#5.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa105'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# # OvCa109
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933745.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa109/OvCa109_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa109/OvCa109_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa109/OvCa109_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa109/OvCa109_classI_Rep#4.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa109'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# # OvCa111
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933736.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa111/OvCa111_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa111/OvCa111_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa111/OvCa111_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa111/OvCa111_classI_Rep#4.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa111'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-# # OvCa114
-# dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933737.Aligned.sortedByCoord.out.bed_unique2.fasta']
-# inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa114/OvCa114_classI_Rep#1.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa114/OvCa114_classI_Rep#2.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa114/OvCa114_classI_Rep#3.raw',
-#           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa114/OvCa114_classI_Rep#4.raw']
-# outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa114'
-# snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                            outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
+df = snaf.proteomics.summarize_ms_result(peptide='MS/OvCa114/combined/txt/peptides.txt',msms='MS/OvCa114/combined/txt/msms.txt',freq='result/frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt')
+df.to_csv('test.txt',sep='\t')
+sys.exit('stop')
 
 
 # stack barplot

@@ -63,6 +63,10 @@ set_maxquant_configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.proteomics.set_maxquant_configuration
 
+summarize_ms_result
+~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.proteomics.summarize_ms_result
+
 Surface Antigen (B antigen)
 -------------------------------
 
@@ -99,6 +103,10 @@ GTEx Viewer (tumor specificity)
 gtex_visual_combine
 ~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.gtex_viewer.gtex_visual_combine  
+
+gtex_visual_combine_plotly
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.gtex_viewer.gtex_visual_combine_plotly
 
 gtex_visual_subplots
 ~~~~~~~~~~~~~~~~~~~~~

@@ -44,6 +44,20 @@ def gtex_visual_per_tissue_count(query,out_folder='.'):
 
 
 def gtex_visual_combine_plotly(uid,outdir='',norm=False,tumor=None):
+    '''
+    Generate combined plot but interactively
+
+    :param uid: string, the uid for the splicing event
+    :param norm: bool. whether normalize for the sequencing depth or not
+    :param outdir: string, where the figure go into
+    :param tumor: pandas dataframe, the tumor df to compare with
+
+    Example::
+
+        snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
+        snaf.gtex_visual_combine(query='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
+
+    '''
     import plotly.graph_objects as go
     query = uid
     try:
