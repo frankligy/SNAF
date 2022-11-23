@@ -1016,8 +1016,9 @@ class NeoJunction():
         if self.event_type != 'invalid':
             ensid = self.uid.split(':')[0]
             subexon1,subexon2 = ':'.join(self.uid.split(':')[1:]).split('-')
-            seq1 = subexon_tran(subexon1,ensid,'site1')
-            seq2 = subexon_tran(subexon2,ensid,'site2')
+            code = is_consecutive(subexon1,subexon2)
+            seq1 = subexon_tran(subexon1,ensid,'site1',code)
+            seq2 = subexon_tran(subexon2,ensid,'site2',code)
             junction = ','.join([seq1,seq2])
             self.junction = junction
         else:
@@ -1284,7 +1285,22 @@ def retrieveSeqFromUCSCapi(chr_,start,end):
     exon_seq = my_dict['DASDNA']['SEQUENCE']['DNA']['#text'].replace('\n','').upper()
     return exon_seq
 
-def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
+def is_consecutive(subexon1,subexon2):
+    # I only care of E3.3-E3.4, other form will automatically being labelled as not consecutive
+    # the return code: 0 -> not consecutive, 1 -> consecutive
+    code = 0
+    pattern1 = re.compile(r'^E(\d{1,3})\.(\d{1,3})$')
+    match1 = re.search(pattern1,subexon1)
+    if match1:
+        captured_group1 = match1.group(1)
+        captured_group2 = match1.group(2)
+        pattern2 = re.compile(rf'^E{captured_group1}\.{int(captured_group2)+1}$')
+        match2 = re.search(pattern2,subexon2)
+        if match2:
+            code = 1
+    return code
+
+def subexon_tran(subexon,EnsID,flag,code):  # flag either site1 or site2
     '''
     1. subexon can take multiple forms depending on the event type
     E1.2 or I3.4
@@ -1293,10 +1309,19 @@ def subexon_tran(subexon,EnsID,flag):  # flag either site1 or site2
     U0.1_49689185
     2. everything with trailing suffix will depend on the subexon1 or subexon2, but sometimes, it is fixed (trans-splicing can only be in subexon2)
     3. to be clear, the exon_seq returned is always 5'-3' sequence, not forward anymore.
+
+    if code is 1, meaning its consecutive, E3.3-E3.4, if the flag is site2, then offset the start position of it by 1, the start position is the conceptual
+    start position, if it is in negative string, it will be operated by the stop position.
     '''
     try:   # E1.2 or I3.4
         attrs = dict_exonCoords[EnsID][subexon]  # [chr,strand,start,end,suffer] 
-        exon_seq = query_from_dict_fa(attrs[2],attrs[3],EnsID,attrs[1])  
+        if code == 1 and flag == 'site2':
+            if attrs[1] == '+':
+                exon_seq = query_from_dict_fa(int(attrs[2])+1,attrs[3],EnsID,attrs[1])   
+            else:
+                exon_seq = query_from_dict_fa(attrs[2],int(attrs[3])-1,EnsID,attrs[1])
+        else:
+            exon_seq = query_from_dict_fa(attrs[2],attrs[3],EnsID,attrs[1])
     except KeyError:
         if ':' in subexon: # ENSG00000213934:E3.1
             fusionGeneEnsID = subexon.split(':')[0] 
