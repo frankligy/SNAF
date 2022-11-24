@@ -58,6 +58,8 @@ def gtex_visual_combine_plotly(uid,outdir='',norm=False,tumor=None):
         snaf.gtex_visual_combine(query='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
 
     '''
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
     import plotly.graph_objects as go
     query = uid
     try:
@@ -115,6 +117,8 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
         snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
         snaf.gtex_visual_combine(query='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
     '''
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
     query = uid
     try:
         info = adata[[query],:]

@@ -320,13 +320,14 @@ def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
 #######################  Here marks the end of maxQuant configuration
 
 
-def summarize_ms_result(peptide,msms,freq):
+def summarize_ms_result(peptide,msms,freq,outdir):
     '''
     After finishing running Maxquant, this function can help figuring out what peptide for further validation
 
     :param peptide: string, the path to MaxQuant peptide.txt file
     :param msms: string, the path to the MaxQuant msms.txt file
     :param freq: string, the path to the SNAF frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt file
+    :param outdir: string, the path to the output folder
 
     :return df_peptide: dataframe, the valid MS-evidenced neoantigens with associated properties
 
@@ -356,5 +357,6 @@ def summarize_ms_result(peptide,msms,freq):
         dic_uid_property[row.uid] = (row.samples,row.n_sample,row.symbol,row.coord,row.tumor_specificity_mean,row.tumor_specificity_mle)
     df_peptide['uids'] = df_peptide.index.map(dic_pep_uid).values
     df_peptide['properties'] = [[dic_uid_property[uid] for uid in row] for row in df_peptide['uids']]
+    df_peptide.to_csv(os.path.join(outdir,'summaried_ms_results.txt'),sep='\t')
     return df_peptide
 
