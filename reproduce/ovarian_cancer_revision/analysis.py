@@ -19,26 +19,26 @@ mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
-# # get junction count matrix
-# df = snaf.get_reduced_junction_matrix(pc='counts.original.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# get junction count matrix
+df = snaf.get_reduced_junction_matrix(pc='counts.original.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
-# # run SNAF
-# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
-# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
-# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
-# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+# run SNAF
+netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 
-# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
-# surface.initialize(db_dir=db_dir)
+snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+surface.initialize(db_dir=db_dir)
 
-# T antigen
+# # T antigen
 # jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result',filter_mode='maxmin')
 # sample_to_hla = pd.read_csv('./sample_hla.txt',sep='\t',index_col=2)['HLA'].to_dict()
 # hlas = [hla_string.split(',') for hla_string in df.columns.map(sample_to_hla)]
 # jcmq.run(hlas=hlas,outdir='./result')
 # snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
-# proteome
+# # proteome
 # jcmq = snaf.JunctionCountMatrixQuery.deserialize('./result/after_prediction.p')
 # for sample in jcmq.junction_count_matrix.columns:
 #     print('polishing {} results'.format(sample))
@@ -47,6 +47,7 @@ mpl.rcParams['font.family'] = 'Arial'
 #     snaf.proteomics.compare_two_fasta(fa1_path='/data/salomonis2/LabFiles/Frank-Li/clinical/ovarian/MS/database/human_proteome_uniprot_9_10_mers_unique.fasta',
 #                                       fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
 #                                       write_unique2=True,prefix='{}_'.format(sample))
+
 # configure maxquant
 # fasta_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ovarian/fasta'
 # raw_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ovarian/MS'
@@ -79,20 +80,57 @@ mpl.rcParams['font.family'] = 'Arial'
 #                                                outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
 
 '''specifically test OvCa114'''
-# df = snaf.proteomics.summarize_ms_result(peptide='MS/OvCa114/combined/txt/peptides.txt',msms='MS/OvCa114/combined/txt/msms.txt',freq='result/frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt')
-# df.to_csv('MS/OvCa114/summarized_ms_result.txt',sep='\t')
-# snaf.gtex_visual_combine_plotly(uid='ENSG00000137266:E24.7-E24.8',outdir='inspection/OvCa114',norm=False,tumor=df);sys.exit('stop')
-# cmd = snaf.prepare_sashimi_plot(bam_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam'],
-#                                 bai_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam.bai'],
-#                                 outdir='./sashimi',
+# df = snaf.proteomics.summarize_ms_result(peptide='MS/OvCa114/combined/txt/peptides.txt',msms='MS/OvCa114/combined/txt/msms.txt',freq='result/frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt',outdir='MS/OvCa114')
+'''cand#1'''
+# uid = 'ENSG00000165626:E15.1-I15.1'
+# snaf.gtex_visual_combine_plotly(uid=uid,outdir='MS/OvCa114/specifity',norm=False,tumor=df)
+# snaf.gtex_visual_combine_plotly(uid=uid,outdir='MS/OvCa114/specifity',norm=True,tumor=df)
+# snaf.gtex_visual_combine(uid=uid,outdir='MS/OvCa114/specifity',norm=False,ylim=(-0.05,100),tumor=None)
+# cmd = snaf.prepare_sashimi_plot(bam_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-BREAST-CANCER/TCGA-files-Ens91/bams/TCGA-BH-A208-11A-51R-A157-07.bam','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-Kidney/KIRC/TCGA-CJ-5680-11A-01R-1541-07.bam'],
+#                                 bai_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam.bai','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-BREAST-CANCER/TCGA-files-Ens91/bams/TCGA-BH-A208-11A-51R-A157-07.bam.bai','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-Kidney/KIRC/TCGA-CJ-5680-11A-01R-1541-07.bam.bai'],
+#                                 outdir='MS/OvCa114/sashimi',
 #                                 sif_anno_path='/data/salomonis2/software/ggsashimi',
-#                                 bam_contig_rename=True,
-#                                 query_region='chr2:70921285-70958046',
-#                                 min_junction=20)  # chr10:13446484-13446485 # chr2:70921285-70958046 # chr22:22556930-22557545 # chr6:3272865-3272865
+#                                 bam_contig_rename=[True,False,False],
+#                                 query_region='chr10:13446454-13446515',
+#                                 min_junction=20)  
 # print(cmd)
+# jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
+# jcmq.visualize(uid=uid,sample='SRR5933737_secondAligned.sortedByCoord.out.bed',outdir='MS/OvCa114/sashimi')
+'''cand#2'''
+# uid = 'ENSG00000114541:E63.6-E63.7'
+# snaf.gtex_visual_combine_plotly(uid=uid,outdir='MS/OvCa114/specifity',norm=False,tumor=df)
+# snaf.gtex_visual_combine_plotly(uid=uid,outdir='MS/OvCa114/specifity',norm=True,tumor=df)
+# cmd = snaf.prepare_sashimi_plot(bam_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-STAD/TCGA-BR-6453-11A-01R-1802-13.bam','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-ESCA/TCGA-L5-A4OG-11A-12R-A260-31.bam'],
+#                                 bai_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam.bai','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-STAD/TCGA-BR-6453-11A-01R-1802-13.bam.bai','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-ESCA/TCGA-L5-A4OG-11A-12R-A260-31.bam.bai'],
+#                                 outdir='MS/OvCa114/sashimi',
+#                                 sif_anno_path='/data/salomonis2/software/ggsashimi',
+#                                 bam_contig_rename=[True,False,False],
+#                                 query_region='chr3:69171525-69171725',
+#                                 min_junction=20)  
+# print(cmd)
+# jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
+# jcmq.visualize(uid=uid,sample='SRR5933737_secondAligned.sortedByCoord.out.bed',outdir='MS/OvCa114/sashimi')
+'''cand#3'''
+# uid = 'ENSG00000116035:E2.1-ENSG00000116039:E3.2'
+# snaf.gtex_visual_combine_plotly(uid=uid,outdir='MS/OvCa114/specifity',norm=False,tumor=df)
+# snaf.gtex_visual_combine_plotly(uid=uid,outdir='MS/OvCa114/specifity',norm=True,tumor=df)
+# jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
+# jcmq.visualize(uid=uid,sample='SRR5933737_secondAligned.sortedByCoord.out.bed',outdir='MS/OvCa114/sashimi')
+'''cand#4'''
+uid = 'ENSG00000196083:E17.1-I17.1_190634313'
+snaf.gtex_visual_combine_plotly(uid=uid,outdir='MS/OvCa114/specifity',norm=False,tumor=df)
+# snaf.gtex_visual_combine_plotly(uid=uid,outdir='MS/OvCa114/specifity',norm=True,tumor=df)
+# jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
+# jcmq.visualize(uid=uid,sample='SRR5933737_secondAligned.sortedByCoord.out.bed',outdir='MS/OvCa114/sashimi')
+# cmd = snaf.prepare_sashimi_plot(bam_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-THCA/TCGA-EL-A3ZP-11A.bam','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-BREAST-CANCER/TCGA-files-Ens91/bams/TCGA-BH-A0H7-11A-13R-A089-07.bam'],
+#                                 bai_path_list=['/data/salomonis-archive/FASTQs/NCI-R01/SNAF_ovarian/SRR5933737_secondAligned.sortedByCoord.out.bam.bai','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-THCA/TCGA-EL-A3ZP-11A.bam.bai','/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-BREAST-CANCER/TCGA-files-Ens91/bams/TCGA-BH-A0H7-11A-13R-A089-07.bam.bai'],
+#                                 outdir='MS/OvCa114/sashimi',
+#                                 sif_anno_path='/data/salomonis2/software/ggsashimi',
+#                                 bam_contig_rename=[True,False,False],
+#                                 query_region='chr3:190629398-190634413',
+#                                 min_junction=20) 
+# print(cmd) 
 sys.exit('stop')
-
-
 
 # stack barplot
 # srr_to_id = pd.read_csv('../meta.txt',sep='\t',index_col=0).squeeze().to_dict()
