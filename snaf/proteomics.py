@@ -351,12 +351,12 @@ def summarize_ms_result(peptide,msms,freq,outdir):
     from ast import literal_eval
     df_freq['samples'] = [literal_eval(item) for item in df_freq['samples']]
     dic_pep_uid = {}
-    dic_uid_property = {}
+    dic_pepuid_property = {}
     for row in df_freq.itertuples():
         dic_pep_uid.setdefault(row.pep,[]).append(row.uid)
-        dic_uid_property[row.uid] = (row.samples,row.n_sample,row.symbol,row.coord,row.tumor_specificity_mean,row.tumor_specificity_mle)
+        dic_pepuid_property[row.Index] = (row.samples,row.n_sample,row.symbol,row.coord,row.tumor_specificity_mean,row.tumor_specificity_mle)
     df_peptide['uids'] = df_peptide.index.map(dic_pep_uid).values
-    df_peptide['properties'] = [[dic_uid_property[uid] for uid in row] for row in df_peptide['uids']]
+    df_peptide['properties'] = [[dic_pepuid_property[','.join([pep,uid])] for uid in row] for row,pep in zip(df_peptide['uids'],df_peptide.index)]
     df_peptide.to_csv(os.path.join(outdir,'summaried_ms_results.txt'),sep='\t')
     return df_peptide
 
