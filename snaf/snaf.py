@@ -453,7 +453,7 @@ class JunctionCountMatrixQuery():
             jcmq.show_neoantigen_frequency(outdir=outdir,name='frequency_stage{}_verbosity1_uid.txt'.format(stage),stage=stage,verbosity=1,contain_uid=True,plot=False,criterion=criterion)
             # add additional attributes
             df = pd.read_csv(os.path.join(outdir,'frequency_stage{}_verbosity1_uid.txt'.format(stage)),sep='\t',index_col=0)
-            enhance_frequency_table(df,True,True,'result','frequency_stage{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage))
+            enhance_frequency_table(df,True,True,outdir,'frequency_stage{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage))
             # report candidates
             if stage == 3:
                 dff = pd.read_csv(os.path.join(outdir,'frequency_stage{}_verbosity1_uid_gene_symbol_coord_mean_mle.txt'.format(stage)),sep='\t',index_col=0)
