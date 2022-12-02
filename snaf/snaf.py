@@ -654,10 +654,14 @@ class JunctionCountMatrixQuery():
             plt.savefig(os.path.join(outdir,'x_neoantigen_{}'.format(plot_name)),bbox_inches='tight')
             plt.close()
             fig,ax = plt.subplots()
-            sns.histplot(df['n_sample'].values,binwidth=1,kde=True,ax=ax)
-            ax.set_yscale(yscale)
-            plt.savefig(os.path.join(outdir,'x_occurence_{}'.format(plot_name)),bbox_inches='tight')
-            plt.close()
+            try:
+                sns.histplot(df['n_sample'].values,binwidth=1,kde=True,ax=ax)
+                ax.set_yscale(yscale)
+                plt.savefig(os.path.join(outdir,'x_occurence_{}'.format(plot_name)),bbox_inches='tight')
+                plt.close()
+            except ValueError:
+                print('All neoantigens are present in same amount of patients, seaborn histplot can not properly figure out binedge, no occurence plot generated')
+
 
 
 
