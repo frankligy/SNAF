@@ -289,7 +289,7 @@ def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
     :param site_fdr: float, default is 0.01
     :param include_contaminants: boolean, default is True
     :param var_mods: list or None, default is ['Oxidation (M)', 'Acetyl (Protein N-term)', 'Carbamidomethyl (C)']
-    :param fix_mods, list or None, default is []
+    :param fix_mods: list or None, default is []
     :param minPepLen: int, default is 8
     :param maxPeptideMass: int, default is 4600
     :param minPeptideLengthForUnspecificSearch: int, default is 8
