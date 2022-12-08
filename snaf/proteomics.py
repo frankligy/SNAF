@@ -247,6 +247,20 @@ def change_contaminants(doc,include):
     doc['MaxQuantParams']['includeContaminants'] = str(include)
     return doc
 
+def change_variable_modifications(doc,mods=['Oxidation (M)', 'Acetyl (Protein N-term)', 'Carbamidomethyl (C)']):
+    if mods is not None:
+        doc['MaxQuantParams']['parameterGroups']['parameterGroup']['variableModifications']['string'] = mods
+    else:
+        doc['MaxQuantParams']['parameterGroups']['parameterGroup']['variableModifications'] = mods
+    return doc
+
+def change_fixed_modifications(doc,mods=None):
+    if mods is not None:
+        doc['MaxQuantParams']['parameterGroups']['parameterGroup']['fixedModifications']['string'] = []
+        for mod in mods:
+            doc['MaxQuantParams']['parameterGroups']['parameterGroup']['fixedModifications']['string'].append(mod)
+    return doc
+
 def change_length(doc,minPepLen,maxPeptideMass,minPeptideLengthForUnspecificSearch,maxPeptideLengthForUnspecificSearch):
     doc['MaxQuantParams']['minPepLen'] = minPepLen
     doc['MaxQuantParams']['maxPeptideMass'] = maxPeptideMass
@@ -256,10 +270,12 @@ def change_length(doc,minPepLen,maxPeptideMass,minPeptideLengthForUnspecificSear
 
 
 def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
-                               outname='mqpar.xml',protein_fdr=0.01,peptide_fdr=0.01,site_fdr=0.01,include_contaminants=True,
-                               minPepLen=9,maxPeptideMass=4600,minPeptideLengthForUnspecificSearch=9,maxPeptideLengthForUnspecificSearch=10):
+                               outname='mqpar.xml',protein_fdr=0.01,peptide_fdr=0.01,site_fdr=0.01,include_contaminants=True,var_mods=['Oxidation (M)', 'Acetyl (Protein N-term)', 'Carbamidomethyl (C)'],fix_mods=None,
+                               minPepLen=8,maxPeptideMass=4600,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25):
     '''
-    automatically build MaxQuant configuration file mqpar.xml
+    automatically build MaxQuant configuration file mqpar.xml, the template mqpar.xml is generated using maxquant 2.0.3.1 on a windows PC GUI,
+    we load a single raw file, a single fasta file, reduce carbamidomethyl from fixed modification to variable modification and allow match run, otherwise,
+    we retain all default parameters.
 
     :param dbs: list, each element is the path to the database fasta file
     :param n_threads: int, how many threads will be used for MaxQuant search
@@ -272,10 +288,12 @@ def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
     :param peptide_fdr: float, default is 0.01
     :param site_fdr: float, default is 0.01
     :param include_contaminants: boolean, default is True
-    :param minPepLen: int, default is 9
+    :param var_mods: list or None, default is ['Oxidation (M)', 'Acetyl (Protein N-term)', 'Carbamidomethyl (C)']
+    :param fix_mods, list or None, default is []
+    :param minPepLen: int, default is 8
     :param maxPeptideMass: int, default is 4600
-    :param minPeptideLengthForUnspecificSearch: int, default is 9
-    :param maxPeptideLengthForUnspecificSearch: int, default is 10
+    :param minPeptideLengthForUnspecificSearch: int, default is 8
+    :param maxPeptideLengthForUnspecificSearch: int, default is 25
 
     Example::
 
@@ -287,8 +305,7 @@ def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
                     '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#5.raw',
                     '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#6.raw']
             outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48'
-            snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-                                               outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
+            snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,outdir=outdir)
 
     '''
     with open (os.path.join(os.path.dirname(__file__),'mqpar.xml'),'r') as fr:
@@ -299,6 +316,8 @@ def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
         doc = change_enzymes(doc,enzymes,enzyme_mode)
         doc = change_fdr(doc,protein_fdr=protein_fdr,peptide_fdr=peptide_fdr,site_fdr=site_fdr)
         doc = change_contaminants(doc,include_contaminants)
+        doc = change_variable_modifications(doc,var_mods)
+        doc = change_fixed_modifications(doc,fix_mods)
         doc = change_length(doc,minPepLen,maxPeptideMass,minPeptideLengthForUnspecificSearch,maxPeptideLengthForUnspecificSearch)
         a = xmltodict.unparse(doc,pretty=True,encoding='utf-8')
         a = a.replace('&gt;','>')
