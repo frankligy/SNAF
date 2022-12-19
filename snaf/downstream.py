@@ -384,7 +384,7 @@ def visualize_GO_result(path_list,skiprows_list,category_list,mode='interactive'
             
 
         
-def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_contig_rename, query_region, min_junction=3, width=10, ann_height=4, height=2):
+def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_contig_rename, query_region, skip_copy=False, min_junction=3, width=10, ann_height=4, height=2):
     '''
     Given a bunch of bam file and cognate bai files, we want to generate sashimi plot in an automatic way using ggsashimi package singularity image, this image is pulled using::
 
@@ -401,6 +401,7 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_c
     :param sif_anno_path: string, the folder where ggsashimi.sif and gencode.v36.annotation.gtf reside
     :param bam_contig_rename: list of boolean, whether to convert the respective bam contig from 10 to chr10, require the samtools are loaded
     :param query_region: string, format like chr10:27040584-27048100
+    :param skip_copy: boolean, whether to skip copying step
     :param min_junction: int, the minimum number of junction to show sashimi line
     :param width: float, the width in pct for the plot
     :param ann_height: float, the height in pct for the annotation
@@ -423,34 +424,35 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_c
         os.mkdir(outdir)
     if not os.path.exists(os.path.join(outdir,'ggsashimi_bams')):
         os.mkdir(os.path.join(outdir,'ggsashimi_bams'))
-    for bam in bam_path_list:
-        print('copy {}'.format(bam))
-        subprocess.run(['cp','{}'.format(bam),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
-    for bai in bai_path_list:
-        print('copy {}'.format(bai))
-        subprocess.run(['cp','{}'.format(bai),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
-    subprocess.run(['cp','{}'.format(os.path.join(sif_anno_path,'gencode.v36.annotation.gtf')),'{}'.format(outdir)])
-    pwd = os.getcwd()
-    os.chdir(os.path.join(outdir,'ggsashimi_bams'))
-    all_bams = subprocess.run("for file in *.bam; do echo $file; done",shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-    for boolean,bam in zip(bam_contig_rename,all_bams):
-            if boolean:
-                cmd1 = 'samtools view -H {} | sed  -e \'s/SN:\([0-9XY]*\)/SN:chr\\1/\' -e \'s/SN:MT/SN:chrM/\' > in.header.sam'.format(bam)
-                print(cmd1)
-                subprocess.run(cmd1,shell=True)
-                cmd2 = 'samtools reheader in.header.sam {} > tmp.bam'.format(bam)
-                print(cmd2)
-                subprocess.run(cmd2,shell=True)
-                cmd3 = 'rm {}; rm {}; rm {}'.format(bam, 'in.header.sam','{}.bai'.format(bam))
-                print(cmd3)
-                subprocess.run(cmd3,shell=True)
-                cmd4 = 'mv tmp.bam {}'.format(bam)
-                print(cmd4)
-                subprocess.run(cmd4,shell=True)
-                cmd5 = 'samtools index {}'.format(bam)
-                print(cmd5)
-                subprocess.run(cmd5,shell=True)
-    os.chdir(pwd)
+    if not skip_copy:
+        for bam in bam_path_list:
+            print('copy {}'.format(bam))
+            subprocess.run(['cp','{}'.format(bam),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
+        for bai in bai_path_list:
+            print('copy {}'.format(bai))
+            subprocess.run(['cp','{}'.format(bai),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
+        subprocess.run(['cp','{}'.format(os.path.join(sif_anno_path,'gencode.v36.annotation.gtf')),'{}'.format(outdir)])
+        pwd = os.getcwd()
+        os.chdir(os.path.join(outdir,'ggsashimi_bams'))
+        all_bams = subprocess.run("for file in *.bam; do echo $file; done",shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
+        for boolean,bam in zip(bam_contig_rename,all_bams):
+                if boolean:
+                    cmd1 = 'samtools view -H {} | sed  -e \'s/SN:\([0-9XY]*\)/SN:chr\\1/\' -e \'s/SN:MT/SN:chrM/\' > in.header.sam'.format(bam)
+                    print(cmd1)
+                    subprocess.run(cmd1,shell=True)
+                    cmd2 = 'samtools reheader in.header.sam {} > tmp.bam'.format(bam)
+                    print(cmd2)
+                    subprocess.run(cmd2,shell=True)
+                    cmd3 = 'rm {}; rm {}; rm {}'.format(bam, 'in.header.sam','{}.bai'.format(bam))
+                    print(cmd3)
+                    subprocess.run(cmd3,shell=True)
+                    cmd4 = 'mv tmp.bam {}'.format(bam)
+                    print(cmd4)
+                    subprocess.run(cmd4,shell=True)
+                    cmd5 = 'samtools index {}'.format(bam)
+                    print(cmd5)
+                    subprocess.run(cmd5,shell=True)
+        os.chdir(pwd)
 
     # create input_bams.tsv file
     with open(os.path.join(outdir,'input_bams.tsv'),'w') as f:
@@ -468,6 +470,7 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_c
         for c in colors[:n]:
             f.write('{}\n'.format(c))
     cmd = 'singularity run -W $PWD -B $PWD:$PWD {} -b input_bams.tsv -c {} -C 3 -M {} --width {} --fix-y-scale -g gencode.v36.annotation.gtf --ann-height={} --height={} -P palette.txt'.format(os.path.join(sif_anno_path,'ggsashimi.sif'),query_region,min_junction,width,ann_height,height)
+    print(cmd)
     return cmd
 
     
