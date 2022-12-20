@@ -545,6 +545,7 @@ class JunctionCountMatrixQuery():
         :param sample: string, the sample name
         :param outdir: string, where to deposite the figure
         :param tumor: bool, whether to show the expression level in tumor sample as well, default is not
+        :param criterion: a nested tuple, if none of the neoantigens are bound and immunogenic, no candidates will be plotted, so you can relax the criterion a bit based on the format specified.
 
         Example::
 

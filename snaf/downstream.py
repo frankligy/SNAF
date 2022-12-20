@@ -434,7 +434,7 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_c
         subprocess.run(['cp','{}'.format(os.path.join(sif_anno_path,'gencode.v36.annotation.gtf')),'{}'.format(outdir)])
         pwd = os.getcwd()
         os.chdir(os.path.join(outdir,'ggsashimi_bams'))
-        all_bams = subprocess.run("for file in *.bam; do echo $file; done",shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
+        all_bams = [os.path.basename(item) for item in bam_path_list]
         for boolean,bam in zip(bam_contig_rename,all_bams):
                 if boolean:
                     cmd1 = 'samtools view -H {} | sed  -e \'s/SN:\([0-9XY]*\)/SN:chr\\1/\' -e \'s/SN:MT/SN:chrM/\' > in.header.sam'.format(bam)
