@@ -53,6 +53,9 @@ RUN cd /usr/src \
     && python AltAnalyze.py --species Hs --update Official --version EnsMart91 --additional all \
     && mv /usr/src/Hs.bed /usr/src/altanalyze/AltDatabase/EnsMart91/ensembl/Hs
 
+# DEG and GO
+COPY DEG.sh /usr/src
+COPY GO_Elite.sh /usr/src
 
 ENTRYPOINT ["/usr/src/run.sh"]  # must double quote
 
