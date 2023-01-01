@@ -20,51 +20,19 @@ mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
 
-# get reduced junction
-df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# # get reduced junction
+# df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
-# run SNAF
-netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
-tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
-gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
-add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+# # run SNAF
+# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 
-snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
-surface.initialize(db_dir=db_dir)
+# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+# surface.initialize(db_dir=db_dir)
 
-# test bayesian model
-# for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
-#     snaf.gtex_visual_subplots(uid=uid,norm=False,outdir='.')
-# for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
-#     snaf.tumor_specificity(uid=uid,method='bayesian',return_df=True)
-# df = pd.read_csv('result/frequency_stage3_verbosity1_uid.txt',sep='\t',index_col=0)
-# new_df = snaf.add_tumor_specificity_frequency_table(df,method='bayesian',remove_quote=True,cores=None)
-# new_df.to_csv('test1.txt',sep='\t')
-# sys.exit('stop')
-
-# for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
-#     sigma, df = snaf.tumor_specificity(uid=uid,method='mle',return_df=True)
-#     fig,ax = plt.subplots()
-#     sns.histplot(df['value_cpm'],bins=100,kde=True,ax=ax,stat='density')
-#     from scipy.stats import halfnorm
-#     r = halfnorm.rvs(loc=0,scale=sigma,size=2000)
-#     sns.kdeplot(r,ax=ax,color='orange',clip=(-0.01,5))
-#     plt.savefig('{}.pdf'.format(uid),bbox_inches='tight')
-#     plt.close()
-
-
-# for uid in ['ENSG00000241343:E2.6-E2.9_101392052','ENSG00000175482:E2.22_67352741-E3.1']:
-#     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=False,tumor=df)
-#     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=True,tumor=df)     
-
-# for uid in ['ENSG00000084764:E19.1-E20.1','ENSG00000243290:E1.1-E1.1_89040710','ENSG00000165914:E6.3-E8.1']:
-#     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=False,tumor=df)
-#     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=True,tumor=df)   
-
-# for uid in ['ENSG00000105976:E3.1-E4.1','ENSG00000198053:E7.2-E13.1_1915159','ENSG00000164175:E3.2_33963931-E4.2','ENSG00000092421:E22.1-E24.1_116468915','ENSG00000057019:E5.1-I5.1_98867438','ENSG00000152558:I7.1_102419074-E8.1']:
-#     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=False,tumor=df)
-#     snaf.gtex_visual_combine_plotly(uid=uid,outdir='.',norm=True,tumor=df)
 
 '''T cell neoantigen'''
 # jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result_new',filter_mode='maxmin')
@@ -107,84 +75,44 @@ surface.initialize(db_dir=db_dir)
 
 
 '''B cell neoantigen'''
-# long-read
-membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df,add_control=add_control,not_in_db=False,outdir='result_new/surface',filter_mode='maxmin')
-surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='long_read',n_stride=2,
-            gtf='/data/salomonis2/LabFiles/Frank-Li/refactor/data/2021UHRRIsoSeq_SQANTI3_filtered.gtf',
-            tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
-surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='long_read',validation_gtf=None)
+# # long-read
+# membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df,add_control=add_control,not_in_db=False,outdir='result_new/surface',filter_mode='maxmin')
+# surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='long_read',n_stride=2,
+#             gtf='/data/salomonis2/LabFiles/Frank-Li/refactor/data/2021UHRRIsoSeq_SQANTI3_filtered.gtf',
+#             tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
+# surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='long_read',validation_gtf=None)
 
-# short-read
-membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df,add_control=add_control,not_in_db=False,outdir='result_new/surface',filter_mode='maxmin')
-surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='short_read',n_stride=2,
-            gtf=None,
-            tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
-surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='short_read',validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
+# # short-read
+# membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df,add_control=add_control,not_in_db=False,outdir='result_new/surface',filter_mode='maxmin')
+# surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='short_read',n_stride=2,
+#             gtf=None,
+#             tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
+# surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='short_read',validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
 
 # surface.run_dash_B_antigen(pkl='result/surface/surface_antigen_lr.p',candidates='result/surface/candidates_3_lr_None_True.txt',prediction_mode='long_read',
 #                            python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
 
 
 
-sys.exit('stop')
-
-
-
-### MS validation
-# df = pd.read_csv('result/frequency_stage3_verbosity1_uid_gene_symbol.txt',sep='\t',index_col=0)
-# df_common = df.loc[df['n_sample']>282,:]
+## MS validation
+# df = pd.read_csv('result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
+# df_common = df.loc[df['n_sample']>71,:]
 # df_unique = df.loc[df['n_sample']==1,:]
-# with open('result/MS_validation_common.fasta','w') as f:
+# with open('result_new/MS_validation_common.fasta','w') as f:
 #     for row in df_common.itertuples():
 #         peptide, uid = row.Index.split(',')
 #         f.write('>{}\n{}\n'.format(uid,peptide))
-# with open('result/MS_validation_unique.fasta','w') as f:
+# with open('result_new/MS_validation_unique.fasta','w') as f:
 #     for row in df_unique.itertuples():
 #         peptide, uid = row.Index.split(',')
 #         f.write('>{}\n{}\n'.format(uid,peptide))
 # for f in ['MS_validation_common','MS_validation_unique']:
-#     snaf.proteomics.remove_redundant('./result/{}.fasta'.format(f),'./result/{}_unique.fasta'.format(f))
+#     snaf.proteomics.remove_redundant('./result_new/{}.fasta'.format(f),'./result_new/{}_unique.fasta'.format(f))
 #     snaf.proteomics.compare_two_fasta(fa1_path='/data/salomonis2/LabFiles/Frank-Li/clinical/ovarian/MS/database/human_proteome_uniprot_9_10_mers_unique.fasta',
-#                                       fa2_path='./result/{}_unique.fasta'.format(f),outdir='./result',write_unique2=True,prefix='{}_'.format(f))
-
-db_common = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/fasta/MS_validation_common_unique2.fasta']
-db_unique = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/fasta/MS_validation_unique_unique2.fasta']
-
-'''
-common
-'''
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_common')
-# all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-# for p in all_patients:
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_common/{}'.format(p))
-#     all_samples = subprocess.run('for file in *.raw; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-#     inputs = []
-#     pwd = os.getcwd()
-#     for s in all_samples:
-#         inputs.append(os.path.join(pwd,s))
-#     snaf.proteomics.set_maxquant_configuration(dbs=db_common,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                                outdir=pwd,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
+#                                       fa2_path='./result_new/{}_unique.fasta'.format(f),outdir='./result_new',write_unique2=True,prefix='{}_'.format(f))
 
 
-'''
-unique
-'''
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_unique')
-# all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-# for p in all_patients:
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_unique/{}'.format(p))
-#     all_samples = subprocess.run('for file in *.raw; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-#     inputs = []
-#     pwd = os.getcwd()
-#     for s in all_samples:
-#         inputs.append(os.path.join(pwd,s))
-#     snaf.proteomics.set_maxquant_configuration(dbs=db_unique,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                                outdir=pwd,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
-
-'''
-concat
-'''
-# with open('result/MS_validation_common_unique2.fasta','r') as f1, open('result/MS_validation_unique_unique2.fasta','r') as f2, open('result/MS_validation_concat_unique2.fasta','w') as f3:
+# with open('result_new/MS_validation_common_unique2.fasta','r') as f1, open('result_new/MS_validation_unique_unique2.fasta','r') as f2, open('result_new/MS_validation_concat_unique2.fasta','w') as f3:
 #     # first process common neoantigen fasta
 #     for line in f1:
 #         if line.startswith('>'):
@@ -204,119 +132,54 @@ concat
 #         else:
 #             f3.write(line)
 
-# db_concat = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/fasta/MS_validation_concat_unique2.fasta']
+# # do some move
 # os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat')
+# all_patients = subprocess.run('for folder in *; do echo $folder; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
+# for p in all_patients:
+#     print(p)
+#     os.mkdir('/data/salomonis-archive/MS/melanoma/raw/{}'.format(p))
+#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat/{}'.format(p))
+#     des_folder = '/data/salomonis-archive/MS/melanoma/raw/{}'.format(p)
+#     subprocess.run('for file in *.raw; do mv $file {}; done'.format(des_folder),shell=True)
+#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat')
+
+
+# db_concat = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result_new/MS_validation_concat_unique2.fasta']
+# os.chdir('/data/salomonis-archive/MS/melanoma/raw')
 # all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
 # for p in all_patients:
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat/{}'.format(p))
+#     os.chdir('/data/salomonis-archive/MS/melanoma/raw/{}'.format(p))
 #     all_samples = subprocess.run('for file in *.raw; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
 #     inputs = []
 #     pwd = os.getcwd()
 #     for s in all_samples:
 #         inputs.append(os.path.join(pwd,s))
-#     snaf.proteomics.set_maxquant_configuration(dbs=db_concat,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-#                                                outdir=pwd,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
+#     outdir='/data/salomonis-archive/MS/melanoma/raw/{}'.format(p)
+#     snaf.proteomics.set_maxquant_configuration(dbs=db_concat,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,outdir=outdir)
 
-
-'''
-plot separate
-'''
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_common')
-# all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
-# fig,ax = plt.subplots()
-# n_common = []
-# n_unique = []
-# from scipy.stats import mannwhitneyu,ks_2samp,ttest_ind,ttest_rel
-# all_patients.pop(all_patients.index('Mel-16'))
-# for p in all_patients:
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_common/{}/combined/txt'.format(p))
-#     pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
-#     pep = pep.loc[pep['Proteins'].notna(),:]
-#     n = int(pep.shape[0])/114
-#     n_common.append(n)
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_unique/{}/combined/txt'.format(p))
-#     pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
-#     pep = pep.loc[pep['Proteins'].notna(),:]
-#     n = int(pep.shape[0])/25188
-#     n_unique.append(n)  
-# stats = ttest_ind(n_common,n_unique)
-# print(stats)
-# number = len(all_patients)
-# ax.bar(x=[i for i in range(1,1+3*(number-1)+1,3)],height=n_common,label='common neoantigen')
-# ax.bar(x=[i for i in range(2,2+3*(number-1)+1,3)],height=n_unique,label='unique neoantigen')
-# xticks = []
-# for ic,iu in zip([i for i in range(1,1+3*(number-1)+1,3)],[i for i in range(2,2+3*(number-1)+1,3)]):
-#     xticks.append((ic+iu)/2)
-# ax.set_xticks(xticks)
-# ax.set_xticklabels(all_patients,fontsize=4,rotation=90)
-# ax.set_xlabel('patients',fontsize=6)
-# ax.set_ylabel('MS recovery rate',fontsize=6)
-# ax.legend(loc='upper left',bbox_to_anchor=(1,1),frameon=False)
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
-# plt.savefig('MS_plot.pdf',bbox_inches='tight')
-# plt.close()
-
-'''
-plot concat
-'''
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat')
-# all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
-# fig,ax = plt.subplots()
-# n_common = []
-# n_unique = []
-# from scipy.stats import mannwhitneyu,ks_2samp,ttest_ind,ttest_rel
-# all_patients.pop(all_patients.index('Mel-16'))
-# for p in all_patients:
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat/{}/combined/txt'.format(p))
-#     pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
-#     pep = pep.loc[pep['Proteins'].notna(),:]
-#     n_common_single = np.count_nonzero(pep['Proteins'].str.contains('common').values)
-#     n_unique_single = np.count_nonzero(pep['Proteins'].str.contains('unique').values)
-#     f_common = n_common_single / 114
-#     f_unique = n_unique_single / 25188
-#     n_common.append(f_common)
-#     n_unique.append(f_unique)
-# stats = ttest_ind(n_common,n_unique)
-# print(stats)
-# number = len(all_patients)
-# ax.bar(x=[i for i in range(1,1+3*(number-1)+1,3)],height=n_common,label='common neoantigen')
-# ax.bar(x=[i for i in range(2,2+3*(number-1)+1,3)],height=n_unique,label='unique neoantigen')
-# xticks = []
-# for ic,iu in zip([i for i in range(1,1+3*(number-1)+1,3)],[i for i in range(2,2+3*(number-1)+1,3)]):
-#     xticks.append((ic+iu)/2)
-# ax.set_xticks(xticks)
-# ax.set_xticklabels(all_patients,fontsize=4,rotation=90)
-# ax.set_xlabel('patients',fontsize=6)
-# ax.set_ylabel('MS recovery rate',fontsize=6)
-# ax.legend(loc='upper left',bbox_to_anchor=(1,1),frameon=False)
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
-# plt.savefig('MS_plot_concat.pdf',bbox_inches='tight')
-# plt.close()
 
 '''
 plot concat stacked barplot
 '''
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat')
+# os.chdir('/data/salomonis-archive/MS/melanoma/raw')
 # all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
+# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
 # fig,ax = plt.subplots()
 # n_common = []
 # n_unique = []
 # from scipy.stats import mannwhitneyu,ks_2samp,ttest_ind,ttest_rel
 # all_patients.pop(all_patients.index('Mel-16'))
 # for p in all_patients:
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat/{}/combined/txt'.format(p))
+#     os.chdir('/data/salomonis-archive/MS/melanoma/raw/{}/combined/txt'.format(p))
 #     pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
 #     pep = pep.loc[pep['Proteins'].notna(),:]
 #     n_common_single = np.count_nonzero(pep['Proteins'].str.contains('common').values)
 #     n_unique_single = np.count_nonzero(pep['Proteins'].str.contains('unique').values)
-#     f_common = n_common_single / 114
-#     f_unique = n_unique_single / 25188
+#     f_common = n_common_single / 613
+#     f_unique = n_unique_single / 16753
 #     n_common.append(f_common)
 #     n_unique.append(f_unique)
-# stats = ttest_ind(n_common,n_unique)
+# stats = ttest_rel(n_common,n_unique)
 # print(stats)
 # number = len(all_patients)
 # ax.bar(x=np.arange(number),height=n_unique,label='unique neoantigen')
@@ -327,80 +190,68 @@ plot concat stacked barplot
 # ax.set_xlabel('patients',fontsize=6)
 # ax.set_ylabel('MS recovery rate',fontsize=6)
 # ax.legend(loc='upper left',bbox_to_anchor=(1,1),frameon=False)
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
+# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
 # plt.savefig('MS_plot_concat_stacked.pdf',bbox_inches='tight')
 # plt.close()
 
 
 '''
-occurence, separate
+plot concat side-by-side barplot
 '''
-# dict_common = {}
-# with open('result/MS_validation_common_unique2.fasta') as f:
-#     for line in f:
-#         if not line.startswith('>'):
-#             dict_common[line.rstrip('\n')] = 0
-# dict_unique = {}
-# with open('result/MS_validation_unique_unique2.fasta') as f:
-#     for line in f:
-#         if not line.startswith('>'):
-#             dict_unique[line.rstrip('\n')] = 0
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_common')
+# os.chdir('/data/salomonis-archive/MS/melanoma/raw')
 # all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
+# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
+# fig,ax = plt.subplots()
+# n_common = []
+# n_unique = []
+# from scipy.stats import mannwhitneyu,ks_2samp,ttest_ind,ttest_rel
 # all_patients.pop(all_patients.index('Mel-16'))
 # for p in all_patients:
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_common/{}/combined/txt'.format(p))
+#     os.chdir('/data/salomonis-archive/MS/melanoma/raw/{}/combined/txt'.format(p))
 #     pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
 #     pep = pep.loc[pep['Proteins'].notna(),:]
-#     for item in pep.index:
-#         try:
-#             dict_common[item] += 1
-#         except KeyError:
-#             continue
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_unique/{}/combined/txt'.format(p))
-#     pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
-#     pep = pep.loc[pep['Proteins'].notna(),:]
-#     for item in pep.index:
-#         try:
-#             dict_unique[item] += 1
-#         except KeyError:
-#             continue    
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
-# series_common = pd.Series(dict_common)
-# series_common.name = 'occurence'
-# series_common.to_csv('MS_common_occurence.txt',sep='\t')
-# series_unique = pd.Series(dict_unique)
-# series_unique.name = 'occurence'
-# series_unique.to_csv('MS_unique_occurence.txt',sep='\t')
-# fig,ax = plt.subplots()
-# sns.ecdfplot(data=series_common.to_frame(),x='occurence',ax=ax)
-# sns.ecdfplot(data=series_unique.to_frame(),x='occurence',ax=ax)
-# import matplotlib.patches as mpatches
-# ax.legend(handles=[mpatches.Patch(color=i) for i in ['#4B71B0','#DE8353']],labels=['common neoantigen','unique neoantigen'],loc='upper left',bbox_to_anchor=(1,1),frameon=False)
-# #ax.text(x=0.5,y=0.1,s='Mann Whitney p-value: {}'.format(stats),transform=ax.transAxes)
-# plt.savefig('MS_occurence.pdf',bbox_inches='tight');plt.close()
-
+#     n_common_single = np.count_nonzero(pep['Proteins'].str.contains('common').values)
+#     n_unique_single = np.count_nonzero(pep['Proteins'].str.contains('unique').values)
+#     f_common = n_common_single / 613
+#     f_unique = n_unique_single / 16753
+#     n_common.append(f_common)
+#     n_unique.append(f_unique)
+# stats = mannwhitneyu(n_common,n_unique)   # should use related as they are related, p=0.006
+# print(stats)
+# number = len(all_patients)
+# ax.bar(x=[i for i in range(1,1+3*(number-1)+1,3)],height=n_common,label='common neoantigen')
+# ax.bar(x=[i for i in range(2,2+3*(number-1)+1,3)],height=n_unique,label='unique neoantigen')
+# xticks = []
+# for ic,iu in zip([i for i in range(1,1+3*(number-1)+1,3)],[i for i in range(2,2+3*(number-1)+1,3)]):
+#     xticks.append((ic+iu)/2)
+# ax.set_xticks(xticks)
+# ax.set_xticklabels(all_patients,fontsize=4,rotation=90)
+# ax.set_xlabel('patients',fontsize=6)
+# ax.set_ylabel('MS recovery rate',fontsize=6)
+# ax.legend(loc='upper left',bbox_to_anchor=(1,1),frameon=False)
+# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
+# plt.savefig('MS_plot_concat.pdf',bbox_inches='tight')
+# plt.close()
 
 '''
 occurence concat
 '''
 # dict_common = {}
-# with open('result/MS_validation_common_unique2.fasta') as f:
+# with open('result_new/MS_validation_common_unique2.fasta') as f:
 #     for line in f:
 #         if not line.startswith('>'):
 #             dict_common[line.rstrip('\n')] = 0
 # dict_unique = {}
-# with open('result/MS_validation_unique_unique2.fasta') as f:
+# with open('result_new/MS_validation_unique_unique2.fasta') as f:
 #     for line in f:
 #         if not line.startswith('>'):
 #             dict_unique[line.rstrip('\n')] = 0
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat')
+# os.chdir('/data/salomonis-archive/MS/melanoma/raw')
 # all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
+# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
 # all_patients.pop(all_patients.index('Mel-16'))
 # for p in all_patients:
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat/{}/combined/txt'.format(p))
+#     os.chdir('/data/salomonis-archive/MS/melanoma/raw/{}/combined/txt'.format(p))
 #     pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
 #     pep = pep.loc[pep['Proteins'].notna(),:]
 #     for aa,protein in zip(*[pep.index,pep['Proteins']]):
@@ -414,7 +265,7 @@ occurence concat
 #                 dict_unique[aa] += 1
 #             except KeyError:
 #                 continue  
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
+# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
 # series_common = pd.Series(dict_common)
 # series_common.name = 'occurence'
 # series_common.to_csv('MS_common_occurence.txt',sep='\t')
@@ -426,28 +277,28 @@ occurence concat
 # sns.ecdfplot(data=series_unique.to_frame(),x='occurence',ax=ax)
 # import matplotlib.patches as mpatches
 # ax.legend(handles=[mpatches.Patch(color=i) for i in ['#4B71B0','#DE8353']],labels=['common neoantigen','unique neoantigen'],loc='upper left',bbox_to_anchor=(1,1),frameon=False)
-# #ax.text(x=0.5,y=0.1,s='Mann Whitney p-value: {}'.format(stats),transform=ax.transAxes)
 # plt.savefig('MS_occurence_concat.pdf',bbox_inches='tight');plt.close()
+
 
 '''
 occurence concat histogram or kde plot
 '''
 # dict_common = {}
-# with open('result/MS_validation_common_unique2.fasta') as f:
+# with open('result_new/MS_validation_common_unique2.fasta') as f:
 #     for line in f:
 #         if not line.startswith('>'):
 #             dict_common[line.rstrip('\n')] = 0
 # dict_unique = {}
-# with open('result/MS_validation_unique_unique2.fasta') as f:
+# with open('result_new/MS_validation_unique_unique2.fasta') as f:
 #     for line in f:
 #         if not line.startswith('>'):
 #             dict_unique[line.rstrip('\n')] = 0
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat')
+# os.chdir('/data/salomonis-archive/MS/melanoma/raw')
 # all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
+# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
 # all_patients.pop(all_patients.index('Mel-16'))
 # for p in all_patients:
-#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat/{}/combined/txt'.format(p))
+#     os.chdir('/data/salomonis-archive/MS/melanoma/raw/{}/combined/txt'.format(p))
 #     pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
 #     pep = pep.loc[pep['Proteins'].notna(),:]
 #     for aa,protein in zip(*[pep.index,pep['Proteins']]):
@@ -461,22 +312,37 @@ occurence concat histogram or kde plot
 #                 dict_unique[aa] += 1
 #             except KeyError:
 #                 continue  
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis')
+# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
 # series_common = pd.Series(dict_common)
 # series_common.name = 'occurence'
-# # series_common.to_csv('MS_common_occurence.txt',sep='\t')
 # series_unique = pd.Series(dict_unique)
 # series_unique.name = 'occurence'
-# # series_unique.to_csv('MS_unique_occurence.txt',sep='\t')
 # fig,ax = plt.subplots()
 # sns.kdeplot(data=series_common.to_frame(),x='occurence',ax=ax,clip=[-0.05,15])
 # sns.kdeplot(data=series_unique.to_frame(),x='occurence',ax=ax,clip=[-0.05,15])
 # import matplotlib.patches as mpatches
 # ax.legend(handles=[mpatches.Patch(color=i) for i in ['#4B71B0','#DE8353']],labels=['common neoantigen','unique neoantigen'],loc='upper left',bbox_to_anchor=(1,1),frameon=False)
-# #ax.text(x=0.5,y=0.1,s='Mann Whitney p-value: {}'.format(stats),transform=ax.transAxes)
 # plt.savefig('MS_occurence_concat_kde.pdf',bbox_inches='tight');plt.close()
-# sys.exit('stop')
 
+'''
+further explore the identity of common neoantigens
+'''
+identified_common_neoantigens = []
+os.chdir('/data/salomonis-archive/MS/melanoma/raw')
+all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
+os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
+all_patients.pop(all_patients.index('Mel-16'))
+for p in all_patients:
+    os.chdir('/data/salomonis-archive/MS/melanoma/raw/{}/combined/txt'.format(p))
+    pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
+    pep = pep.loc[pep['Proteins'].notna(),:]
+    for aa,protein,pval,s in zip(*[pep.index,pep['Proteins'],pep['PEP'],pep['Score']]):
+        if 'common' in protein:
+            data = (aa,protein.lstrip('>').split(',')[0],pval,s,p)
+            identified_common_neoantigens.append(data)
+os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
+pd.DataFrame.from_records(data=identified_common_neoantigens,columns=['peptide','uid','PEP','Score','patient']).to_csv('identified_common_neoantigens.txt',sep='\t')
+sys.exit('stop')
 
 '''write peptide.txt to a merged xlsx file for publication, supp3 table'''
 os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat')
@@ -614,24 +480,6 @@ sys.exit('stop')
 # jcmq = snaf.JunctionCountMatrixQuery.deserialize(name='./result/after_prediction.p')
 # jcmq.visualize(uid='ENSG00000167291:E38.6-E39.1',sample='TCGA-DA-A1I1-06A-12R-A18U-07.bed',outdir='./result')
 
-### Step3: downstream analysis (patient level and neoantigen level)
-
-'''patient analysis'''
-# 1. survival analysis
-# survival = pd.read_csv('TCGA-SKCM.survival.tsv',sep='\t',index_col=0)  # 463
-# burden = pd.read_csv('result/burden_stage0.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]  # 472
-# burden.index = ['-'.join(sample.split('-')[0:4]) for sample in burden.index]
-# burden_output,quantiles = snaf.survival_analysis(burden,survival,n=2,stratification_plot='result/stage0_stratify.pdf',survival_plot='result/stage0_survival.pdf')
-# burden_output.to_csv('result/to_nathan_stage0_neojunction_encode.txt',sep='\t')
-
-
-
-# 2. mutation analysis
-# mutation = pd.read_csv('TCGA-SKCM.mutect2_snv.tsv',sep='\t',index_col=0)  # 467 samples have mutations
-# mutation = mutation.loc[mutation['filter']=='PASS',:]
-# burden = pd.read_csv('result/burden_stage3.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]  # 472
-# burden.index = ['-'.join(sample.split('-')[0:4]) for sample in burden.index]
-# snaf.mutation_analysis(mode='compute',burden=burden,mutation=mutation,output='result/stage3_mutation.txt')
 
 
 '''neoantigen analysis'''
