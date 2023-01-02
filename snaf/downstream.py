@@ -384,7 +384,7 @@ def visualize_GO_result(path_list,skiprows_list,category_list,mode='interactive'
             
 
         
-def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_contig_rename, query_region, skip_copy=False, min_junction=3, width=10, ann_height=4, height=2):
+def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_contig_rename, query_region, skip_copy=False, min_junction=3, width=10, ann_height=4, height=2, task_name=''):
     '''
     Given a bunch of bam file and cognate bai files, we want to generate sashimi plot in an automatic way using ggsashimi package singularity image, this image is pulled using::
 
@@ -406,6 +406,7 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_c
     :param width: float, the width in pct for the plot
     :param ann_height: float, the height in pct for the annotation
     :param height: float, the height in pct for the sashimi plot
+    :param task_name: string, default is empty string, add this as a suffix to generated sashimi.pdf 
 
     :return cmd: string, the singularity cmd that you should type in the console when cd to the outdir
 
@@ -427,10 +428,18 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_c
     if not skip_copy:
         for bam in bam_path_list:
             print('copy {}'.format(bam))
-            subprocess.run(['cp','{}'.format(bam),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
+            base = os.path.basename(bam)
+            if not os.path.exists(os.path.join(outdir,'ggsashimi_bams',base)):
+                subprocess.run(['cp','{}'.format(bam),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
+            else:
+                print('{} exists, skip copy'.format(base))
         for bai in bai_path_list:
             print('copy {}'.format(bai))
-            subprocess.run(['cp','{}'.format(bai),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
+            base = os.path.basename(bai)
+            if not os.path.exists(os.path.join(outdir,'ggsashimi_bams',base)):
+                subprocess.run(['cp','{}'.format(bai),'{}'.format(os.path.join(outdir,'ggsashimi_bams'))])
+            else:
+                print('{} exists, skip copy'.format(base))
         subprocess.run(['cp','{}'.format(os.path.join(sif_anno_path,'gencode.v36.annotation.gtf')),'{}'.format(outdir)])
         pwd = os.getcwd()
         os.chdir(os.path.join(outdir,'ggsashimi_bams'))
@@ -471,6 +480,13 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_c
             f.write('{}\n'.format(c))
     cmd = 'singularity run -W $PWD -B $PWD:$PWD {} -b input_bams.tsv -c {} -C 3 -M {} --width {} --fix-y-scale -g gencode.v36.annotation.gtf --ann-height={} --height={} -P palette.txt'.format(os.path.join(sif_anno_path,'ggsashimi.sif'),query_region,min_junction,width,ann_height,height)
     print(cmd)
+    # execuate assuming singularity has been loaded
+    old_pwd = os.getcwd()
+    os.chdir(outdir)
+    subprocess.run(cmd,shell=True)
+    # rename the sashimi.pdf
+    os.rename('sashimi.pdf','sashimi{}.pdf'.format(task_name))
+    os.chdir(old_pwd)
     return cmd
 
     
