@@ -392,7 +392,7 @@ def run_dash_B_antigen(pkl,prediction_mode,candidates,python_executable,host=Non
                 sequence =  sa.orfp[value_index]
                 ensp = df_certain.loc[df_certain['index']==value_index,:]['EnsPID'].values[0]
                 ensembl_sequence = run_ensembl(ens=ensp)
-                emboss_alignment = run_emboss(asequence=ensembl_sequence,bsequence=sequence,python_executable=python_executable)
+                emboss_alignment = run_emboss(asequence=sequence,bsequence=ensembl_sequence,python_executable=python_executable)
                 emboss_alignment = emboss_alignment.replace('\n','<br/>')
             elif value_display == 'junction':
                 sequence = sa.junction
