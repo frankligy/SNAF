@@ -19,17 +19,28 @@ def find_uid_in_clique(the_uid,region,strand,uid2coords):
                     clique[uid] = coords
     return clique
 
+def calculate_max_ratio(mat):
+    max_incl_exp = mat[0,:].max()
+    max_excl_exp = mat[1:,:].sum(axis=0).max()
+    ratio = max_excl_exp / max_incl_exp
+    return ratio
+
 def calculate_psi_core(clique,uid,count,sample_columns):
     sub_count = count.loc[list(clique.keys()),sample_columns]
+    cond = True
+    mat = sub_count.values
+    psi = mat[0,:] / mat.sum(axis=0)
     if sub_count.shape[0] > 1:
-        mat = sub_count.values
-        psi = mat[0,:] / mat.sum(axis=0)
         bg_uid = sub_count.index.tolist()[np.argmax(mat[1:,:].sum(axis=1)) + 1]
+        print(mat.sum(axis=0) < 10);sys.exit('stop')
+        if np.count_nonzero(mat.sum(axis=0) < 10) > 1:
+            cond = False
+        if calculate_max_ratio(mat) < 0.1:
+            cond = False
     else:  # no background event
-        mat = sub_count.values
-        psi = mat[0,:] / mat.sum(axis=0)
         bg_uid = 'None'      
-    return psi,bg_uid
+        cond = False
+    return psi,bg_uid,cond
         
 
 
@@ -46,10 +57,10 @@ def calculate_psi_per_gene(count):
         for c in ['gene','chrom','start','end','strand']:
             index_list.remove(c)
         sample_columns = index_list
-        psi_values,bg_uid = calculate_psi_core(clique,uid,count,sample_columns)
-        data = (uid,bg_uid,*psi_values)
+        psi_values,bg_uid, cond = calculate_psi_core(clique,uid,count,sample_columns)
+        data = (uid,bg_uid,cond,*psi_values)
         return_data.append(data)
-    df = pd.DataFrame.from_records(data=return_data,columns=['uid','bg_uid']+sample_columns)
+    df = pd.DataFrame.from_records(data=return_data,columns=['uid','bg_uid','cond']+sample_columns)
     df.to_csv('check.txt',sep='\t')
 
         
