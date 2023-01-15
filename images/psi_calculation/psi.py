@@ -19,24 +19,28 @@ def find_uid_in_clique(the_uid,region,strand,uid2coords):
                     clique[uid] = coords
     return clique
 
-def calculate_max_ratio(mat):
+
+
+def is_valid(mat,uid):
+    num_incl_events = np.count_nonzero(mat[0,:] >= 20)
+    num_excl_events = np.count_nonzero(mat[1:,:].sum(axis=0) >= 20)
+    total_number_junctions = np.count_nonzero(mat.sum(axis=0) >= 20)
     max_incl_exp = mat[0,:].max()
     max_excl_exp = mat[1:,:].sum(axis=0).max()
     ratio = max_excl_exp / max_incl_exp
-    return ratio
+    if num_incl_events > 1 and num_excl_events > 1 and total_number_junctions > 2 and ratio > 0.1:
+        cond = True
+    else:
+        cond = False
+    return cond
 
 def calculate_psi_core(clique,uid,count,sample_columns):
     sub_count = count.loc[list(clique.keys()),sample_columns]
-    cond = True
     mat = sub_count.values
     psi = mat[0,:] / mat.sum(axis=0)
     if sub_count.shape[0] > 1:
         bg_uid = sub_count.index.tolist()[np.argmax(mat[1:,:].sum(axis=1)) + 1]
-        print(mat.sum(axis=0) < 10);sys.exit('stop')
-        if np.count_nonzero(mat.sum(axis=0) < 10) > 1:
-            cond = False
-        if calculate_max_ratio(mat) < 0.1:
-            cond = False
+        cond = is_valid(mat,uid)
     else:  # no background event
         bg_uid = 'None'      
         cond = False
@@ -90,6 +94,6 @@ for item in count.index:
 for name,col in zip(['uid','gene','chrom','start','end','strand'],[col_uid,col_gene,col_chrom,col_start,col_end,col_strand]):
     count[name] = col
 
-test_count = count.loc[count['gene']=='ENSG00000000003',:]
+test_count = count.loc[count['gene']=='ENSG00000000419',:]
 calculate_psi_per_gene(test_count)
 
