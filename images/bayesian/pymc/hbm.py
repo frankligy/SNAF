@@ -11,7 +11,6 @@ import pymc as pm
 import pytensor.tensor as at
 
 
-# debug
 
 def compute_scaled_x(adata,uid):
     x = []
@@ -95,20 +94,17 @@ def infer_parameters_vectorize(uids):
     t = X.shape[1]
     with pm.Model() as m:
         sigma = pm.Uniform('sigma',lower=0,upper=1,shape=n)
-        nc = pm.HalfNormal('nc',sigma=sigma,observed=Y)
+        nc = pm.HalfNormal('nc',sigma=sigma,observed=Y.T)  # since sigma is of shape n, so each draw will be a row of length n (support dimention), and we draw s times, then the resultant matrix, we transpose
         psi = pm.Beta('psi',alpha=2,beta=sigma*2)
         mu = pm.Gamma('mu',alpha=sigma*25,beta=1)
-        c = pm.ZeroInflatedPoisson('c',psi,mu,observed=X)
+        c = pm.ZeroInflatedPoisson('c',psi,mu,observed=X.T)
         # gv = pm.model_to_graphviz(m)
         # gv.format = 'pdf'
         # gv.render(filename='model_graph')
-    print(pm.draw(nc,draws=1))
-    sys.exit('stop')
     with m:
-        trace = pm.sample(draws=1000,step=pm.NUTS(),tune=1000,cores=1,progressbar=False)
-    df = az.summary(trace,round_to=4)
-    print(df)
-    sys.exit('stop')
+        trace = pm.sample(draws=1000,step=pm.NUTS(),tune=1000,cores=1,progressbar=True)
+    with open('pickle_mcmc_trace.p','wb') as f:
+        pickle.dump(trace,f)
 
 def infer_parameters(uid):
     y = compute_y(adata,uid)
