@@ -46,7 +46,7 @@ def prior_check(prior_samples,var,observed):
         observed,
         kind="hist",
         color="orange",
-        hist_kwargs=dict(alpha=0.6),
+        hist_kwargs=dict(alpha=0.6,bins=100),
         label="observed",
         ax = ax
     )
@@ -54,7 +54,7 @@ def prior_check(prior_samples,var,observed):
         prior_samples.prior_predictive[var],
         kind="hist",
         color = 'blue',
-        hist_kwargs=dict(alpha=0.6),
+        hist_kwargs=dict(alpha=0.6,bins=100),
         label="simulated",
         ax = ax
     )
@@ -68,7 +68,7 @@ def posterior_check(posterior_samples,var,observed):
         observed,
         kind="hist",
         color="orange",
-        hist_kwargs=dict(alpha=0.6,bins=10),
+        hist_kwargs=dict(alpha=0.6,bins=100),
         label="observed",
         ax = ax
     )
@@ -76,7 +76,7 @@ def posterior_check(posterior_samples,var,observed):
         posterior_samples.posterior_predictive[var],
         kind="hist",
         color = 'blue',
-        hist_kwargs=dict(alpha=0.6),
+        hist_kwargs=dict(alpha=0.6,bins=100),
         label="simulated",
         ax = ax
     )
@@ -85,18 +85,13 @@ def posterior_check(posterior_samples,var,observed):
     plt.close() 
 
 def infer_parameters(uid):
-    y = compute_y()
+    y = compute_y(adata,uid)
     x = compute_scaled_x(adata,uid)
-    # print(x)
-    # print(y)
-    # sns.histplot(x,bins=50);plt.savefig('x.pdf',bbox_inches='tight');plt.close()
-    # sns.histplot(y,bins=1000);plt.savefig('y.pdf',bbox_inches='tight');plt.close()
     with pm.Model() as m:
         sigma = pm.Uniform('sigma',lower=0,upper=1)
         nc = pm.HalfNormal('nc',sigma=sigma,observed=y)
-        nc_hat = pm.Deterministic('nc_hat',pm.math.sum(nc)/len(y))
-        psi = pm.Beta('psi',alpha=2,beta=nc_hat*20)
-        mu = pm.Gamma('mu',alpha=nc_hat*50,beta=1)
+        psi = pm.Beta('psi',alpha=2,beta=sigma*2)  # beta(2,2) is good for modeling intermediate proportion, beta(0.5,0.5) is good for modeling bimodel
+        mu = pm.Gamma('mu',alpha=sigma*25,beta=1)  # gamme(alpha,1) is good to control the mean, as mean=alpha/beta
         c = pm.ZeroInflatedPoisson('c',psi,mu,observed=x)
     # gv = pm.model_to_graphviz(m)
     # gv.format = 'pdf'
@@ -105,20 +100,20 @@ def infer_parameters(uid):
     #     prior_samples = pm.sample_prior_predictive(1000)
     # prior_check(prior_samples,'nc',y)
     # prior_check(prior_samples,'c',x)
-    with m:
-        trace = pm.sample(draws=1000,step=pm.NUTS(),tune=1000,cores=1,progressbar=False)
+    # with m:
+    #     trace = pm.sample(draws=1000,step=pm.NUTS(),tune=1000,cores=1,progressbar=False)
     # df = az.summary(trace,round_to=4)
     # result = df['mean'].tolist() + [y.mean(),np.array(x).mean()]
-    # with m:
-    #     # below is from pymc3 tutorial: https://docs.pymc.io/en/v3/pymc-examples/examples/variational_inference/variational_api_quickstart.html
-    #     mean_field = pm.fit(method='advi',progressbar=False)
+    with m:
+        # below is from pymc3 tutorial: https://docs.pymc.io/en/v3/pymc-examples/examples/variational_inference/variational_api_quickstart.html
+        mean_field = pm.fit(method='advi',progressbar=False)
     posterior_samples = mean_field.sample(1000).posterior
-    result = [posterior_samples['sigma'].values.mean(),posterior_samples['psi'].values.mean(),posterior_samples['mu'].values.mean(),posterior_samples['nc_hat'].values.mean()] + [y.mean(),np.array(x).mean()]
-    # az.plot_trace(trace,var_names=['sigma','nc_hat','mu','psi'])
+    result = [posterior_samples['sigma'].values.mean(),posterior_samples['psi'].values.mean(),posterior_samples['mu'].values.mean()] + [y.mean(),np.array(x).mean()]
+    # az.plot_trace(trace,var_names=['sigma','mu','psi'])
     # plt.savefig('trace.pdf',bbox_inches='tight');plt.close()
     # az.plot_energy(trace)
     # plt.savefig('energy.pdf',bbox_inches='tight');plt.close()
-    # az.plot_forest(trace,var_names=['sigma','nc_hat','mu','psi'],combined=True,hdi_prob=0.95,r_hat=True)
+    # az.plot_forest(trace,var_names=['sigma','mu','psi'],combined=True,hdi_prob=0.95,r_hat=True)
     # plt.savefig('forest.pdf',bbox_inches='tight');plt.close()
     # with m:
     #     extended_trace = pm.sample_posterior_predictive(trace)
@@ -135,36 +130,54 @@ def infer_parameters(uid):
 # adata.to_df().to_csv('sampled_100.txt',sep='\t')
 adata = ad.read_h5ad('sampled_100.h5ad')
 
+# # visualize
+# uid = 'ENSG00000115459:I5.1-E6.1'
+# from gtex_viewer import *
+# gtex_viewer_configuration(adata)
+# gtex_visual_per_tissue_count(uid)
+# gtex_visual_norm_count_combined(uid)
+# gtex_visual_subplots(uid)
 
-# determine the coefficient between n_hat and psi/mu
-X = np.array([compute_scaled_x(adata,uid) for uid in adata.obs_names])
-Y = np.array([compute_y(adata,uid) for uid in adata.obs_names]).mean(axis=1)
-psi = 1 - np.count_nonzero(X,axis=1) / adata.shape[0]
-mu = np.quantile(X,0.25,axis=1)
-nc_hat = Y
-df = adata.to_df()
-df['psi'] = psi; df['mu'] = mu; df['nc_hat'] = nc_hat
-df.to_csv('empirical.txt',sep='\t');sys.exit('stop')
-result = np.linalg.lstsq(np.column_stack([np.ones(len(nc_hat)),nc_hat]),np.column_stack([psi,mu]),rcond=None)
-print(result)
-fig,ax = plt.subplots()
-ax.scatter(nc_hat,mu)
-plt.savefig('check.pdf',bbox_inches='tight')
-plt.close()
-sys.exit('stop')
+# # determine the coefficient between n_hat and psi/mu, but seems to be indirect to model nc_hat and psi/mu
+# X = np.array([compute_scaled_x(adata,uid) for uid in adata.obs_names])
+# Y = np.array([compute_y(adata,uid) for uid in adata.obs_names]).mean(axis=1)
+# psi = np.count_nonzero(X,axis=1) / X.shape[1]
+# mu = np.quantile(X,0.5,axis=1)
+# nc_hat = Y
+# df = adata.to_df()
+# df['psi'] = psi; df['mu'] = mu; df['nc_hat'] = nc_hat
+# df.to_csv('empirical.txt',sep='\t')
+# train_X = np.column_stack([np.ones(len(nc_hat)),nc_hat])
+# # linear regression
+# result = np.linalg.lstsq(X,np.column_stack([psi,mu]),rcond=None)
+# # GLM
+# import statsmodels.api as sm
+# mod = sm.GLM(endog=psi,exog=train_X,family=sm.families.Binomial())
+# mod_result = mod.fit()
+# mod = sm.GLM(endog=mu,exog=train_X,family=sm.families.Poisson())
+# mod_result = mod.fit()
+# mod_result.summary()
+# fig,ax = plt.subplots()
+# ax.scatter(nc_hat,mu)
+# plt.savefig('mu.pdf',bbox_inches='tight')
+# plt.close()
 
-# # mode
-# count = pd.read_csv('sampled_100.txt',sep='\t',index_col=0)
-# data = []
-# for uid in tqdm(adata.obs_names,total=adata.shape[0]):
-#     values = infer_parameters(uid)
-#     data.append((uid,*values))
-# result = pd.DataFrame.from_records(data,columns=['uid','sigma','psi','mu','nc_hat','mean_y','mean_x']).set_index('uid')
-# final = pd.concat([count,result],axis=1)
-# final.to_csv('final_vi.txt',sep='\t')
+# change to model
+# uid = 'ENSG00000115459:I5.1-E6.1'
+# infer_parameters(uid)
+
+# mode
+count = pd.read_csv('sampled_100.txt',sep='\t',index_col=0)
+data = []
+for uid in tqdm(adata.obs_names,total=adata.shape[0]):
+    values = infer_parameters(uid)
+    data.append((uid,*values))
+result = pd.DataFrame.from_records(data,columns=['uid','sigma','psi','mu','mean_y','mean_x']).set_index('uid')
+final = pd.concat([count,result],axis=1)
+final.to_csv('final.txt',sep='\t')
 
 # diagnose
-diagnose('final_vi.txt','diagnosis_vi.pdf')
+diagnose('final.txt','diagnosis.pdf')
 
 
 
