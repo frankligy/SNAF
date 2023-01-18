@@ -1,6 +1,6 @@
 from .snaf import snaf_configuration,NeoJunction,JunctionCountMatrixQuery,uid_to_coord, add_coord_frequency_table, enhance_frequency_table
 from .gtex import gtex_configuration, tumor_specificity, add_tumor_specificity_frequency_table
-from .gtex_viewer import gtex_viewer_configuration, gtex_visual_combine, gtex_visual_subplots, gtex_visual_combine_plotly
+from .gtex_viewer import gtex_viewer_configuration, gtex_visual_combine, gtex_visual_subplots, gtex_visual_combine_plotly, gtex_visual_per_tissue_count
 from .proteomics import *
 from .downstream import *
 from datetime import datetime,date

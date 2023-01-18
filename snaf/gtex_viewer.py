@@ -32,14 +32,18 @@ def gtex_visual_norm_count_combined(query,out_folder='.'):
     plt.savefig(os.path.join(out_folder,'hist_{}.pdf'.format(query.replace(':','_'))),bbox_inches='tight')
     plt.close()
 
-def gtex_visual_per_tissue_count(query,out_folder='.'):
-    per_tissue_count = []
+def gtex_visual_per_tissue_count(uid,total_count=10, count_cutoff=1, total=25, outdir='.'):
+    x = []
     for tissue in adata.var['tissue'].unique():
-        sub = adata[query,adata.var['tissue']==tissue]
-        c = np.count_nonzero(sub.X.toarray())
-        per_tissue_count.append(c)
-    sns.histplot(np.array(per_tissue_count),binwidth=1)
-    plt.savefig(os.path.join(out_folder,'poisson_{}.pdf'.format(query.replace(':','_'))),bbox_inches='tight')
+        sub = adata[uid,adata.var['tissue']==tissue]
+        total_count = sub.shape[1]
+        if total_count >= total_count:
+            c = np.count_nonzero(np.where(sub.X.toarray()<count_cutoff,0,sub.X.toarray()))
+            scaled_c = round(c * (total/total_count),0)
+            x.append(scaled_c)
+    x = np.array(x)
+    sns.histplot(x,binwidth=1)
+    plt.savefig(os.path.join(outdir,'tissue_dist_{}.pdf'.format(query.replace(':','_'))),bbox_inches='tight')
     plt.close()
 
 
@@ -181,7 +185,7 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
 
 
 
-def gtex_visual_subplots(uid,norm=True,outdir='.'):
+def gtex_visual_subplots(uid,norm=True,top=100,outdir='.'):
     ''' 
     Visualize the gtex expression and tumor specificity for splicing event (subplots)
 
@@ -222,7 +226,7 @@ def gtex_visual_subplots(uid,norm=True,outdir='.'):
             ax.set_xticks(np.arange(len(psi)))
             ax.set_xticklabels(['s{}'.format(i) for i in np.arange(len(psi))],fontsize=4,rotation=60)
             ax.set_title('{}_count:{}/{}'.format(tissue,non_zero_count,total_count),fontsize=4)
-            ax.set_ylim(bottom=-0.001,top=50)
+            ax.set_ylim(bottom=-0.001,top=top)
             if norm:
                 ax.set_ylabel('normalized counts')
             else:
