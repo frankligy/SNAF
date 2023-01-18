@@ -10,6 +10,9 @@ import arviz as az
 import pymc as pm
 import pytensor.tensor as at
 
+
+# debug
+
 def compute_scaled_x(adata,uid):
     x = []
     for tissue in adata.var['tissue'].unique():
@@ -83,6 +86,29 @@ def posterior_check(posterior_samples,var,observed):
     ax.tick_params(axis='x',rotation=45,labelsize=0.5)
     plt.savefig('posterior_check_{}.pdf'.format(var),bbox_inches='tight')
     plt.close() 
+
+def infer_parameters_vectorize(uids):
+    Y = np.array([compute_y(adata,uid) for uid in uids])
+    X = np.array([compute_scaled_x(adata,uid) for uid in uids])
+    n = len(uids)
+    s = Y.shape[1]
+    t = X.shape[1]
+    with pm.Model() as m:
+        sigma = pm.Uniform('sigma',lower=0,upper=1,shape=n)
+        nc = pm.HalfNormal('nc',sigma=sigma,observed=Y)
+        psi = pm.Beta('psi',alpha=2,beta=sigma*2)
+        mu = pm.Gamma('mu',alpha=sigma*25,beta=1)
+        c = pm.ZeroInflatedPoisson('c',psi,mu,observed=X)
+        # gv = pm.model_to_graphviz(m)
+        # gv.format = 'pdf'
+        # gv.render(filename='model_graph')
+    print(pm.draw(nc,draws=1))
+    sys.exit('stop')
+    with m:
+        trace = pm.sample(draws=1000,step=pm.NUTS(),tune=1000,cores=1,progressbar=False)
+    df = az.summary(trace,round_to=4)
+    print(df)
+    sys.exit('stop')
 
 def infer_parameters(uid):
     y = compute_y(adata,uid)
@@ -166,18 +192,21 @@ adata = ad.read_h5ad('sampled_100.h5ad')
 # uid = 'ENSG00000115459:I5.1-E6.1'
 # infer_parameters(uid)
 
-# mode
-count = pd.read_csv('sampled_100.txt',sep='\t',index_col=0)
-data = []
-for uid in tqdm(adata.obs_names,total=adata.shape[0]):
-    values = infer_parameters(uid)
-    data.append((uid,*values))
-result = pd.DataFrame.from_records(data,columns=['uid','sigma','psi','mu','mean_y','mean_x']).set_index('uid')
-final = pd.concat([count,result],axis=1)
-final.to_csv('final.txt',sep='\t')
+# # mode
+# count = pd.read_csv('sampled_100.txt',sep='\t',index_col=0)
+# data = []
+# for uid in tqdm(adata.obs_names,total=adata.shape[0]):
+#     values = infer_parameters(uid)
+#     data.append((uid,*values))
+# result = pd.DataFrame.from_records(data,columns=['uid','sigma','psi','mu','mean_y','mean_x']).set_index('uid')
+# final = pd.concat([count,result],axis=1)
+# final.to_csv('final.txt',sep='\t')
 
-# diagnose
-diagnose('final.txt','diagnosis.pdf')
+# # diagnose
+# diagnose('final.txt','diagnosis.pdf')
+
+# vectorize
+infer_parameters_vectorize(uids=adata.obs_names.tolist())
 
 
 
