@@ -13,33 +13,32 @@ import pytensor.tensor as at
 
 
 
-def compute_scaled_x(adata,uid):
-    x = []
-    for tissue in adata.var['tissue'].unique():
-        sub = adata[uid,adata.var['tissue']==tissue]
+def compute_scaled_x(adata,uids):
+    total_tissue = adata.var['tissue'].unique()
+    valid_tissue = [tissue for tissue in total_tissue if adata[:,adata.var['tissue']==tissue].shape[1] >= 10]
+    x = np.zeros((len(uids),len(valid_tissue)))
+    for i,tissue in enumerate(valid_tissue):
+        sub = adata[uids,adata.var['tissue']==tissue]
         total_count = sub.shape[1]
-        if total_count >= 10:
-            c = np.count_nonzero(np.where(sub.X.toarray()<1,0,sub.X.toarray()))
-            scaled_c = round(c * (25/total_count),0)
-            x.append(scaled_c)
-    x = np.array(x)
+        c = np.count_nonzero(np.where(sub.X.toarray()<1,0,sub.X.toarray()),axis=1)
+        scaled_c = np.round(c * (25/total_count),0)
+        x[:,i] = scaled_c
     return x
 
-def compute_y(adata,uid):
-    info = adata[[uid],:]
-    scale_factor_dict = adata.var['total_count'].to_dict()
-    df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
-    df['value_cpm'] = df['value'].values / df.index.map(scale_factor_dict).values
-    y = df['value_cpm'].values 
+
+def compute_y(adata,uids):
+    info = adata[uids,:]
+    y = info.X.toarray() / adata.var['total_count'].values.reshape(1,-1)
     return y
 
 def diagnose(final_path,output_name='diagnosis.pdf'):
     df = pd.read_csv(final_path,sep='\t',index_col=0)
     fig,ax = plt.subplots()
-    im = ax.scatter(df['mean_x'],df['mean_y'],c=df['sigma'])
+    im = ax.scatter(df['X_mean'],df['Y_mean'],c=df['mean_sigma'],s=1,cmap='viridis')
     plt.colorbar(im)
     ax.set_ylabel('average_normalized_counts')
     ax.set_xlabel('average_n_present_samples_per_tissue')
+    ax.set_ylim([-1,7])
     plt.savefig(output_name,bbox_inches='tight')
     plt.close()
 
@@ -87,9 +86,9 @@ def posterior_check(posterior_samples,var,observed):
     plt.savefig('posterior_check_{}.pdf'.format(var),bbox_inches='tight')
     plt.close() 
 
-def infer_parameters_vectorize(uids,solver='mcmc'):
-    Y = np.array([compute_y(adata,uid) for uid in uids])
-    X = np.array([compute_scaled_x(adata,uid) for uid in uids])
+def infer_parameters_vectorize(uids,solver='vi'):
+    X = compute_scaled_x(adata,uids)
+    Y = compute_y(adata,uids)
     n = len(uids)
     s = Y.shape[1]
     t = X.shape[1]
@@ -106,9 +105,9 @@ def infer_parameters_vectorize(uids,solver='mcmc'):
         if solver == 'mcmc':
             trace = pm.sample(draws=1000,step=pm.NUTS(),tune=1000,cores=1,progressbar=True)
         elif solver == 'vi':
-            mean_field = pm.fit(method='advi',progressbar=False)
+            mean_field = pm.fit(method='advi',progressbar=True)
             trace = mean_field.sample(1000)
-    with open('pickle_vi_trace.p','wb') as f:
+    with open('pickle_trace.p','wb') as f:
         pickle.dump(trace,f)
 
 def infer_parameters(uid):
@@ -133,7 +132,7 @@ def infer_parameters(uid):
     # result = df['mean'].tolist() + [y.mean(),np.array(x).mean()]
     with m:
         # below is from pymc3 tutorial: https://docs.pymc.io/en/v3/pymc-examples/examples/variational_inference/variational_api_quickstart.html
-        mean_field = pm.fit(method='advi',progressbar=False)
+        mean_field = pm.fit(method='advi',progressbar=True)
     posterior_samples = mean_field.sample(1000).posterior
     result = [posterior_samples['sigma'].values.mean(),posterior_samples['psi'].values.mean(),posterior_samples['mu'].values.mean()] + [y.mean(),np.array(x).mean()]
     # az.plot_trace(trace,var_names=['sigma','mu','psi'])
@@ -152,10 +151,11 @@ def infer_parameters(uid):
 # load the count
 # adata = ad.read_h5ad('combined_normal_count.h5ad')
 # adata.var['tissue'].value_counts().to_csv('tissue_count.txt',sep='\t')
-# adata = adata[np.random.choice(np.arange(adata.shape[0]),size=100,replace=False),:]
-# adata.write('sampled_100.h5ad')
-# adata.to_df().to_csv('sampled_100.txt',sep='\t')
-adata = ad.read_h5ad('sampled_100.h5ad')
+# adata = adata[np.random.choice(np.arange(adata.shape[0]),size=20000,replace=False),:]
+# adata.write('sampled_20000.h5ad')
+# adata.to_df().to_csv('sampled_20000.txt',sep='\t')
+adata = ad.read_h5ad('sampled_20000.h5ad')
+
 
 # # visualize
 # uid = 'ENSG00000115459:I5.1-E6.1'
@@ -204,20 +204,27 @@ adata = ad.read_h5ad('sampled_100.h5ad')
 # final.to_csv('final.txt',sep='\t')
 
 # # diagnose
-# diagnose('final.txt','diagnosis.pdf')
+# diagnose('final_vectorize_vi.txt','diagnosis.pdf')
+
 
 # vectorize
-# infer_parameters_vectorize(uids=adata.obs_names.tolist(),solver='vi')
-count = pd.read_csv('sampled_100.txt',sep='\t',index_col=0)
-with open('pickle_vi_trace.p','rb') as f:
-    trace = pickle.load(f)
-df = az.summary(trace,round_to=4)
-values_list = []
-for param in ['sigma','psi','mu']:
-    tmp = df.loc[df.index.to_series().str.contains(pat=param),['mean','r_hat']].set_index(count.index).rename(columns=lambda x:x+'_{}'.format(param))
-    values_list.append(tmp)
-final = pd.concat([count,*values_list],axis=1)
-final.to_csv('final_vectorize_vi.txt',sep='\t')
+uids = adata.obs_names.tolist()
+infer_parameters_vectorize(uids=uids,solver='vi')
+# count = pd.read_csv('sampled_1000.txt',sep='\t',index_col=0)
+# with open('pickle_trace.p','rb') as f:
+#     trace = pickle.load(f)
+# df = az.summary(trace,round_to=4)
+# values_list = []
+# for param in ['sigma','psi','mu']:
+#     tmp = df.loc[df.index.to_series().str.contains(pat=param),['mean','r_hat']].set_index(count.index).rename(columns=lambda x:x+'_{}'.format(param))
+#     values_list.append(tmp)
+# final = pd.concat([count,*values_list],axis=1)
+# uids = adata.obs_names.tolist()
+# Y_mean = np.array([compute_y(adata,uid) for uid in uids]).mean(axis=1)
+# X_mean = np.array([compute_scaled_x(adata,uid) for uid in uids]).mean(axis=1)
+# final['Y_mean'] = Y_mean
+# final['X_mean'] = X_mean
+# final.to_csv('final_vectorize_vi.txt',sep='\t')
 
 
 
