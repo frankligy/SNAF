@@ -5,6 +5,7 @@ import os,sys
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import pickle
 
 import arviz as az
 import pymc as pm
@@ -86,7 +87,7 @@ def posterior_check(posterior_samples,var,observed):
     plt.savefig('posterior_check_{}.pdf'.format(var),bbox_inches='tight')
     plt.close() 
 
-def infer_parameters_vectorize(uids):
+def infer_parameters_vectorize(uids,solver='mcmc'):
     Y = np.array([compute_y(adata,uid) for uid in uids])
     X = np.array([compute_scaled_x(adata,uid) for uid in uids])
     n = len(uids)
@@ -102,8 +103,12 @@ def infer_parameters_vectorize(uids):
         # gv.format = 'pdf'
         # gv.render(filename='model_graph')
     with m:
-        trace = pm.sample(draws=1000,step=pm.NUTS(),tune=1000,cores=1,progressbar=True)
-    with open('pickle_mcmc_trace.p','wb') as f:
+        if solver == 'mcmc':
+            trace = pm.sample(draws=1000,step=pm.NUTS(),tune=1000,cores=1,progressbar=True)
+        elif solver == 'vi':
+            mean_field = pm.fit(method='advi',progressbar=False)
+            trace = mean_field.sample(1000)
+    with open('pickle_vi_trace.p','wb') as f:
         pickle.dump(trace,f)
 
 def infer_parameters(uid):
@@ -202,7 +207,19 @@ adata = ad.read_h5ad('sampled_100.h5ad')
 # diagnose('final.txt','diagnosis.pdf')
 
 # vectorize
-infer_parameters_vectorize(uids=adata.obs_names.tolist())
+# infer_parameters_vectorize(uids=adata.obs_names.tolist(),solver='vi')
+count = pd.read_csv('sampled_100.txt',sep='\t',index_col=0)
+with open('pickle_vi_trace.p','rb') as f:
+    trace = pickle.load(f)
+df = az.summary(trace,round_to=4)
+values_list = []
+for param in ['sigma','psi','mu']:
+    tmp = df.loc[df.index.to_series().str.contains(pat=param),['mean','r_hat']].set_index(count.index).rename(columns=lambda x:x+'_{}'.format(param))
+    values_list.append(tmp)
+final = pd.concat([count,*values_list],axis=1)
+final.to_csv('final_vectorize_vi.txt',sep='\t')
+
+
 
 
 
