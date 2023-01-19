@@ -28,11 +28,8 @@ def is_valid(mat,uid):
     max_incl_exp = mat[0,:].max()
     max_excl_exp = mat[1:,:].sum(axis=0).max()
     ratio = max_excl_exp / max_incl_exp
-    if num_incl_events > 1 and num_excl_events > 1 and total_number_junctions > 2 and ratio > 0.1:
-        cond = True
-    else:
-        cond = False
-    return cond
+    return (num_incl_events > 1 and num_excl_events > 1 and total_number_junctions > 2 and ratio > 0.1)
+
 
 def calculate_psi_core(clique,uid,count,sample_columns):
     sub_count = count.loc[list(clique.keys()),sample_columns]
