@@ -45,6 +45,7 @@ def initialize(df,db_dir,gtex_mode='count',software_path=None,binding_method=Non
     fasta = os.path.join(db_dir,'Alt91_db','Hs_gene-seq-2000_flank.fa')  # 2000 only affect the query_from_dict_fa function
     if gtex_mode == 'count':
         gtex_db = os.path.join(db_dir,'controls','GTEx_junction_counts.h5ad')
+        # gtex_db = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ts/gene/gtex_count.h5ad'
     elif gtex_mode == 'psi':
         gtex_db = os.path.join(db_dir,'controls','GTEx_junction_psi.h5ad')
     snaf_configuration(exon_table,transcript_db,db_dir,fasta,software_path,binding_method)

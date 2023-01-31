@@ -1,5 +1,3 @@
-#!/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7
-
 import numpy as np
 import pandas as pd
 import os
@@ -11,9 +9,6 @@ import anndata as ad
 import seaborn as sns
 from scipy.sparse import csr_matrix
 
-'''
-this is gtex viewer
-'''
 
 import matplotlib as mpl
 mpl.rcParams['pdf.fonttype'] = 42
@@ -26,10 +21,16 @@ def gtex_viewer_configuration(adata_passed_in):
     global adata
     adata = adata_passed_in
 
-def gtex_visual_norm_count_combined(query,out_folder='.'):
-    data = adata[query,:].X.toarray().squeeze() / adata.var['total_count'].values
-    sns.histplot(data,binwidth=0.01)
-    plt.savefig(os.path.join(out_folder,'hist_{}.pdf'.format(query.replace(':','_'))),bbox_inches='tight')
+def gtex_visual_norm_count_combined(uid,outdir='.'):
+    info = adata[[uid],:]
+    scale_factor_dict = adata.var['total_count'].to_dict()
+    df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
+    df['value_cpm'] = df['value'].values / df.index.map(scale_factor_dict).values
+    data = df['value_cpm'].values 
+    fig, ax = plt.subplots()
+    sns.histplot(data,bins=100,ax=ax)
+    ax.set_xlabel('Count Per Million(CPM)')
+    plt.savefig(os.path.join(outdir,'hist_{}.pdf'.format(uid.replace(':','_'))),bbox_inches='tight')
     plt.close()
 
 def gtex_visual_per_tissue_count(uid,total_count=10, count_cutoff=1, total=25, outdir='.'):
@@ -42,8 +43,13 @@ def gtex_visual_per_tissue_count(uid,total_count=10, count_cutoff=1, total=25, o
             scaled_c = round(c * (total/total_count),0)
             x.append(scaled_c)
     x = np.array(x)
-    sns.histplot(x,binwidth=1)
-    plt.savefig(os.path.join(outdir,'tissue_dist_{}.pdf'.format(query.replace(':','_'))),bbox_inches='tight')
+    fig,ax = plt.subplots()
+    try:
+        sns.histplot(x,binwidth=1,ax=ax)
+    except:
+        sns.histplot(x,ax=ax)  # if x is with no variance at all, binwidth can not be 1
+    ax.set_xlabel('Number of samples expressing this target in each tissue type')
+    plt.savefig(os.path.join(outdir,'tissue_dist_{}.pdf'.format(uid.replace(':','_'))),bbox_inches='tight')
     plt.close()
 
 
