@@ -112,6 +112,14 @@ gtex_visual_subplots
 ~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.gtex_viewer.gtex_visual_subplots
 
+gtex_visual_norm_count_combined
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.gtex_viewer.gtex_visual_norm_count_combined
+
+gtex_visual_per_tissue_count
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.gtex_viewer.gtex_visual_per_tissue_count
+
 Miscellaneous
 ------------------
 

@@ -22,6 +22,19 @@ def gtex_viewer_configuration(adata_passed_in):
     adata = adata_passed_in
 
 def gtex_visual_norm_count_combined(uid,outdir='.'):
+    '''
+    This function is to visualize the normalized count (CPM) distribution,
+    it should follow a half-norm distribution, this plot will help determine the choice in
+    bayesian modeling for tumor specificity score
+
+    :param uid: string, the uid for the splicing event
+    :param outdir: string, where the figure go into
+
+    Example::
+        snaf.gtex_visual_norm_count_combined(uid='ENSG00000090339:E4.3-E4.5')  
+    '''
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
     info = adata[[uid],:]
     scale_factor_dict = adata.var['total_count'].to_dict()
     df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
@@ -34,6 +47,22 @@ def gtex_visual_norm_count_combined(uid,outdir='.'):
     plt.close()
 
 def gtex_visual_per_tissue_count(uid,total_count=10, count_cutoff=1, total=25, outdir='.'):
+    '''
+    This function is to visualize the random variable X, which repesents the number of samples in each
+    tissue type that express this junction. It should follow a zeroinflated poisson distribution. We do not 
+    consider tissues with less than total_count samples, and we use count_cutoff to represent how many count can
+    be defined as "expressed" versus "non-expressed". We scaled all the number of samples to the total of "total" to make sure 
+    they are comparable. Because if a tissue type has 1000 samples, another has 25 samples, this random variable is not directly
+    comparable. this plot will help determine the choice in bayesian modeling for tumor specificity score
+
+    :param uid: string, the uid for the splicing event
+    :param outdir: string, where the figure go into
+
+    Example::
+        snaf.gtex_visual_per_tissue_count(uid='ENSG00000090339:E4.3-E4.5')  
+    '''
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
     x = []
     for tissue in adata.var['tissue'].unique():
         sub = adata[uid,adata.var['tissue']==tissue]
@@ -64,8 +93,8 @@ def gtex_visual_combine_plotly(uid,outdir='',norm=False,tumor=None):
 
     Example::
 
-        snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
-        snaf.gtex_visual_combine(query='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
+        snaf.gtex_visual_combine(uid='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
+        snaf.gtex_visual_combine(uid='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
 
     '''
     if not os.path.exists(outdir):
@@ -124,8 +153,8 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
 
     Example::
 
-        snaf.gtex_visual_combine(query='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
-        snaf.gtex_visual_combine(query='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
+        snaf.gtex_visual_combine(uid='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
+        snaf.gtex_visual_combine(uid='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
     '''
     if not os.path.exists(outdir):
         os.mkdir(outdir)
