@@ -31,6 +31,7 @@ def gtex_visual_norm_count_combined(uid,outdir='.'):
     :param outdir: string, where the figure go into
 
     Example::
+    
         snaf.gtex_visual_norm_count_combined(uid='ENSG00000090339:E4.3-E4.5')  
     '''
     if not os.path.exists(outdir):
@@ -59,6 +60,7 @@ def gtex_visual_per_tissue_count(uid,total_count=10, count_cutoff=1, total=25, o
     :param outdir: string, where the figure go into
 
     Example::
+
         snaf.gtex_visual_per_tissue_count(uid='ENSG00000090339:E4.3-E4.5')  
     '''
     if not os.path.exists(outdir):
