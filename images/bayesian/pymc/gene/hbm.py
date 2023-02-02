@@ -44,6 +44,27 @@ def diagnose(final_path,output_name='diagnosis.pdf'):
     plt.savefig(output_name,bbox_inches='tight')
     plt.close()
 
+def diagnose_plotly(final_path,output_name='diagnosis.html'):
+    import plotly.graph_objects as go
+    df = pd.read_csv(final_path,sep='\t',index_col=0)
+    df['symbol'] = ensemblgene_to_symbol(df.index.tolist(),'human')
+    df.loc[:,['X_mean','Y_mean','mean_sigma','symbol']].to_csv('result.txt',sep='\t')
+    node_x = []
+    node_y = []
+    node_text = []
+    node_color = []
+    for uid,X_mean,Y_mean,mean_sigma in zip(df.index,df['X_mean'],df['Y_mean'],df['mean_sigma']):
+        if Y_mean < 7:
+            node_x.append(X_mean)
+            node_y.append(Y_mean)
+            node_text.append('{};X:{};Y:{}'.format(uid,X_mean,Y_mean))
+            node_color.append(mean_sigma)
+    node_trace = go.Scatter(x=node_x,y=node_y,mode='markers',marker={'color':node_color,'colorscale':'Viridis','showscale':True,'size':1},text=node_text,hoverinfo='text')
+    fig_layout = go.Layout(showlegend=False,title='diagnose',xaxis=dict(title_text='average_n_present_samples_per_tissue'),yaxis=dict(title_text='average_normalized_counts'))
+    fig = go.Figure(data=[node_trace],layout=fig_layout)
+    fig.write_html(output_name,include_plotlyjs='cdn')
+
+
 def prior_check(prior_samples,var,observed):
     fig,ax = plt.subplots()
     az.plot_dist(
@@ -149,23 +170,71 @@ def infer_parameters(uid):
     # posterior_check(extended_trace,'nc',y)
     return result
 
+def ensemblgene_to_symbol(query,species):
+    # assume query is a list, will also return a list
+    import mygene
+    mg = mygene.MyGeneInfo()
+    out = mg.querymany(query,scopes='ensemblgene',fileds='symbol',species=species,returnall=True,as_dataframe=True,df_index=True)
 
-# load the count
+    df = out['out']
+    df_unique = df.loc[~df.index.duplicated(),:]
+    df_unique['symbol'].fillna('unknown_gene',inplace=True)
+    mapping = df_unique['symbol'].to_dict()
+
+    result = []
+    for item in query:
+        result.append(mapping[item])
+
+    return result
+
+# # load the count
 # adata = ad.read_h5ad('combined_gene_count.h5ad')
+# genes = ensemblgene_to_symbol(query=adata.obs_names.tolist(),species='human')
+# adata.obs['symbol'] = genes
+# adata.obs.to_csv('mean_and_symbol_inspection.txt',sep='\t')
+
+# # summarize LINC, LOC and -AS genes versus coding gene
+# df = pd.read_csv('mean_and_symbol_inspection.txt',sep='\t',index_col=0)
+# linc = df.loc[df['symbol'].str.startswith('LINC'),:]
+# loc = df.loc[df['symbol'].str.startswith('LOC'),:]
+# antisense = df.loc[df['symbol'].str.contains('-AS'),:]
+# unknown = df.loc[df['symbol']=='unknown_gene',:]
+# cond = ~((df['symbol'].str.startswith('LINC')) | (df['symbol'].str.startswith('LOC')) | (df['symbol'].str.contains('-AS')) | (df['symbol']=='unknown_gene'))
+# coding = df.loc[cond,:]
+# fig,ax = plt.subplots()
+# sns.boxplot(data=[linc['mean'],loc['mean'],antisense['mean'],unknown['mean'],coding['mean']],ax=ax)
+# ax.set_xticklabels(['LINC','LOC','Antisense','unknown','coding gene'])
+# ax.set_ylabel('raw count')
+# plt.savefig('summary_category.pdf',bbox_inches='tight')
+# plt.close()
+
+# adata = adata[coding.index,:]
+# adata.write('coding.h5ad')  # 24290 × 3644
+
 # adata.var['tissue'].value_counts().to_csv('tissue_count.txt',sep='\t')
 # adata = adata[np.random.choice(np.arange(adata.shape[0]),size=20000,replace=False),:]
 # adata.write('sampled_20000.h5ad')
 # adata.to_df().to_csv('sampled_20000.txt',sep='\t')
-adata = ad.read_h5ad('sampled_20000.h5ad')
+# adata = ad.read_h5ad('sampled_20000.h5ad')
+
+adata = ad.read_h5ad('coding.h5ad')
+# adata.to_df().to_csv('coding.txt',sep='\t')
 
 
 # visualize
-uid = 'ENSG00000115459:I5.1-E6.1'
 from gtex_viewer import *
 gtex_viewer_configuration(adata)
-gtex_visual_per_tissue_count(uid)
-gtex_visual_norm_count_combined(uid)
-gtex_visual_subplots(uid)
+# selected = adata[np.random.choice(np.arange(adata.shape[0]),size=100,replace=False),:].obs_names.tolist()
+def visualize(uid):
+    outdir = 'random_100_dist/{}'.format(uid)
+    gtex_visual_per_tissue_count(uid,outdir=outdir)
+    gtex_visual_norm_count_combined(uid,outdir=outdir)
+    gtex_visual_subplots(uid,outdir=outdir)
+# for uid in tqdm(selected):
+#     visualize(uid)
+uid = 'ENSG00000141736'
+visualize(uid)
+sys.exit('stop')
 
 # # determine the coefficient between n_hat and psi/mu, but seems to be indirect to model nc_hat and psi/mu
 # X = np.array([compute_scaled_x(adata,uid) for uid in adata.obs_names])
@@ -205,12 +274,10 @@ gtex_visual_subplots(uid)
 # final = pd.concat([count,result],axis=1)
 # final.to_csv('final.txt',sep='\t')
 
-
-
-# vectorize
+# # vectorize
 # uids = adata.obs_names.tolist()
 # infer_parameters_vectorize(uids=uids,solver='vi')
-# count = pd.read_csv('sampled_20000.txt',sep='\t',index_col=0)
+# count = pd.read_csv('coding.txt',sep='\t',index_col=0)
 # with open('pickle_trace.p','rb') as f:
 #     trace = pickle.load(f)
 # df = az.summary(trace,round_to=4)
@@ -226,8 +293,8 @@ gtex_visual_subplots(uid)
 # final['X_mean'] = X_mean
 # final.to_csv('final_vectorize_vi.txt',sep='\t')
 
-# diagnose
-diagnose('final_vectorize_vi.txt','diagnosis.pdf')
+# # diagnose
+# diagnose_plotly('final_vectorize_vi.txt','diagnosis.html')
 
 
 
