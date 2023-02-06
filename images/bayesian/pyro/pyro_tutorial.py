@@ -132,6 +132,9 @@ plt.ylabel("ELBO loss")
 plt.savefig('full_rank_cov_guide_elbo_loss.pdf',bbox_inches='tight')
 plt.close()
 
+# a bayesian network (VAE) example offcial
+# https://github.com/pyro-ppl/pyro/blob/dev/examples/vae/vae.py
+
 
 
 
