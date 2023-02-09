@@ -19,13 +19,13 @@ def chop_normal_pep_db(fasta_path,output_path,mers,allow_duplicates):
     chop any normal human proteome to certain mers
 
     :param fasta_path: string, the path to the human protein fasta file
-    :param output_path: string, the path to the output directory
+    :param output_path: string, the path to the output fasta file
     :param mers: list, like [9,10] will generate 9mer and 10mer
     :param allow_duplicates: boolean. whether allow duplicate or not
 
     Example::
 
-        chop_normal_pep_db(fasta_path='human_uniprot_proteome.fasta',output_path='./fasta',mers=[9,10],allow_duplicates=False)
+        chop_normal_pep_db(fasta_path='human_uniprot_proteome.fasta',output_path='./human_uniprot_proteome_mer9_10.fasta',mers=[9,10],allow_duplicates=False)
     '''
     # for human genome in uniprot, 9-10mer, remove duplicates will decrease from 44,741,578 to 41,638,172
     if allow_duplicates:
