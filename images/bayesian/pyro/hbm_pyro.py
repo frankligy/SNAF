@@ -12,6 +12,10 @@ import torch
 import pyro
 import pickle
 import pyro.poutine as poutine
+import pyro.distributions as dist
+import pyro.distributions.constraints as constraints
+from pyro.infer import SVI,Trace_ELBO
+from pyro.optim import Adam,ClippedAdam
 
 # functions
 def compute_scaled_x(adata,uids):
@@ -30,94 +34,6 @@ def compute_y(adata,uids):
     info = adata[uids,:]
     y = info.X.toarray() / adata.var['total_count'].values.reshape(1,-1)
     return y
-
-# test
-# adata = ad.read_h5ad('coding.h5ad')
-# uids = adata.obs_names.tolist()
-# X = compute_scaled_x(adata,uids)
-# Y = compute_y(adata,uids)
-# with open('X.p','wb') as f:
-#     pickle.dump(X,f)
-# with open('Y.p','wb') as f:
-#     pickle.dump(Y,f)
-
-with open('X.p','rb') as f:
-    X = pickle.load(f)
-with open('Y.p','rb') as f:
-    Y = pickle.load(f)
-import pyro.distributions as dist
-import pyro.distributions.constraints as constraints
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(device)
-X = torch.tensor(X.T,device=device)
-Y = torch.tensor(Y.T,device=device)
-n = X.shape[1]
-s = Y.shape[0]
-t = X.shape[0]
-
-
-adam = pyro.optim.Adam({"lr": 0.02}) 
-elbo = pyro.infer.Trace_ELBO()
-
-
-def model(X,Y):
-    sigma = pyro.sample('sigma',dist.Uniform(torch.tensor(0.,device=device),torch.tensor(1.,device=device)).expand([n]).to_event(1))
-    with pyro.plate('data_Y'):
-        nc = pyro.sample('nc',dist.HalfNormal(sigma).expand([s,n]).to_event(1),obs=Y)
-    psi = pyro.sample('psi',dist.Beta(torch.tensor(2.,device=device),sigma*2.).to_event(1))
-    mu = pyro.sample('mu',dist.Gamma(sigma*25.,torch.tensor(1.,device=device)).to_event(1))
-    with pyro.plate('data_X'):
-        c = pyro.sample('c',dist.ZeroInflatedPoisson(rate=mu,gate=1.-psi).expand([t,n]).to_event(1),obs=X)
-
-# pyro.render_model(model, model_args=(X,Y), render_distributions=True, filename='bayesian_pyro.pdf')
-trace = poutine.trace(model).get_trace(X,Y)
-trace.compute_log_prob()  
-print(trace.format_shapes())
-
-def guide(X,Y):
-    sigma_low = pyro.param('sigma_low',lambda: torch.tensor(0.,device=device),constraint=constraints.interval(0,0.49))
-    sigma_high = pyro.param('sigma_high',lambda: torch.tensor(1.,device=device),constraint=constraints.interval(0.51,1))
-    sigma = pyro.sample('sigma',dist.Uniform(sigma_low,sigma_high).expand([n]).to_event(1))
-
-    psi_alpha = pyro.param('psi_alpha',lambda: torch.tensor(2.,device=device),constraint=constraints.positive)
-    psi_beta = pyro.param('psi_beta',lambda: torch.tensor(2.,device=device),constraint=constraints.positive)
-    psi = pyro.sample('psi',dist.Beta(psi_alpha,psi_beta).expand([n]).to_event(1))
-
-    mu_alpha = pyro.param('mu_mean',lambda: torch.tensor(12.5,device=device),constraint=constraints.positive)
-    mu_beta = pyro.param('mu_scale',lambda: torch.tensor(1.,device=device),constraint=constraints.positive)
-    mu = pyro.sample('mu',dist.Gamma(mu_alpha,mu_beta).expand([n]).to_event(1))
-    return {'sigma':sigma,'psi':psi,'mu':mu}
-
-# guide = pyro.infer.autoguide.AutoNormal(model)
-pyro.render_model(guide, model_args=(X,Y), render_distributions=True, render_params=True, filename='guide.pdf')
-trace = poutine.trace(guide).get_trace(X,Y)
-trace.compute_log_prob()  
-print(trace.format_shapes())
-
-pyro.clear_param_store()
-svi = pyro.infer.SVI(model, guide, adam, elbo)
-
-losses = []
-for step in range(1000):  
-    loss = svi.step(X,Y)
-    losses.append(loss)
-    print("Elbo loss: {}".format(loss))
-plt.figure(figsize=(5, 2))
-plt.plot(losses)
-plt.xlabel("SVI step")
-plt.ylabel("ELBO loss")
-plt.savefig('elbo_loss.pdf',bbox_inches='tight')
-plt.close()
-
-sys.exit('stop')
-
-
-
-
-
-
-
-
 
 def diagnose(final_path,output_name='diagnosis.pdf'):
     df = pd.read_csv(final_path,sep='\t',index_col=0)
@@ -149,6 +65,148 @@ def diagnose_plotly(final_path,output_name='diagnosis.html'):
     fig_layout = go.Layout(showlegend=False,title='diagnose',xaxis=dict(title_text='average_n_present_samples_per_tissue'),yaxis=dict(title_text='average_normalized_counts'))
     fig = go.Figure(data=[node_trace],layout=fig_layout)
     fig.write_html(output_name,include_plotlyjs='cdn')
+
+# test
+adata = ad.read_h5ad('coding.h5ad')
+uids = adata.obs_names.tolist()
+# X = compute_scaled_x(adata,uids)
+# Y = compute_y(adata,uids)
+# with open('X.p','wb') as f:
+#     pickle.dump(X,f)
+# with open('Y.p','wb') as f:
+#     pickle.dump(Y,f)
+
+with open('X.p','rb') as f:
+    X = pickle.load(f)
+with open('Y.p','rb') as f:
+    Y = pickle.load(f)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
+X = torch.tensor(X.T,device=device)
+Y = torch.tensor(Y.T,device=device)
+n = X.shape[1]
+s = Y.shape[0]
+t = X.shape[0]
+
+
+adam = Adam({'lr': 0.002,'betas':(0.95,0.999)}) 
+clipped_adam = ClippedAdam({'betas':(0.95,0.999)})
+elbo = Trace_ELBO()
+
+def model_mle(X,Y):
+    sigma = pyro.param('sigma',lambda:torch.tensor(np.full(n,0.5),device=device),constraint=constraints.interval(0.05,1))
+    with pyro.plate('data_Y'):
+        nc = pyro.sample('nc',dist.HalfNormal(sigma).expand([s,n]).to_event(1),obs=Y)
+    psi = pyro.sample('psi',dist.Beta(sigma*20.,torch.tensor(10.,device=device)).to_event(1))
+    mu = pyro.sample('mu',dist.Gamma(sigma*25.,torch.tensor(1.,device=device)).to_event(1))
+    with pyro.plate('data_X'):
+        c = pyro.sample('c',dist.ZeroInflatedPoisson(rate=mu,gate=1.-psi).expand([t,n]).to_event(1),obs=X)
+
+def guide_mle(X,Y):
+    pass
+
+# train
+n_steps = 2000
+pyro.clear_param_store()
+svi = SVI(model_mle, guide_mle, adam, loss=Trace_ELBO())
+losses = []
+for step in tqdm(range(n_steps),total=n_steps):  
+    loss = svi.step(X,Y)
+    losses.append(loss)
+    print("Elbo loss step {}: {}".format(step,loss))
+plt.figure(figsize=(5, 2))
+plt.plot(losses)
+plt.xlabel("SVI step")
+plt.ylabel("ELBO loss")
+plt.savefig('elbo_loss.pdf',bbox_inches='tight')
+plt.close()
+
+sigma = pyro.param('sigma').data.cpu().numpy()
+df = pd.Series(index=uids,data=sigma,name='mean_sigma').to_frame()
+Y_mean = Y.mean(axis=0).data.cpu().numpy()
+X_mean = X.mean(axis=0).data.cpu().numpy()
+df['Y_mean'] = Y_mean
+df['X_mean'] = X_mean
+df.to_csv('mle_results.txt',sep='\t')
+diagnose('mle_results.txt','pyro_mle_diagnosis.pdf')
+sys.exit('stop')
+
+
+
+def model(X,Y):
+    sigma = pyro.sample('sigma',dist.Uniform(torch.tensor(0.,device=device),torch.tensor(1.,device=device)).expand([n]).to_event(1))
+    with pyro.plate('data_Y'):
+        nc = pyro.sample('nc',dist.HalfNormal(sigma).expand([s,n]).to_event(1),obs=Y)
+    psi = pyro.sample('psi',dist.Beta(sigma*20.,torch.tensor(10.,device=device)).to_event(1))
+    mu = pyro.sample('mu',dist.Gamma(sigma*25.,torch.tensor(1.,device=device)).to_event(1))
+    with pyro.plate('data_X'):
+        c = pyro.sample('c',dist.ZeroInflatedPoisson(rate=mu,gate=1.-psi).expand([t,n]).to_event(1),obs=X)
+
+# pyro.render_model(model, model_args=(X,Y), render_distributions=True, filename='bayesian_pyro.pdf')
+trace = poutine.trace(model).get_trace(X,Y)
+trace.compute_log_prob()  
+print(trace.format_shapes())
+
+
+
+
+
+def guide(X,Y):
+    sigma_alpha = pyro.param('sigma_alpha',lambda: torch.tensor(np.full(shape=n,fill_value=2.),device=device),constraint=constraints.positive)
+    sigma = pyro.sample('sigma',dist.Beta(sigma_alpha,torch.tensor([2],device=device)).expand([n]).to_event(1))
+
+    psi_alpha = pyro.param('psi_alpha',lambda: torch.tensor(np.full(shape=n,fill_value=10.),device=device),constraint=constraints.positive)
+    psi_beta = pyro.param('psi_beta',lambda: torch.tensor(np.full(shape=n,fill_value=10.),device=device),constraint=constraints.positive)
+    psi = pyro.sample('psi',dist.Beta(psi_alpha,psi_beta).expand([n]).to_event(1))
+
+    mu_alpha = pyro.param('mu_mean',lambda: torch.tensor(np.full(shape=n,fill_value=12.5),device=device),constraint=constraints.positive)
+    mu_beta = pyro.param('mu_scale',lambda: torch.ones(n,device=device),constraint=constraints.positive)
+    mu = pyro.sample('mu',dist.Gamma(mu_alpha,mu_beta).expand([n]).to_event(1))
+    return {'sigma':sigma,'psi':psi,'mu':mu}
+
+# guide = pyro.infer.autoguide.AutoNormal(model)
+# pyro.render_model(guide, model_args=(X,Y), render_distributions=True, render_params=True, filename='guide.pdf')
+trace = poutine.trace(guide).get_trace(X,Y)
+trace.compute_log_prob()  
+print(trace.format_shapes())
+
+pyro.clear_param_store()
+svi = pyro.infer.SVI(model, guide, adam, elbo)
+
+losses = []
+for step in range(1000):  
+    loss = svi.step(X,Y)
+    losses.append(loss)
+    print("Elbo loss: {}".format(loss))
+plt.figure(figsize=(5, 2))
+plt.plot(losses)
+plt.xlabel("SVI step")
+plt.ylabel("ELBO loss")
+plt.savefig('elbo_loss.pdf',bbox_inches='tight')
+plt.close()
+sys.exit('stop')
+
+for name, value in pyro.get_param_store().items():
+    print(name, pyro.param(name).data.cpu().numpy())
+    if name == 'sigma':
+        pd.Series(data=pyro.param(name).data.cpu().numpy())
+
+predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=10000)
+svi_samples = predictive(X,Y) # same dict as samples above, but here they have obs, obs is generated by first sample from guide, then run model using those values
+svi_nc = svi_samples['nc'] # (800,170)
+svi_c = svi_samples['c'] # (800,170)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def prior_check(prior_samples,var,observed):
