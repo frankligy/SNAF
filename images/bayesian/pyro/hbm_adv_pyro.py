@@ -40,14 +40,14 @@ def compute_x(adata,uids,cond_Y):
         x[:,i] = scaled_c
     return x,adata
 
-def diagnose(final_path,output_name='diagnosis.pdf'):
+def diagnose(final_path,ylim=(-1,200),output_name='diagnosis.pdf'):
     df = pd.read_csv(final_path,sep='\t',index_col=0)
     fig,ax = plt.subplots()
     im = ax.scatter(df['X_mean'],df['Y_mean'],c=df['mean_sigma'],s=0.5**2,cmap='viridis')
     plt.colorbar(im)
     ax.set_ylabel('average_normalized_counts')
     ax.set_xlabel('average_n_present_samples_per_tissue')
-    ax.set_ylim([-1,7])
+    ax.set_ylim(ylim)
     plt.savefig(output_name,bbox_inches='tight')
     plt.close()
 
@@ -141,9 +141,9 @@ uids = adata.obs_names.tolist()
 #     pickle.dump(thresholded_X,f)
 
 
-with open('X_threshold.p','rb') as f:
+with open('X.p','rb') as f:
     X = pickle.load(f)
-with open('Y_threshold.p','rb') as f:
+with open('Y.p','rb') as f:
     Y = pickle.load(f)
 
 # debug
@@ -152,14 +152,17 @@ ENSG00000198681  MAGEA1
 ENSG00000221867  MAGEA3
 ENSG00000150991  a very highly expressed one
 '''
-uid = 'ENSG00000198681'
-index = uids.index(uid)
-X = X[[index],:]
-Y = Y[[index],:]
-print(X.shape,Y.shape)
+# uid = 'ENSG00000150991'
+# index = uids.index(uid)
+# X = X[[index],:]
+# Y = Y[[index],:]
+# print(X.shape,Y.shape)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
+Y = np.where(Y==0,1e-5,Y)
+amplifier = 10000
+X = X * amplifier
 X = torch.tensor(X.T,device=device)
 Y = torch.tensor(Y.T,device=device)
 n = X.shape[1]
@@ -173,18 +176,20 @@ elbo = Trace_ELBO()
 
 def model_mle(X,Y):
     sigma = pyro.param('sigma',lambda:torch.tensor(np.full(n,0.5),device=device),constraint=constraints.interval(0.05,1))
-    with pyro.plate('data_Y',s):
-        nc = pyro.sample('nc',dist.HalfNormal(sigma).expand([s,n]).to_event(1),obs=Y)
-    psi = pyro.sample('psi',dist.Beta(sigma*20.,torch.tensor(10.,device=device)).to_event(1))
-    mu = pyro.sample('mu',dist.Gamma(sigma*25.,torch.tensor(1.,device=device)).to_event(1))
+    beta_y = pyro.sample('beta_y',dist.Gamma(10,1))
+    beta_x = pyro.sample('beta_x',dist.Gamma(250000,1))
     with pyro.plate('data_X',t):
-        c = pyro.sample('c',dist.ZeroInflatedPoisson(rate=mu,gate=1.-psi).expand([t,n]).to_event(1),obs=X)
+        c = pyro.sample('c',dist.Poisson(beta_x*sigma).expand([t,n]).to_event(1),obs=X)
+    with pyro.plate('data_Y',s):
+        nc = pyro.sample('nc',dist.LogNormal(beta_y*sigma,0.5).expand([s,n]).to_event(1),obs=Y)
+
+
 
 def guide_mle(X,Y):
     pass
 
 # train
-n_steps = 3000
+n_steps = 5000
 pyro.clear_param_store()
 svi = SVI(model_mle, guide_mle, adam, loss=Trace_ELBO())
 losses = []
@@ -198,8 +203,8 @@ plt.ylabel("ELBO loss")
 plt.savefig('elbo_loss.pdf',bbox_inches='tight')
 plt.close()
 
+
 sigma = pyro.param('sigma').data.cpu().numpy()
-print(sigma);sys.exit('stop')
 df = pd.Series(index=uids,data=sigma,name='mean_sigma').to_frame()
 with open('X.p','rb') as f:
     X = pickle.load(f)
@@ -210,7 +215,7 @@ X_mean = X.mean(axis=1)
 df['Y_mean'] = Y_mean
 df['X_mean'] = X_mean
 df.to_csv('mle_results.txt',sep='\t')
-diagnose('mle_results.txt','pyro_mle_diagnosis.pdf')
+diagnose('mle_results.txt',output_name='pyro_mle_diagnosis.pdf')
 sys.exit('stop')
 
 
