@@ -21,13 +21,16 @@ def gtex_viewer_configuration(adata_passed_in):
     global adata
     adata = adata_passed_in
 
-def gtex_visual_norm_count_combined(uid,outdir='.'):
+def gtex_visual_norm_count_combined(uid,xlim=None,ylim=None,save_df=False,outdir='.'):
     '''
     This function is to visualize the normalized count (CPM) distribution,
     it should follow a half-norm distribution, this plot will help determine the choice in
     bayesian modeling for tumor specificity score
 
     :param uid: string, the uid for the splicing event
+    :param xlim: None or tuple, whether to constrain the xlim of the histplot
+    :param ylim: None or tuple, whether to constrain the ylim of the histplot
+    :param save_df: boolean, whether to save a txt file reporting all the cpm values and the tissue information for debug purpose
     :param outdir: string, where the figure go into
 
     Example::
@@ -43,9 +46,16 @@ def gtex_visual_norm_count_combined(uid,outdir='.'):
     data = df['value_cpm'].values 
     fig, ax = plt.subplots()
     sns.histplot(data,bins=100,ax=ax)
+    if xlim is not None:
+        ax.set_xlim(xlim)
+    if ylim is not None:
+        ax.set_ylim(ylim)
     ax.set_xlabel('Count Per Million(CPM)')
     plt.savefig(os.path.join(outdir,'hist_{}.pdf'.format(uid.replace(':','_'))),bbox_inches='tight')
     plt.close()
+    if save_df:
+        df.to_csv(os.path.join(outdir,'cpm_{}.txt'.format(uid.replace(':','_'))),sep='\t')
+    return df
 
 def gtex_visual_per_tissue_count(uid,total_count=10, count_cutoff=1, total=25, outdir='.'):
     '''
