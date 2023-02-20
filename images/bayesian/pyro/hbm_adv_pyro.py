@@ -92,9 +92,14 @@ def threshold(cpm,method,**kwargs):
         th = thresholding_otsu(cpm,**kwargs)
     elif method == 'gmm':
         th = thresholding_gmm(cpm,**kwargs)
+    elif method == 'hardcode':
+        th = thresholding_hardcode(cpm,**kwargs)
     cpm = np.where(cpm>th,cpm,0)
     cond = cpm>th
     return cpm, cond, th
+
+def thresholding_hardcode(cpm,v):
+    return v
 
 def thresholding_otsu(cpm,step=0.05,dampen_factor=20):
     x = cpm[cpm > 0]  # all non-zero values
@@ -125,6 +130,7 @@ def thresholding_gmm(cpm):
     best_th = means[bg_index,0]
     return best_th
 
+
 '''main program starts'''
 
 adata = ad.read_h5ad('coding.h5ad')
@@ -142,24 +148,22 @@ ENSG00000141506, PIK3R5, threshold is about 20
 ENSG00000150991 a highly expressed one
 '''
 
-uid = 'ENSG00000198681'
+uid = 'ENSG00000156738'
 from gtex_viewer import *
 gtex_viewer_configuration(adata)
 df = gtex_visual_norm_count_combined(uid,xlim=None,ylim=None,save_df=True)
 gtex_visual_per_tissue_count(uid)
 gtex_visual_subplots(uid)
-print(thresholding_kneedle(df['value_cpm'].values,True))
-sys.exit('stop')
 
 Y = compute_y(adata,uids)
 thresholded_Y = np.empty_like(Y,dtype=np.float32)
 cond_Y = np.empty_like(Y,dtype=bool)
 ths = []
 for i in tqdm(range(Y.shape[0]),total=Y.shape[0]):
-    thresholded_Y[i,:], cond_Y[i,:], th = threshold(Y[i,:],'kneedle')
+    thresholded_Y[i,:], cond_Y[i,:], th = threshold(Y[i,:],'hardcode',v=1.0)
     ths.append(th)
 # pd.Series(index=uids,data=ths,name='threshold').to_csv('threshold.txt',sep='\t')
-print(thresholding_kneedle(df['value_cpm'].values,True))
+# print(thresholding_kneedle(df['value_cpm'].values,True))
 new_adata = get_thresholded_adata(adata,cond_Y)
 
 X = compute_x(new_adata,uids)
@@ -170,21 +174,19 @@ from gtex_viewer import *
 gtex_viewer_configuration(new_adata)
 gtex_visual_per_tissue_count(uid)
 gtex_visual_subplots(uid)
-sys.exit('stop')
+
+'''if hardcode seems to be the best, then I need to justify why you use certain hardcoded value,
+I can do so by evaluating both AUPR and spearman'''
+
+
+
 
 with open('raw_X.p','rb') as f:
     X = pickle.load(f)
 with open('Y.p','rb') as f:
     Y = pickle.load(f)
 
-# debug
-'''
-ENSG00000198681  MAGEA1
-ENSG00000221867  MAGEA3
-ENSG00000150991  a very highly expressed one
-ENSG00000156738  CD20
-'''
-# uid = 'ENSG00000150991'
+
 # index = uids.index(uid)
 # X = X[[index],:]
 # Y = Y[[index],:]
