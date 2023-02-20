@@ -19,6 +19,7 @@ from pyro.optim import Adam,ClippedAdam
 from kneed import KneeLocator
 from scipy.sparse import csr_matrix
 from pyro.poutine import scale
+from sklearn.mixture import GaussianMixture
 
 # functions
 def compute_y(adata,uids):
@@ -89,6 +90,8 @@ def threshold(cpm,method,**kwargs):
         th = thresholding_kneedle(cpm,**kwargs)
     elif method == 'otsu':
         th = thresholding_otsu(cpm,**kwargs)
+    elif method == 'gmm':
+        th = thresholding_gmm(cpm,**kwargs)
     cpm = np.where(cpm>th,cpm,0)
     cond = cpm>th
     return cpm, cond, th
@@ -113,15 +116,40 @@ def thresholding_otsu(cpm,step=0.05,dampen_factor=20):
     best_th = ths[np.argmin(criteria)]
     return best_th
 
+
+def thresholding_gmm(cpm):
+    x = cpm[cpm > 0]  # all non-zero values
+    gm = GaussianMixture(n_components=2).fit(cpm.reshape(-1,1))
+    means = gm.means_
+    bg_index = np.argmin(means.mean(axis=1))
+    best_th = means[bg_index,0]
+    return best_th
+
 '''main program starts'''
 
 adata = ad.read_h5ad('coding.h5ad')
 uids = adata.obs_names.tolist()
 
-uid = 'ENSG00000156738'
+'''
+I want to fix the threshold issue
+testing targets:
+
+ENSG00000198681  MAGEA1
+ENSG00000221867  MAGEA3
+ENSG00000156738 MS4A1, CD20
+ENSG00000185274 GALNT17, threshould is about 30
+ENSG00000141506, PIK3R5, threshold is about 20
+ENSG00000150991 a highly expressed one
+'''
+
+uid = 'ENSG00000198681'
 from gtex_viewer import *
 gtex_viewer_configuration(adata)
-df = gtex_visual_norm_count_combined(uid,xlim=None,ylim=(0,10),save_df=False)
+df = gtex_visual_norm_count_combined(uid,xlim=None,ylim=None,save_df=True)
+gtex_visual_per_tissue_count(uid)
+gtex_visual_subplots(uid)
+print(thresholding_kneedle(df['value_cpm'].values,True))
+sys.exit('stop')
 
 Y = compute_y(adata,uids)
 thresholded_Y = np.empty_like(Y,dtype=np.float32)
@@ -130,23 +158,19 @@ ths = []
 for i in tqdm(range(Y.shape[0]),total=Y.shape[0]):
     thresholded_Y[i,:], cond_Y[i,:], th = threshold(Y[i,:],'kneedle')
     ths.append(th)
-pd.Series(index=uids,data=ths,name='threshold').to_csv('threshold.txt',sep='\t')
-print(thresholding_kneedle(df['value_cpm'],True))
+# pd.Series(index=uids,data=ths,name='threshold').to_csv('threshold.txt',sep='\t')
+print(thresholding_kneedle(df['value_cpm'].values,True))
 new_adata = get_thresholded_adata(adata,cond_Y)
 
-
-# X = compute_x(adata,uids)
-# with open('raw_X.p','wb') as f:
-#     pickle.dump(X, f)
-
+X = compute_x(new_adata,uids)
+with open('raw_X.p','wb') as f:
+    pickle.dump(X, f)
 
 from gtex_viewer import *
 gtex_viewer_configuration(new_adata)
 gtex_visual_per_tissue_count(uid)
 gtex_visual_subplots(uid)
 sys.exit('stop')
-
-
 
 with open('raw_X.p','rb') as f:
     X = pickle.load(f)
@@ -175,21 +199,21 @@ n = X.shape[1]
 s = Y.shape[0]
 t = X.shape[0]
 weights = np.full(t,0.5)
-dic = {
-    'Whole Blood': 0.1,
-    'Spleen': 0.1,
-    'Testis': 0.1,
-    'Esophagus - Mucosa': 0.1,
-    'Vagina': 0.1,
-    'COAD': 0.1,
-    'Lung': 0.1,
-    'Liver': 0.1,
-    'Thyroid': 0.1,
-    'BRCA': 0.1,
-    'Adipose - Subcutaneous': 0.1,
-    'Stomach': 0.1,
-}
-weights = weighting(adata,dic,weights)
+# dic = {
+#     'Whole Blood': 0.1,
+#     'Spleen': 0.1,
+#     'Testis': 0.1,
+#     'Esophagus - Mucosa': 0.1,
+#     'Vagina': 0.1,
+#     'COAD': 0.1,
+#     'Lung': 0.1,
+#     'Liver': 0.1,
+#     'Thyroid': 0.1,
+#     'BRCA': 0.1,
+#     'Adipose - Subcutaneous': 0.1,
+#     'Stomach': 0.1,
+# }
+# weights = weighting(adata,dic,weights)
 weights = torch.tensor(weights,device=device)
 
 
@@ -209,9 +233,9 @@ def model_mle(X,Y,weights):
     with pyro.poutine.scale(scale=1/5000), pyro.plate('data_Y',s):
         nc = pyro.sample('nc',dist.LogNormal(beta_y*sigma,0.5).expand([s,n]).to_event(1),obs=Y)
 
-trace = pyro.poutine.trace(model_mle).get_trace(X,Y,weights)
-trace.compute_log_prob()  
-print(trace.format_shapes())
+# trace = pyro.poutine.trace(model_mle).get_trace(X,Y,weights)
+# trace.compute_log_prob()  
+# print(trace.format_shapes())
 # pyro.render_model(model_mle, model_args=(X,Y,weights), render_distributions=True, render_params=True, filename='importance_added.pdf')
 
 
