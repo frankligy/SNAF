@@ -20,6 +20,9 @@ from kneed import KneeLocator
 from scipy.sparse import csr_matrix
 from pyro.poutine import scale
 from sklearn.mixture import GaussianMixture
+from scipy.stats import pearsonr, spearmanr
+import numpy.ma as ma
+from sklearn.metrics import precision_recall_curve,auc,roc_curve,accuracy_score
 
 # functions
 def compute_y(adata,uids):
@@ -130,6 +133,43 @@ def thresholding_gmm(cpm):
     best_th = means[bg_index,0]
     return best_th
 
+def compute_concordance(uids, X,lookup,external,valid_tissue,method):
+    ''' 
+    X is n_gene * n_valid_tissue
+    '''
+    concordance = {}
+    external_dic = {gene: sub_df for gene, sub_df in external.groupby(by='Gene')}   # {ensg:sub_df}
+    external_ordered_tissue = {t:i for i, t in external_dic['ENSG00000121410']['Tissue'].reset_index(drop=True).to_dict().items()}  # {thyroid gland:0}
+    external_dic = {gene: sub_df['nTPM'].values for gene, sub_df in external_dic.items()}
+    lookup_dic = lookup.to_dict()  # {internal:external}
+    valid_tissue = {t:i for i, t in valid_tissue.to_dict().items()}   # {thyroid: 4}
+    avail_indices = []
+    avail_external_indices = []
+    for inter, exter in lookup_dic.items():
+        avail_indices.append(valid_tissue[inter])
+        avail_external_indices.append(external_ordered_tissue[exter])
+    for i in tqdm(np.arange(X.shape[0]),total=X.shape[0]):
+        gene = uids[i]
+        v1 = X[i,avail_indices]
+        try:
+            v2 = external_dic[gene][avail_external_indices]
+        except:
+            continue
+        if np.count_nonzero(v2) < len(v2) * 0.5 and np.count_nonzero(v1) > 0 and np.count_nonzero(v2) > 0:
+            if method == 'pearson':
+                value = pearsonr(v1,v2)[0]
+            elif method == 'spearman':
+                value = spearmanr(v1,v2)[0]
+            elif method == 'AUPR':
+                v2 = np.where(v2>0,1,0)
+                precision,recall,_ = precision_recall_curve(v2,v1,pos_label=1)
+                value = auc(recall,precision)
+            concordance[gene] = value
+    return concordance
+
+
+
+
 
 '''main program starts'''
 
@@ -148,38 +188,70 @@ ENSG00000141506, PIK3R5, threshold is about 20
 ENSG00000150991 a highly expressed one
 '''
 
-uid = 'ENSG00000156738'
-from gtex_viewer import *
-gtex_viewer_configuration(adata)
-df = gtex_visual_norm_count_combined(uid,xlim=None,ylim=None,save_df=True)
-gtex_visual_per_tissue_count(uid)
-gtex_visual_subplots(uid)
+# uid = 'ENSG00000156738'
+# from gtex_viewer import *
+# gtex_viewer_configuration(adata)
+# df = gtex_visual_norm_count_combined(uid,xlim=None,ylim=None,save_df=True)
+# gtex_visual_per_tissue_count(uid)
+# gtex_visual_subplots(uid)
 
+# lookup = pd.read_csv('tissue_lookup.txt',sep='\t',index_col=0).squeeze()
+# external = pd.read_csv('rna_tissue_consensus.tsv',sep='\t')
+# valid_tissue = pd.read_csv('valid_tissue.txt',sep='\t',index_col=0).squeeze()
+
+# data = {}
+# for v in np.arange(0,5.1,0.1):
+#     print(v)
+#     Y = compute_y(adata,uids)
+#     thresholded_Y = np.empty_like(Y,dtype=np.float32)
+#     cond_Y = np.empty_like(Y,dtype=bool)
+#     ths = []
+#     for i in tqdm(range(Y.shape[0]),total=Y.shape[0]):
+#         thresholded_Y[i,:], cond_Y[i,:], th = threshold(Y[i,:],'hardcode',v=v)
+#         ths.append(th)
+#     # pd.Series(index=uids,data=ths,name='threshold').to_csv('threshold.txt',sep='\t')
+#     new_adata = get_thresholded_adata(adata,cond_Y)
+#     X = compute_x(new_adata,uids)
+#     concordance = compute_concordance(uids,X,lookup,external,valid_tissue,'spearman')
+#     print(ma.masked_invalid(list(concordance.values())).mean())
+#     data[v] = concordance
+# with open('concordance.p','wb') as f:
+#     pickle.dump(data,f)
+
+# with open('concordance.p','rb') as f:
+#     data = pickle.load(f)
+# x = list(data.keys())
+# y = [ma.masked_invalid(list(v.values())).mean() for v in data.values()]
+# # y_95 = [np.nanpercentile(list(v.values()),95) for v in data.values()]
+# # y_05 = [np.nanpercentile(list(v.values()),5) for v in data.values()]
+# fig,ax = plt.subplots()
+# ax.plot(x,y,marker='o',linewidth=1,linestyle='-')
+# # ax.fill_between(x,y_05,y_95,alpha=0.2)
+# ax.set_xticks(x)
+# ax.set_xticklabels(x,fontsize=0.5,rotation=90)
+# ax.set_xlabel('cutoff')
+# ax.set_ylabel('mean_spearmanr')
+# plt.savefig('cutoff.pdf',bbox_inches='tight')
+# plt.close()
+
+
+
+'''
+Seems 0.8 is a decent cutoff
+'''
 Y = compute_y(adata,uids)
 thresholded_Y = np.empty_like(Y,dtype=np.float32)
 cond_Y = np.empty_like(Y,dtype=bool)
 ths = []
 for i in tqdm(range(Y.shape[0]),total=Y.shape[0]):
-    thresholded_Y[i,:], cond_Y[i,:], th = threshold(Y[i,:],'hardcode',v=1.0)
+    thresholded_Y[i,:], cond_Y[i,:], th = threshold(Y[i,:],'hardcode',v=0.8)
     ths.append(th)
 # pd.Series(index=uids,data=ths,name='threshold').to_csv('threshold.txt',sep='\t')
-# print(thresholding_kneedle(df['value_cpm'].values,True))
 new_adata = get_thresholded_adata(adata,cond_Y)
-
 X = compute_x(new_adata,uids)
+
 with open('raw_X.p','wb') as f:
     pickle.dump(X, f)
-
-from gtex_viewer import *
-gtex_viewer_configuration(new_adata)
-gtex_visual_per_tissue_count(uid)
-gtex_visual_subplots(uid)
-
-'''if hardcode seems to be the best, then I need to justify why you use certain hardcoded value,
-I can do so by evaluating both AUPR and spearman'''
-
-
-
 
 with open('raw_X.p','rb') as f:
     X = pickle.load(f)
@@ -235,20 +307,63 @@ def model_mle(X,Y,weights):
     with pyro.poutine.scale(scale=1/5000), pyro.plate('data_Y',s):
         nc = pyro.sample('nc',dist.LogNormal(beta_y*sigma,0.5).expand([s,n]).to_event(1),obs=Y)
 
-# trace = pyro.poutine.trace(model_mle).get_trace(X,Y,weights)
-# trace.compute_log_prob()  
-# print(trace.format_shapes())
-# pyro.render_model(model_mle, model_args=(X,Y,weights), render_distributions=True, render_params=True, filename='importance_added.pdf')
-
-
 
 def guide_mle(X,Y,weights):
     pass
 
+def model(X,Y,weights):
+    a = torch.tensor(2.,device=device)
+    b = torch.tensor(2.,device=device)
+    sigma = pyro.sample('sigma',dist.Beta(a,b).expand([n]).to_event(1))
+    a = torch.tensor(10.,device=device)
+    b = torch.tensor(1.,device=device)
+    beta_y = pyro.sample('beta_y',dist.Gamma(a,b))
+    a = torch.tensor(25.,device=device)
+    b = torch.tensor(1.,device=device)
+    beta_x = pyro.sample('beta_x',dist.Gamma(a,b))
+    a = torch.tensor(50.,device=device)
+    total = pyro.sample('total',dist.Binomial(a,weights).expand([t]).to_event(1))
+    scaled_X = torch.round(X * total.unsqueeze(-1))
+    with pyro.poutine.scale(scale=1), pyro.plate('data_X',t):
+        c = pyro.sample('c',dist.Poisson(beta_x*sigma).expand([t,n]).to_event(1),obs=scaled_X)
+    with pyro.poutine.scale(scale=1/5000), pyro.plate('data_Y',s):
+        nc = pyro.sample('nc',dist.LogNormal(beta_y*sigma,0.5).expand([s,n]).to_event(1),obs=Y)
+
+def guide_map(X,Y,weights):
+    sigma_param = pyro.param('sigma_param',lambda:torch.tensor(np.full(n,0.5),device=device),constraint=constraints.interval(0.05,1))
+    sigma = pyro.sample('sigma',dist.Delta(sigma_param).expand([n]).to_event(1))
+    a = torch.tensor(10.,device=device)
+    b = torch.tensor(1.,device=device)
+    beta_y = pyro.sample('beta_y',dist.Gamma(a,b))
+    a = torch.tensor(25.,device=device)
+    b = torch.tensor(1.,device=device)
+    beta_x = pyro.sample('beta_x',dist.Gamma(a,b))
+    total = pyro.sample('total',dist.Binomial(50,weights).expand([t]).to_event(1))
+
+def guide(X,Y,weights):
+    alpha = pyro.param('alpha',lambda:torch.tensor(np.full(n,2.0),device=device),constraint=constraints.positive)
+    beta = pyro.param('beta',lambda:torch.tensor(np.full(n,2.0),device=device),constraint=constraints.positive)
+    sigma = pyro.sample('sigma',dist.Beta(alpha,beta).expand([n]).to_event(1))
+    a = torch.tensor(10.,device=device)
+    b = torch.tensor(1.,device=device)
+    beta_y = pyro.sample('beta_y',dist.Gamma(a,b))
+    a = torch.tensor(25.,device=device)
+    b = torch.tensor(1.,device=device)
+    beta_x = pyro.sample('beta_x',dist.Gamma(a,b))
+    total = pyro.sample('total',dist.Binomial(50,weights).expand([t]).to_event(1))
+    return {'sigma':sigma,'beta_y':beta_y,'beta_x':beta_x,'total':total}
+
+# trace = pyro.poutine.trace(model_map).get_trace(X,Y,weights)
+# trace.compute_log_prob()  
+# print(trace.format_shapes())
+# pyro.render_model(model_map, model_args=(X,Y,weights), render_distributions=True, render_params=True, filename='model.pdf')
+
+
+
 # train
 n_steps = 5000
 pyro.clear_param_store()
-svi = SVI(model_mle, guide_mle, adam, loss=Trace_ELBO())
+svi = SVI(model, guide, adam, loss=Trace_ELBO())
 losses = []
 for step in tqdm(range(n_steps),total=n_steps):  
     loss = svi.step(X,Y,weights)
@@ -260,8 +375,13 @@ plt.ylabel("ELBO loss")
 plt.savefig('elbo_loss.pdf',bbox_inches='tight')
 plt.close()
 
-sigma = pyro.param('sigma').data.cpu().numpy()
-df = pd.Series(index=uids,data=sigma,name='mean_sigma').to_frame()
+with pyro.plate('samples',1000,dim=-1):
+    samples = guide(X,Y,weights)
+svi_sigma = samples['sigma']  # torch.Size([1000, 24290])
+sigma = svi_sigma.data.cpu().numpy().mean(axis=0)
+alpha = pyro.param('alpha').data.cpu().numpy()
+beta = pyro.param('beta').data.cpu().numpy()
+df = pd.DataFrame(index=uids,data={'mean_sigma':sigma,'alpha':alpha,'beta':beta})
 with open('X.p','rb') as f:
     X = pickle.load(f)
 with open('Y.p','rb') as f:
@@ -270,9 +390,26 @@ Y_mean = Y.mean(axis=1)
 X_mean = X.mean(axis=1)
 df['Y_mean'] = Y_mean
 df['X_mean'] = X_mean
-df.to_csv('mle_results.txt',sep='\t')
-diagnose('mle_results.txt',output_name='pyro_mle_diagnosis.pdf')
+df.to_csv('full_results.txt',sep='\t')
+diagnose('full_results.txt',output_name='pyro_full_diagnosis.pdf')
 sys.exit('stop')
 
+
+'''evaluate'''
+target = pd.read_csv('CARTargets.txt',sep='\t',index_col=0)
+mapping = {e:g for g,e in target['Ensembl ID'].to_dict().items()}
+target = target.loc[target['Category']=='in clinical trials',:]['Ensembl ID'].tolist()
+result = pd.read_csv('mle_results.txt',sep='\t',index_col=0)
+result = result.loc[target,:]
+result['gene'] = result.index.map(mapping).values
+result = result.sort_values(by='mean_sigma')
+result.to_csv('check1.txt',sep='\t')
+fig,ax = plt.subplots()
+ax.bar(x=np.arange(result.shape[0]),height=result['mean_sigma'].values)
+ax.set_xticks(np.arange(result.shape[0]))
+ax.set_xticklabels(result['gene'].values,fontsize=1,rotation=90)
+ax.set_ylabel('inferred sigma')
+plt.savefig('check.pdf',bbox_inches='tight')
+plt.close()
 
 
