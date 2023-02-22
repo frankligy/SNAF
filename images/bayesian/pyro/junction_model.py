@@ -30,6 +30,18 @@ def compute_y(adata,uids):
     y = info.X.toarray() / adata.var['total_count'].values.reshape(1,-1)
     return y
 
+def compute_scaled_x(adata,uids):
+    total_tissue = adata.var['tissue'].unique()
+    valid_tissue = [tissue for tissue in total_tissue if adata[:,adata.var['tissue']==tissue].shape[1] >= 10]
+    x = np.zeros((len(uids),len(valid_tissue)))
+    for i,tissue in enumerate(valid_tissue):
+        sub = adata[uids,adata.var['tissue']==tissue]
+        total_count = sub.shape[1]
+        c = np.count_nonzero(np.where(sub.X.toarray()<1,0,sub.X.toarray()),axis=1)
+        scaled_c = np.round(c * (25/total_count),0)
+        x[:,i] = scaled_c
+    return x
+
 def compute_x(adata,uids):
     total_tissue = adata.var['tissue'].unique()
     valid_tissue = [tissue for tissue in total_tissue if adata[:,adata.var['tissue']==tissue].shape[1] >= 10]
@@ -173,20 +185,9 @@ def compute_concordance(uids, X,lookup,external,valid_tissue,method):
 
 '''main program starts'''
 
-adata = ad.read_h5ad('coding.h5ad')
+adata = ad.read_h5ad('../bayesian/combined_normal_count.h5ad')
 uids = adata.obs_names.tolist()
-
-'''
-I want to fix the threshold issue
-testing targets:
-
-ENSG00000198681  MAGEA1
-ENSG00000221867  MAGEA3
-ENSG00000156738 MS4A1, CD20
-ENSG00000185274 GALNT17, threshould is about 30
-ENSG00000141506, PIK3R5, threshold is about 20
-ENSG00000150991 a highly expressed one
-'''
+print(adata)
 
 # uid = 'ENSG00000156738'
 # from gtex_viewer import *
@@ -194,10 +195,6 @@ ENSG00000150991 a highly expressed one
 # df = gtex_visual_norm_count_combined(uid,xlim=None,ylim=None,save_df=True)
 # gtex_visual_per_tissue_count(uid)
 # gtex_visual_subplots(uid)
-
-# lookup = pd.read_csv('tissue_lookup.txt',sep='\t',index_col=0).squeeze()
-# external = pd.read_csv('rna_tissue_consensus.tsv',sep='\t')
-# valid_tissue = pd.read_csv('valid_tissue.txt',sep='\t',index_col=0).squeeze()
 
 # data = {}
 # for v in np.arange(0,5.1,0.1):
@@ -239,6 +236,14 @@ ENSG00000150991 a highly expressed one
 '''
 Seems 0.8 is a decent cutoff
 '''
+# X = compute_scaled_x(adata,uids)
+# with open('X.p','wb') as f:
+#     pickle.dump(X,f)
+# Y = compute_y(adata,uids)
+# with open('Y.p','wb') as f:
+#     pickle.dump(Y,f)
+
+
 # Y = compute_y(adata,uids)
 # thresholded_Y = np.empty_like(Y,dtype=np.float32)
 # cond_Y = np.empty_like(Y,dtype=bool)
@@ -246,75 +251,22 @@ Seems 0.8 is a decent cutoff
 # for i in tqdm(range(Y.shape[0]),total=Y.shape[0]):
 #     thresholded_Y[i,:], cond_Y[i,:], th = threshold(Y[i,:],'hardcode',v=0.8)
 #     ths.append(th)
-# # pd.Series(index=uids,data=ths,name='threshold').to_csv('threshold.txt',sep='\t')
 # new_adata = get_thresholded_adata(adata,cond_Y)
 # X = compute_x(new_adata,uids)
-
 # with open('raw_X.p','wb') as f:
 #     pickle.dump(X, f)
+
 
 with open('raw_X.p','rb') as f:
     X = pickle.load(f)
 with open('Y.p','rb') as f:
     Y = pickle.load(f)
 
-'''now I want to showcase the tissue importance prior,
-to do that, let's first visualize the tissue distribution of 71 targets'''
-
-# test CLDN18
-# data = {}
-# for p in ['sigmas_upweigh.p','sigmas_default.p','sigmas_downweigh.p']:
-#     with open(p,'rb') as f:
-#         d = pickle.load(f)
-#         data[p] = d
-# df = pd.DataFrame(data)
-# sns.barplot(df)
-# plt.savefig('tissue.pdf',bbox_inches='tight')
-# plt.close()
-
-# # test CTAG1B
-# data = {}
-# for p in ['sigmas_downweigh_0.1.p','sigmas_downweigh_0.2.p','sigmas_downweigh_0.3.p','sigmas_downweigh_0.4.p','sigmas_default.p']:
-#     with open(p,'rb') as f:
-#         d = pickle.load(f)
-#         data[p] = d
-# df = pd.DataFrame(data)
-# sns.barplot(df)
-# plt.savefig('tissue.pdf',bbox_inches='tight')
-# plt.close()
-
-
-# # test MS4A1
-# data = {}
-# for p in ['sigmas_upweigh.p','sigmas_default.p','sigmas_downweigh.p']:
-#     with open(p,'rb') as f:
-#         d = pickle.load(f)
-#         data[p] = d
-# df = pd.DataFrame(data)
-# sns.barplot(df)
-# plt.savefig('tissue.pdf',bbox_inches='tight')
-# plt.close()
-
-
-
-# target = pd.read_csv('CARTargets.txt',sep='\t',index_col=0)
-# mapping = {e:g for g,e in target['Ensembl ID'].to_dict().items()}
-# target = target.loc[target['Category']=='in clinical trials',:]['Ensembl ID'].tolist()
-# from gtex_viewer import *
-# gtex_viewer_configuration(new_adata)
-# outdir = '71_targets_visual'
-# for ensg in target:
-#     uid = ensg
-#     df = gtex_visual_norm_count_combined(uid,xlim=None,ylim=None,save_df=True,outdir=outdir)
-#     gtex_visual_per_tissue_count(uid,outdir=outdir)
-#     gtex_visual_subplots(uid,outdir=outdir)
-
-
-uid = 'ENSG00000156738'
-index = uids.index(uid)
-X = X[[index],:]
-Y = Y[[index],:]
-print(X.shape,Y.shape)
+# uid = 'ENSG00000156738'
+# index = uids.index(uid)
+# X = X[[index],:]
+# Y = Y[[index],:]
+# print(X.shape,Y.shape)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
@@ -325,11 +277,11 @@ n = X.shape[1]
 s = Y.shape[0]
 t = X.shape[0]
 weights = np.full(t,0.5)
-dic = {
-    'Spleen': 0.9,
-    'Whole Blood': 0.9
-}
-weights = weighting(adata,dic,weights)
+# dic = {
+#     'Spleen': 0.9,
+#     'Whole Blood': 0.9
+# }
+# weights = weighting(adata,dic,weights)
 weights = torch.tensor(weights,device=device)
 
 
@@ -420,11 +372,11 @@ plt.close()
 with pyro.plate('samples',1000,dim=-1):
     samples = guide(X,Y,weights)
 svi_sigma = samples['sigma']  # torch.Size([1000, 24290])
-data = svi_sigma.data.cpu().numpy().squeeze()
-print(data.shape)
-with open('sigmas_upweigh.p','wb') as f:
-    pickle.dump(data,f)
-sys.exit('stop')
+
+# data = svi_sigma.data.cpu().numpy().squeeze()
+# print(data.shape)
+# with open('sigmas_upweigh.p','wb') as f:
+#     pickle.dump(data,f)
 
 sigma = svi_sigma.data.cpu().numpy().mean(axis=0)
 alpha = pyro.param('alpha').data.cpu().numpy()
@@ -442,21 +394,5 @@ df.to_csv('full_results.txt',sep='\t')
 diagnose('full_results.txt',output_name='pyro_full_diagnosis.pdf')
 
 
-'''evaluate'''
-target = pd.read_csv('CARTargets.txt',sep='\t',index_col=0)
-mapping = {e:g for g,e in target['Ensembl ID'].to_dict().items()}
-target = target.loc[target['Category']=='in clinical trials',:]['Ensembl ID'].tolist()
-result = pd.read_csv('full_results.txt',sep='\t',index_col=0)
-result = result.loc[target,:]
-result['gene'] = result.index.map(mapping).values
-result = result.sort_values(by='mean_sigma')
-result.to_csv('71_targets.txt',sep='\t')
-fig,ax = plt.subplots()
-ax.bar(x=np.arange(result.shape[0]),height=result['mean_sigma'].values)
-ax.set_xticks(np.arange(result.shape[0]))
-ax.set_xticklabels(result['gene'].values,fontsize=1,rotation=90)
-ax.set_ylabel('inferred sigma')
-plt.savefig('71_targets.pdf',bbox_inches='tight')
-plt.close()
 
 
