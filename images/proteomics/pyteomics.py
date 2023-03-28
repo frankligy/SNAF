@@ -1,6 +1,14 @@
 #!/data/salomonis2/LabFiles/Frank-Li/proteomics_practice/pyteomics_env/bin/python3.7
 
-from pyteomics import mzml  # mzml can be generated using ProteoWizard
+
+
+# mzml can be generated using ProteoWizard
+# ProteoWizard should be downloaded as a docker or singularity image from https://hub.docker.com/r/chambm/pwiz-skyline-i-agree-to-the-vendor-licenses
+# but there are issue with singularity permission to run wine, so I either get it work using docker on my Mac or using cluster docker on /scratch
+# using msconvert
+# docker run -v /your/data:/data chambm/pwiz-skyline-i-agree-to-the-vendor-licenses wine msconvert file.raw
+
+from pyteomics import mzml  
 from pyteomics import pylab_aux
 import matplotlib.pyplot as plt
 for i,dic in enumerate(mzml.read('/data/salomonis2/LabFiles/Frank-Li/neoantigen/ProteoWizard/data/OvCa114_classI_Rep#3.mzML')):
