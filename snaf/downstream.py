@@ -277,12 +277,13 @@ def visualize_DEG_result(result_path,mode,outdir='.',genes_to_highlight=[],up_cu
         plt.savefig(os.path.join(outdir,'volcano_plot_DEG_static.pdf'),bbox_inches='tight');plt.close()
 
 
-def prepare_GO_analysis(result_path,lc_cutoff=0.5,adjp_cutoff=0.05,n=None,sortby='adjp',ascending=True,outdir='.'):
+def prepare_GO_analysis(result_path,lc_cutoff=0.5,direction='>',adjp_cutoff=0.05,n=None,sortby='adjp',ascending=True,outdir='.'):
     '''
     Generate gene list for GO analysis
 
     :param result_path: string, the path to the AltAnalyze generated DEG result
     :param lc_cutoff: float, the cutoff above which will be considered desirable genes
+    :param direction: string, either ">" or "<", indicating whether to use greater than or less than of lc_cutoff
     :param adjp_cutoff: float, the cutoff below which will be considered desirable genes
     :param n: None or int, the number of genes to contrain for GO analysis
     :param sortby: string, 'adjp' or 'LogFold'
@@ -297,7 +298,10 @@ def prepare_GO_analysis(result_path,lc_cutoff=0.5,adjp_cutoff=0.05,n=None,sortby
     '''
     df = pd.read_csv(result_path,sep='\t',index_col=0).loc[:,['LogFold','adjp','Symbol']]
     df.drop_duplicates(subset=['Symbol'],inplace=True)
-    valid_df = df.loc[(df['LogFold']>lc_cutoff) & (df['adjp']<adjp_cutoff),:]
+    if direction == '>':
+        valid_df = df.loc[(df['LogFold']>lc_cutoff) & (df['adjp']<adjp_cutoff),:]
+    elif direction == '<':
+        valid_df = df.loc[(df['LogFold']<lc_cutoff) & (df['adjp']<adjp_cutoff),:]
     print('Total genes are {}, set n as {}, sort by {}, ascending {}'.format(valid_df.shape[0],n,sortby, ascending))
     valid_df = valid_df.sort_values(by=sortby,axis=0,ascending=ascending)
     valid_df.to_csv(os.path.join(outdir,'gene_dataframe.txt'),sep='\t')
