@@ -45,29 +45,26 @@ mpl.rcParams['font.family'] = 'Arial'
 # sub_cand.to_csv('{}/{}_cand.txt'.format(outdir,uid.replace(':','_')),sep='\t')
 
 # whether there's a HLA-C bias in prediction
-cand = pd.read_csv('result_new/T_candidates/T_antigen_candidates_all.txt',sep='\t',index_col=0)
-uid = [p+','+h for p,h in zip(cand['peptide'],cand['hla'])]
-cand['key'] = uid 
-cand = cand.loc[cand['key'].duplicated(),:]
-col = 'immunogenicity'
-hla_c_bind = cand.loc[cand['hla'].str.startswith('HLA-C'),col]
-hla_b_bind = cand.loc[cand['hla'].str.startswith('HLA-B'),col]
-hla_a_bind = cand.loc[cand['hla'].str.startswith('HLA-A'),col]
-fig,ax = plt.subplots()
-sns.barplot(data=[[[len(hla_a_bind)]],[len(hla_b_bind)],[len(hla_c_bind)]])
-ax.set_xticklabels(['hla-a','hla-b','hla-c'])
-ax.set_ylabel('number of hits for each major allele')
-plt.savefig('c_bias_num.pdf',bbox_inches='tight')
-plt.close()
-fig,ax = plt.subplots()
-sns.violinplot(data=[hla_a_bind,hla_b_bind,hla_c_bind],ax=ax)
-ax.set_xticklabels(['hla-a','hla-b','hla-c'])
-ax.set_ylabel(col)
-plt.savefig('c_bias_value.pdf',bbox_inches='tight')
-plt.close()
-sys.exit('stop')
-
-
+# cand = pd.read_csv('result_new/T_candidates/T_antigen_candidates_all.txt',sep='\t',index_col=0)
+# uid = [p+','+h for p,h in zip(cand['peptide'],cand['hla'])]
+# cand['key'] = uid 
+# cand = cand.loc[cand['key'].duplicated(),:]
+# col = 'immunogenicity'
+# hla_c_bind = cand.loc[cand['hla'].str.startswith('HLA-C'),col]
+# hla_b_bind = cand.loc[cand['hla'].str.startswith('HLA-B'),col]
+# hla_a_bind = cand.loc[cand['hla'].str.startswith('HLA-A'),col]
+# fig,ax = plt.subplots()
+# sns.barplot(data=[[[len(hla_a_bind)]],[len(hla_b_bind)],[len(hla_c_bind)]])
+# ax.set_xticklabels(['hla-a','hla-b','hla-c'])
+# ax.set_ylabel('number of hits for each major allele')
+# plt.savefig('c_bias_num.pdf',bbox_inches='tight')
+# plt.close()
+# fig,ax = plt.subplots()
+# sns.violinplot(data=[hla_a_bind,hla_b_bind,hla_c_bind],ax=ax)
+# ax.set_xticklabels(['hla-a','hla-b','hla-c'])
+# ax.set_ylabel(col)
+# plt.savefig('c_bias_value.pdf',bbox_inches='tight')
+# plt.close()
 
 '''T cell neoantigen'''
 # jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result_new',filter_mode='maxmin')
@@ -102,11 +99,14 @@ sys.exit('stop')
 #                                      outdir='result_new/survival',encoding={'low':'1','high':'2'})
 # snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',up_cutoff=0.58,down_cutoff=-0.58,
 #                                      mode='static',outdir='result_new/survival',genes_to_highlight=['LST1','HCST','IL32','CD3D','S100A8','MZB1','IGLC4','ADAM10','ARFGEF2','MIB1','KIF3B','TNPO1','PTPN11','ANKRD52','TGFBR1'])
-# snaf.downstream.prepare_GO_analysis('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',outdir='result_new/survival',lc_cutoff=0.58,adjp_cutoff=0.05)
+# snaf.downstream.prepare_GO_analysis('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',outdir='result_new/survival',direction='<',lc_cutoff=-0.58,adjp_cutoff=0.05)
 # snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20221201-205821/gene_list-GO.txt','result_new/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20221201-205720/gene_list-BioMarkers.txt'],
 #                                     skiprows_list=[17,16],category_list=['Ontology Name','Gene-Set Name'],outdir='result_new/survival',
 #                                     mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-50,10e-1))
-
+snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230407-100025/gene_list-GO.txt'],
+                                    skiprows_list=[17],category_list=['Ontology Name'],outdir='result_new/survival',
+                                    mode='static',ontology_to_highlight={'metabolic process':'metabolic process','nucleic acid metabolic process':'nucleic acid metabolic process','nitrogen compound metabolic process':'nitrogen compound metabolic process','regulation of cellular metabolic process':'regulation of cellular metabolic process','response to DNA damage stimulus':'response to DNA damage stimulus'},ylims=(10e-80,10e-1))
+sys.exit('stop')
 
 
 '''B cell neoantigen'''
@@ -124,9 +124,9 @@ sys.exit('stop')
 #             tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
 # surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='short_read',validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
 
-surface.run_dash_B_antigen(pkl='result_new/surface/surface_antigen_lr.p',candidates='result_new/surface/candidates_3_lr_None_False.txt',prediction_mode='long_read',
-                           python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
-sys.exit('stop')
+# surface.run_dash_B_antigen(pkl='result_new/surface/surface_antigen_lr.p',candidates='result_new/surface/candidates_3_lr_None_False.txt',prediction_mode='long_read',
+#                            python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+
 
 
 
@@ -425,10 +425,71 @@ inspect those candidates for junction validity and tumor specificity
 # offset = (1000,1000)
 # lis = [(row.UID,row.sample,flank_chrom(row.chrom,offset),row.Index) for row in df.itertuples()]
 
-# item = lis[0]
+# item = lis[48]
+# print(item[0])
 # unit_run(item[0],item[1],item[2],'{}_offset_{}'.format(item[3],offset))
 
+'''compare against the proliferative tissues'''
+# # get reduced junction
+# df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
+# # run SNAF but just get the maxmin text file
+# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+# proliferate_db = snaf.remove_trailing_coord('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/proliferating/counts.original.txt')
+# proliferate_db.rename(columns=lambda x:x+'_proliferate',inplace=True)
+# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db,'proliferate':proliferate_db}
+
+# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+# surface.initialize(db_dir=db_dir)
+# jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result_proliferate',filter_mode='maxmin')
+
+'''
+original shape: (951494, 472)
+current shape: (101974, 472)
+2023-04-07 07:48:40 starting initialization
+Current loaded gtex cohort with shape (100039, 2629)
+Adding cohort tcga_control with shape (101974, 705) to the database
+now the shape of control db is (101974, 3334)
+Adding cohort gtex_skin with shape (90788, 313) to the database
+now the shape of control db is (101974, 3647)
+Adding cohort proliferate with shape (88752, 169) to the database
+now the shape of control db is (101974, 3816)
+2023-04-07 07:50:29 finishing initialization
+2023-04-07 07:50:29 starting surface antigen initialization
+2023-04-07 07:50:53 finished surface antigen initialization
+reduce valid NeoJunction from 101974 to 22936 because they are present in GTEx
+reduce valid Neojunction from 22936 to 17670 because they are present in added control tcga_control
+reduce valid Neojunction from 17670 to 16799 because they are present in added control gtex_skin
+reduce valid Neojunction from 16799 to 15026 because they are present in added control proliferate
+'''
+
+# get gene_list that are removed in last step
+# filter_df = pd.read_csv('result_proliferate/NeoJunction_statistics_maxmin.txt',sep='\t',index_col=0)
+# filter_df_removed = filter_df.loc[(filter_df['cond']==True)&(filter_df['cond_add_tcga_control']==True)&(filter_df['cond_add_gtex_skin']==True)&(filter_df['cond_add_proliferate']==False),:]
+# filter_df_removed.to_csv('result_proliferate/filter_df_filtered.txt',sep='\t')
+# df = filter_df_removed.loc[:,['max','mean_add_proliferate']]
+# sns.stripplot(data=df,orient='h')
+# plt.savefig('result_proliferate/boxplot.pdf',bbox_inches='tight')
+# plt.close()
+# genes = list(set([item.split(':')[0] for item in filter_df_removed.index]))
+# symbols = snaf.downstream.ensemblgene_to_symbol(query=genes,species='human')
+# with open('result_proliferate/gene_list.txt','w') as f:
+#     for s in symbols:
+#         if s != 'unknown_gene':
+#             f.write('{}\n'.format(s))
+# snaf.visualize_GO_result(path_list=['/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result_proliferate/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230407-085012/gene_list-GO.txt'],
+#                          skiprows_list=[17],category_list=['Ontology Name'],outdir='result_proliferate',mode='static',ylims=(10e-25,10e-1),
+#                          ontology_to_highlight=
+#                              {'cell cycle':'cell cycle',
+#                               'cell division':'cell division',
+#                               'chromosome segregation':'chromosome segregation',
+#                               'spindle':'spindle',
+#                               'cytoskeleton':'cytoskeleton',
+#                               'regulation of cell cycle process':'regulation of cell cycle process'})
+sys.exit('stop')
 
 '''write peptide.txt to a merged xlsx file for publication, supp3 table'''
 # os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat')
