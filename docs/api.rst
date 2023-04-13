@@ -42,6 +42,10 @@ report_candidates
 ~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.report_candidates
 
+get_coverage
+~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.get_coverage
+
 .. _reference_to_proteomics:
 
 Interface to proteomics

@@ -166,6 +166,56 @@ def survival_regression_psi_atomic(freq,ea,survival,survival_duration,survival_e
     return df_data
 
 
+def get_coverage(t_result,outdir='.'):
+    '''
+    Get the population coverage of certain neoantigen, based on the different HLA allele frequency from
+    US bone marrow registry. The race code can be found here (https://www.sciencedirect.com/science/article/pii/S0198885913001821?via%3Dihub#t0005)
+
+    :params t_result: string, the path to the T_antigen_candidates_all.txt file
+    :params outdir: string, default is current directory
+
+    Examples::
+
+        snaf.downstream.get_coverage(t_result='result_new/T_candidates/T_antigen_candidates_all.txt')
+
+    '''
+
+
+    # race code table: https://www.sciencedirect.com/science/article/pii/S0198885913001821?via%3Dihub#t0005
+    # frequency US registry: https://pubmed.ncbi.nlm.nih.gov/23806270/
+    # download supp table5 as the dictionary
+    import re
+    df = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)),'HLA_Allele_frequency_21_populations.csv'),header=0,skiprows=[1,2]).iloc[:,1:].set_index(keys='Unnamed: 1')
+    df.index.name = 'allele'
+    df.dropna(axis=0,inplace=True)
+    pat = re.compile(r'[ABC]\*\d+:\d+')
+    col = []
+    for item in df.index:
+        match = re.search(pat,item)
+        if match:
+            col.append(match.group(0))
+        else:
+            col.append(item)
+    df.index = col
+    dic = df.to_dict('index')  # {A*01:01:{race:freq,race:freq}}
+
+    t_result = pd.read_csv(t_result,sep='\t')
+    with open(os.path.join(outdir,'T_coverage_analysis.txt'),'w') as f:
+        f.write('peptide\thlas\tuid\tsymbol\tcoord\ttumor_specificity_mean\ttumor_specificity_mle\t{}\n'.format('\t'.join(df.columns.tolist())))
+        for pep,sub_df in t_result.groupby(by='peptide'):
+            tmp = sub_df.iloc[0]
+            uid,symbol,coord,tsmean,tsmle = tmp['uid'],tmp['symbol'],tmp['coord'],tmp['tumor_specificity_mean'],tmp['tumor_specificity_mle']
+            unique_hlas = [item.split('-')[1] for item in list(set(sub_df['hla'].tolist()))]
+            accum = np.empty(shape=(df.shape[1],len(unique_hlas)),dtype=np.float64)
+            for i,hla in enumerate(unique_hlas):
+                try:
+                    tmp = list(dic[hla].values())
+                except KeyError:   # allele not present in the database
+                    tmp = np.zeros((df.shape[1],))
+                accum[:,i] = tmp
+            accum = [str(item) for item in accum.sum(axis=1).tolist()]
+            f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(pep,','.join(unique_hlas),uid,symbol,coord,tsmean,tsmle,'\t'.join(accum)))
+    
 
 
 def prepare_DEG_analysis(burden_path,patient_strat_path,rename_func,outdir='.',encoding={'low':'1','high':'2'}):
