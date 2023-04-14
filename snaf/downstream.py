@@ -166,17 +166,18 @@ def survival_regression_psi_atomic(freq,ea,survival,survival_duration,survival_e
     return df_data
 
 
-def get_coverage(t_result,outdir='.'):
+def get_coverage(t_result,allele,outdir='.'):
     '''
     Get the population coverage of certain neoantigen, based on the different HLA allele frequency from
     US bone marrow registry. The race code can be found here (https://www.sciencedirect.com/science/article/pii/S0198885913001821?via%3Dihub#t0005)
 
-    :params t_result: string, the path to the T_antigen_candidates_all.txt file
-    :params outdir: string, default is current directory
+    :param t_result: string, the path to the T_antigen_candidates_all.txt file
+    :param allele: string, either A, B or C
+    :param outdir: string, default is current directory
 
     Examples::
 
-        snaf.downstream.get_coverage(t_result='result_new/T_candidates/T_antigen_candidates_all.txt')
+        snaf.downstream.get_coverage(t_result='result_new/T_candidates/T_antigen_candidates_all.txt',allele='A')
 
     '''
 
@@ -199,8 +200,11 @@ def get_coverage(t_result,outdir='.'):
     df.index = col
     dic = df.to_dict('index')  # {A*01:01:{race:freq,race:freq}}
 
+    # focus on each allele
+    dic = {k:v for k,v in dic.items() if k[0] == allele}
+
     t_result = pd.read_csv(t_result,sep='\t')
-    with open(os.path.join(outdir,'T_coverage_analysis.txt'),'w') as f:
+    with open(os.path.join(outdir,'T_coverage_analysis_{}.txt'.format(allele)),'w') as f:
         f.write('peptide\thlas\tuid\tsymbol\tcoord\ttumor_specificity_mean\ttumor_specificity_mle\t{}\n'.format('\t'.join(df.columns.tolist())))
         for pep,sub_df in t_result.groupby(by='peptide'):
             tmp = sub_df.iloc[0]

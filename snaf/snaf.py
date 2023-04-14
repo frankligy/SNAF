@@ -1318,6 +1318,11 @@ def subexon_tran(subexon,EnsID,flag,code):  # flag either site1 or site2
     if code is 1, meaning its consecutive, E3.3-E3.4, if the flag is site2, then offset the start position of it by 1, the start position is the conceptual
     start position, if it is in negative string, it will be operated by the stop position.
     '''
+    # let's remove those in the first place
+    # if EnsID not in set(dict_exonCoords.keys()):
+    #     exon_seq = '*' * 10  # indicator for error on MultiPath-PSI itself
+    #     return exon_seq
+        
     try:   # E1.2 or I3.4
         attrs = dict_exonCoords[EnsID][subexon]  # [chr,strand,start,end,suffer] 
         if code == 1 and flag == 'site2':
