@@ -26,13 +26,11 @@ def gtex_visual_norm_count_combined(uid,xlim=None,ylim=None,save_df=False,outdir
     This function is to visualize the normalized count (CPM) distribution,
     it should follow a half-norm distribution, this plot will help determine the choice in
     bayesian modeling for tumor specificity score
-
     :param uid: string, the uid for the splicing event
     :param xlim: None or tuple, whether to constrain the xlim of the histplot
     :param ylim: None or tuple, whether to constrain the ylim of the histplot
     :param save_df: boolean, whether to save a txt file reporting all the cpm values and the tissue information for debug purpose
     :param outdir: string, where the figure go into
-
     Example::
     
         snaf.gtex_visual_norm_count_combined(uid='ENSG00000090339:E4.3-E4.5')  
@@ -65,12 +63,9 @@ def gtex_visual_per_tissue_count(uid,total_count=10, count_cutoff=1, total=25, o
     be defined as "expressed" versus "non-expressed". We scaled all the number of samples to the total of "total" to make sure 
     they are comparable. Because if a tissue type has 1000 samples, another has 25 samples, this random variable is not directly
     comparable. this plot will help determine the choice in bayesian modeling for tumor specificity score
-
     :param uid: string, the uid for the splicing event
     :param outdir: string, where the figure go into
-
     Example::
-
         snaf.gtex_visual_per_tissue_count(uid='ENSG00000090339:E4.3-E4.5')  
     '''
     if not os.path.exists(outdir):
@@ -97,17 +92,13 @@ def gtex_visual_per_tissue_count(uid,total_count=10, count_cutoff=1, total=25, o
 def gtex_visual_combine_plotly(uid,outdir='',norm=False,tumor=None):
     '''
     Generate combined plot but interactively
-
     :param uid: string, the uid for the splicing event
     :param norm: bool. whether normalize for the sequencing depth or not
     :param outdir: string, where the figure go into
     :param tumor: pandas dataframe, the tumor df to compare with
-
     Example::
-
         snaf.gtex_visual_combine(uid='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
         snaf.gtex_visual_combine(uid='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
-
     '''
     if not os.path.exists(outdir):
         os.mkdir(outdir)
@@ -155,16 +146,13 @@ def gtex_visual_combine_plotly(uid,outdir='',norm=False,tumor=None):
 def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,ylim=None):
     ''' 
     Visualize the gtex expression and tumor specificity for splicing event (combine into one plot)
-
     :param uid: string, the uid for the splicing event
     :param norm: bool. whether normalize for the sequencing depth or not
     :param outdir: string, where the figure go into
     :param figsize: tuple, the (width,height) of the figure
     :param tumor: pandas dataframe, the tumor df to compare with
     :param ylim: tuple, modify the ylim of the (bottom, top) of the figure
-
     Example::
-
         snaf.gtex_visual_combine(uid='ENSG00000090339:E4.3-E4.5',norm=True,tumor=df)  
         snaf.gtex_visual_combine(uid='ENSG00000112149:E7.1-E9.1',norm=True,tumor=df)
     '''
@@ -198,6 +186,13 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
     y_list = []
     v_delimiter = [0]
     xticklabel = []
+    total_number_tissues = len(sorted_sub_df_list)
+    if tumor is None:
+        c_list = np.concatenate([np.array(['g']*sub_df.shape[0]) for sub_df in sorted_sub_df_list]).tolist()
+    else:
+        c_list_1 = np.concatenate([np.array(['g']*sub_df.shape[0]) for sub_df in sorted_sub_df_list[:-1]]).tolist()
+        c_list_2 = ['r'] * sorted_sub_df_list[-1].shape[0]
+        c_list = c_list_1 + c_list_2
     for i,sub_df in enumerate(sorted_sub_df_list):
         sub_df.sort_values(by='value',inplace=True)
         n = sub_df.shape[0]
@@ -209,7 +204,8 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
             if j == n-1:
                 v_delimiter.append(x)
                 x += 1
-    ax.plot(x_list,y_list,marker='o',linestyle='',markerfacecolor='r',markeredgewidth=0.1,color='k',markersize=2)
+    # ax.plot(x_list,y_list,marker='o',linestyle='',markerfacecolor='r',markeredgewidth=0.1,color='k',markersize=2)
+    ax.scatter(x_list,y_list,s=2,c=c_list,marker='o')
     for v in v_delimiter[1:-1]:
         ax.axvline(v,linestyle='--',linewidth=0.5)
     xtick = [(v + v_delimiter[i+1])/2 for i,v in enumerate(v_delimiter[:-1])]
@@ -235,13 +231,10 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
 def gtex_visual_subplots(uid,norm=True,top=100,outdir='.'):
     ''' 
     Visualize the gtex expression and tumor specificity for splicing event (subplots)
-
     :param uid: string, the uid for the splicing event
     :param norm: bool. whether normalize for the sequencing depth or not
     :param outdir: string, where the figure go into
-
     Example::
-
         snaf.gtex_visual_subplots(query='ENSG00000090339:E4.3-E4.5',norm=True)
         snaf.gtex_visual_subplots(query='ENSG00000112149:E7.1-E9.1',norm=True)
     '''
@@ -291,11 +284,6 @@ def gtex_visual_subplots(uid,norm=True,top=100,outdir='.'):
         name = 'gtex_visual_subplots_count_{}.pdf'.format(identifier)
     plt.savefig(os.path.join(outdir,name),bbox_inches='tight')
     plt.close()
-
-
-
-
-
 
 
 

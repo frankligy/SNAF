@@ -99,14 +99,23 @@ mpl.rcParams['font.family'] = 'Arial'
 #                                      outdir='result_new/survival',encoding={'low':'1','high':'2'})
 # snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',up_cutoff=0.58,down_cutoff=-0.58,
 #                                      mode='static',outdir='result_new/survival',genes_to_highlight=['LST1','HCST','IL32','CD3D','S100A8','MZB1','IGLC4','ADAM10','ARFGEF2','MIB1','KIF3B','TNPO1','PTPN11','ANKRD52','TGFBR1'])
+
+# visualize RBP specifically
+# rbps = ['YTHDC2', 'SDAD1', 'TARDBP', 'UCHL5', 'SRSF1', 'PUM1', 'GNL3', 'PNPT1', 'DHX30', 'GRSF1', 'HLTF', 'PSIP1', 'DDX52', 'EIF4B', 'SND1', 'PABPC1', 'WDR43', 'AGO2', 'STAU1', 'SSB', 'HNRNPU', 'EIF2S2', 'FAM120A', 'RBM39', 'SNRNP200', 'EIF4G1', 'HSPD1', 'DDX55', 'DDX21', 'PPIG', 'DKC1', 'FIP1L1', 'LARP4', 'YWHAG', 'RCC2', 'EIF4G2', 'MSI2', 'WDR3', 'EIF3A', 'PRPF4', 'PRPF8', 'SERBP1', 'CELF1', 'AQR', 'SUPV3L1', 'FTO', 'NUSAP1', 'XPO5', 'AGO1', 'FMR1', 'SF3B1', 'DNAJC21', 'TROVE2', 'DDX27', 'ADAR', 'KHDRBS1', 'TIAL1', 'CPEB4', 'KRR1', 'FXR1', 'AGO3', 'XPO1', 'NIPBL', 'EIF2S1', 'HNRNPF', 'XRN1', 'DDX42', 'ZC3H11A', 'PUM2', 'AKAP1', 'DROSHA', 'EFTUD2', 'MTPAP', 'DDX1', 'NUFIP2', 'IGF2BP2', 'G3BP1', 'QKI', 'IGF2BP3', 'LARP7', 'GEMIN5', 'DDX3X', 'DDX6', 'TIA1', 'SLTM', 'TRIM56', 'MBNL1', 'SRFBP1', 'AGGF1', 'SUGP2', 'FUBP1', 'ZNF800', 'SF3A3', 'G3BP2', 'MAK16', 'RBM25', 'METAP2', 'CPSF6', 'ZRANB2', 'SSRP1', 'NOLC1', 'UTP18', 'NSUN2', 'FASTKD2', 'WRN', 'ESF1', 'ILF3', 'RBFOX2', 'SART3', 'PABPC4', 'PHF6', 'ABCF1', 'NAA15', 'SRP68', 'XRN2', 'MATR3']
+# snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',up_cutoff=0.58,down_cutoff=-0.58,
+#                                      mode='static',outdir='result_new/survival',genes_to_highlight=rbps)
+
 # snaf.downstream.prepare_GO_analysis('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',outdir='result_new/survival',direction='<',lc_cutoff=-0.58,adjp_cutoff=0.05)
 # snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20221201-205821/gene_list-GO.txt','result_new/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20221201-205720/gene_list-BioMarkers.txt'],
 #                                     skiprows_list=[17,16],category_list=['Ontology Name','Gene-Set Name'],outdir='result_new/survival',
 #                                     mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-50,10e-1))
-snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230407-100025/gene_list-GO.txt'],
-                                    skiprows_list=[17],category_list=['Ontology Name'],outdir='result_new/survival',
-                                    mode='static',ontology_to_highlight={'metabolic process':'metabolic process','nucleic acid metabolic process':'nucleic acid metabolic process','nitrogen compound metabolic process':'nitrogen compound metabolic process','regulation of cellular metabolic process':'regulation of cellular metabolic process','response to DNA damage stimulus':'response to DNA damage stimulus'},ylims=(10e-80,10e-1))
-sys.exit('stop')
+# snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230407-100025/gene_list-GO.txt'],
+#                                     skiprows_list=[17],category_list=['Ontology Name'],outdir='result_new/survival',
+#                                     mode='static',ontology_to_highlight={'metabolic process':'metabolic process','nucleic acid metabolic process':'nucleic acid metabolic process','nitrogen compound metabolic process':'nitrogen compound metabolic process','regulation of cellular metabolic process':'regulation of cellular metabolic process','response to DNA damage stimulus':'response to DNA damage stimulus'},ylims=(10e-80,10e-1))
+
+# # coverage analysis
+# snaf.downstream.get_coverage(t_result='result_new/T_candidates/T_antigen_candidates_all.txt',allele='A')
+# sys.exit('stop')
 
 
 '''B cell neoantigen'''
@@ -489,7 +498,7 @@ reduce valid Neojunction from 16799 to 15026 because they are present in added c
 #                               'spindle':'spindle',
 #                               'cytoskeleton':'cytoskeleton',
 #                               'regulation of cell cycle process':'regulation of cell cycle process'})
-sys.exit('stop')
+
 
 '''write peptide.txt to a merged xlsx file for publication, supp3 table'''
 # os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/MS/raw_files_concat')
@@ -570,7 +579,7 @@ sys.exit('stop')
 #     pd.Series(data=dic,name='description').to_excel(writer,sheet_name='description')
 
 
-sys.exit('stop')
+
 
 
 
