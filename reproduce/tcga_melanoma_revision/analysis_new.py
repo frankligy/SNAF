@@ -20,18 +20,18 @@ mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
 
-# # get reduced junction
-# df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# get reduced junction
+df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
-# # run SNAF
-# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
-# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
-# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
-# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+# run SNAF
+netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 
-# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
-# surface.initialize(db_dir=db_dir)
+snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+surface.initialize(db_dir=db_dir)
 
 # 4 common neoantigens for immuno assay
 # cand = pd.read_csv('result_new/T_candidates/T_antigen_candidates_all.txt',sep='\t',index_col=0)
@@ -404,31 +404,40 @@ inspect those candidates for junction validity and tumor specificity
 #                  '/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-THCA/TCGA-EL-A3ZP-11A.bam.bai',
 #                  '/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-BREAST-CANCER/TCGA-files-Ens91/bams/TCGA-BH-A0H7-11A-13R-A089-07.bam.bai']
 
-# def unit_run(uid,base_sample,region,task_name):
-#     uid = uid
-#     sample = base_sample + '.bed'
-#     region = region
-#     bam_path_list = ['/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-SKCM/TCGA_SKCM-BAMs/bams/{}.bam'.format(base_sample)] + control_bam_path_list
-#     bai_path_list = ['/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-SKCM/TCGA_SKCM-BAMs/bams/{}.bam.bai'.format(base_sample)] + control_bai_path_list
-#     sif_anno_path = '/data/salomonis2/software/ggsashimi'
-#     outdir = 'Frank_inspection/sashimi'
-#     bam_contig_rename = [False,False,False,False,False,False]
-#     criterion=[('netMHCpan_el', 0, '<=', 2),('deepimmuno_immunogenicity',1,'==','True')]
+# control_bam_path_list = ['/data/salomonis-archive/BAMs/PublicDatasets/E-MTAB-2836-Grch38_Deep-Healthy-PanTissue/ERR315409_1.bam']
+# control_bai_path_list = ['/data/salomonis-archive/BAMs/PublicDatasets/E-MTAB-2836-Grch38_Deep-Healthy-PanTissue/ERR315409_1.bam.bai']
 
-#     # snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
-#     # snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=True,tumor=df)
-#     # snaf.JunctionCountMatrixQuery.deserialize('result_new/after_prediction.p').visualize(uid=uid,sample=sample,outdir='Frank_inspection',criterion=criterion)
-#     snaf.prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path,bam_contig_rename,query_region=region,skip_copy=True, min_junction=1,task_name=task_name)
+control_bam_path_list = ['/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-BREAST-CANCER/TCGA-files-Ens91/bams/TCGA-BH-A208-11A-51R-A157-07.bam']
+control_bai_path_list = ['/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-BREAST-CANCER/TCGA-files-Ens91/bams/TCGA-BH-A208-11A-51R-A157-07.bam.bai']
 
-# def flank_chrom(chrom,offset):
-#     chrom = chrom.split('(')[0]
-#     sec1 = chrom.split(':')[0]
-#     sec2 = chrom.split(':')[1].split('-')[0]
-#     sec3 = chrom.split(':')[1].split('-')[1]
-#     new_sec2 = int(sec2) - offset[0]
-#     new_sec3 = int(sec3) + offset[1]
-#     assemble = '{}:{}-{}'.format(sec1,new_sec2,new_sec3)
-#     return assemble
+def unit_run(uid,base_sample,region,task_name):
+    uid = uid
+    sample = base_sample + '.bed'
+    region = region
+    bam_path_list = ['/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-SKCM/TCGA_SKCM-BAMs/bams/{}.bam'.format(base_sample)] + control_bam_path_list
+    bai_path_list = ['/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-SKCM/TCGA_SKCM-BAMs/bams/{}.bam.bai'.format(base_sample)] + control_bai_path_list
+    sif_anno_path = '/data/salomonis2/software/ggsashimi'
+    outdir = 'Frank_inspection/sashimi'
+    bam_contig_rename = [False,False]
+    criterion=[('netMHCpan_el', 0, '<=', 2),('deepimmuno_immunogenicity',1,'==','True')]
+
+    # snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
+    # snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=True,tumor=df)
+    # snaf.JunctionCountMatrixQuery.deserialize('result_new/after_prediction.p').visualize(uid=uid,sample=sample,outdir='Frank_inspection',criterion=criterion)
+    snaf.gtex_visual_combine(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
+    # snaf.prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path,bam_contig_rename,query_region=region,skip_copy=False, min_junction=1,task_name=task_name)
+
+def flank_chrom(chrom,offset):
+    chrom = chrom.split('(')[0]
+    sec1 = chrom.split(':')[0]
+    sec2 = chrom.split(':')[1].split('-')[0]
+    sec3 = chrom.split(':')[1].split('-')[1]
+    new_sec2 = int(sec2) - offset[0]
+    new_sec3 = int(sec3) + offset[1]
+    assemble = '{}:{}-{}'.format(sec1,new_sec2,new_sec3)
+    return assemble
+
+
 
 # df = pd.read_csv('candidates.csv',sep=',')
 # offset = (1000,1000)
@@ -437,6 +446,77 @@ inspect those candidates for junction validity and tumor specificity
 # item = lis[48]
 # print(item[0])
 # unit_run(item[0],item[1],item[2],'{}_offset_{}'.format(item[3],offset))
+
+# specifically, generate publication-quality sashimi for 8 validated hits
+'''
+VAPGEAKNL
+ENSG00000185989:E5.1_114128541-E18.1
+Mel4
+TCGA-DA-A1HY-06A-11R-A18T-07
+RASA3
+gene is highly expressed, but splicing is unique, very tumor specific
+adipose tissue ERR315343 use this as control instead breast is also highly expressed TCGA-BH-A0H7-11A-13R-A089-07
+'''
+unit_run(uid='ENSG00000185989:E5.1_114128541-E18.1',
+         base_sample='TCGA-DA-A1HY-06A-11R-A18T-07',
+         region=flank_chrom('chr13:114073837-114128541',(10000,10000)),
+         task_name='_VAPGEAKNL')
+
+'''
+YALANIKWI
+ENSG00000152760:E7.2-I7.1
+Mel12
+TCGA-FS-A1ZF-06A-12R-A18S-07
+DYNLT5
+fallopian tube,ERR579134
+'''
+# unit_run(uid='ENSG00000152760:E7.2-I7.1',
+#          base_sample='TCGA-FS-A1ZF-06A-12R-A18S-07',
+#          region=flank_chrom('chr1:66775578-66775579',(1000,5000)),
+#          task_name='_YALANIKWI')
+
+'''
+HAAASFETL
+ENSG00000132185:E2.3-E2.5
+Mel15
+TCGA-EB-A3HV-01A-11R-A21D-07
+FCRLA
+tonsil, ERR579133, super tumor specific
+end up using TCGA-BR-6453-11A-01R-1802-13 stomatch instead
+'''
+unit_run(uid='ENSG00000132185:E2.3-E2.5',
+         base_sample='TCGA-EB-A3HV-01A-11R-A21D-07',
+         region=flank_chrom('chr1:161710492-161710760',(5000,1000)),
+         task_name='_HAAASFETL')
+sys.exit('stop')
+
+'''
+TELQRTLSL
+ENSG00000151092:E23.1-E24.1
+Mel20/26
+TCGA-EB-A44O-01A-11R-A266-07
+NGLY1
+end up using TCGA-BH-A0H7-11A-13R-A089-07
+'''
+# unit_run(uid='ENSG00000151092:E23.1-E24.1',
+#          base_sample='TCGA-EB-A44O-01A-11R-A266-07',
+#          region=flank_chrom('chr3:25736400-25737334',(3000,1000)),
+#          task_name='_TELQRTLSL')
+
+'''
+KEKLDQLVY
+ENSG00000100225:E8.2-E9.2_32491143
+Mel27
+TCGA-ER-A2NE-06A-21R-A18T-07
+FBXO7
+end up using TCGA-BH-A208-11A-51R-A157-07
+'''
+unit_run(uid='ENSG00000100225:E8.2-E9.2_32491143',
+         base_sample='TCGA-ER-A2NE-06A-21R-A18T-07',
+         region=flank_chrom('chr22:32487828-32491143',(500,500)),
+         task_name='_KEKLDQLVY')
+sys.exit('stop')
+
 
 '''compare against the proliferative tissues'''
 # # get reduced junction
