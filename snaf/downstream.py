@@ -169,7 +169,7 @@ def survival_regression_psi_atomic(freq,ea,survival,survival_duration,survival_e
 def get_coverage(t_result,allele,outdir='.'):
     '''
     Get the population coverage of certain neoantigen, based on the different HLA allele frequency from
-    US bone marrow registry. The race code can be found here (https://www.sciencedirect.com/science/article/pii/S0198885913001821?via%3Dihub#t0005)
+    US bone marrow registry. The 21 race code can be found here (https://www.sciencedirect.com/science/article/pii/S0198885913001821?via%3Dihub#t0005)
 
     :param t_result: string, the path to the T_antigen_candidates_all.txt file
     :param allele: string, either A, B or C
@@ -178,6 +178,12 @@ def get_coverage(t_result,allele,outdir='.'):
     Examples::
 
         snaf.downstream.get_coverage(t_result='result_new/T_candidates/T_antigen_candidates_all.txt',allele='A')
+
+
+    .. csv-table:: annotation txt file
+        :file: ./_static/coverage.csv
+        :widths: 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10
+        :header-rows: 1   
 
     '''
 

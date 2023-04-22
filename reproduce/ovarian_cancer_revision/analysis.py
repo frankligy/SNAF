@@ -120,8 +120,8 @@ def flank_chrom(chrom,offset):
 # snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
 # snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=True,tumor=df)
 # snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p').visualize(uid=uid,sample=sample,outdir='Frank_inspection',criterion=criterion)
-snaf.prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path,bam_contig_rename,query_region=flank_chrom(region,(2000,2000)),skip_copy=False, min_junction=1)
-sys.exit('stop')
+# snaf.prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path,bam_contig_rename,query_region=flank_chrom(region,(2000,2000)),skip_copy=False, min_junction=1)
+
 
 '''
 NQDEDPLEV:
@@ -138,116 +138,113 @@ SRR5947644  OvCa80
 brain, ERR315455
 '''
 
-# stack barplot
-srr_to_id = pd.read_csv('meta.txt',sep='\t',index_col=0).squeeze().to_dict()
-fig,ax = plt.subplots()
-all_n = []
-all_v = []
-for i,(srr,id_) in enumerate(srr_to_id.items()):
-    db = '{}_secondAligned.sortedByCoord.out.bed_unique2.fasta'.format(srr)
-    n = subprocess.run(['wc','-l','./fasta/{}'.format(db)],stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[0].split(' ')[0]
-    n = int(n)/2
-    all_n.append(n)
-    pep_path = 'MS/{}/combined/txt/peptides.txt'.format(id_)
-    pep = pd.read_csv(pep_path,sep='\t',index_col=0)
-    pep = pep.loc[pep['Proteins'].notna(),:]
-    v = pep.shape[0]
-    v = int(v)
-    all_v.append(v)
-    ax.bar(x=i,height=n,bottom=0,color='b')
-    ax.bar(x=i,height=v,bottom=n-v,color='orange')
-    ax.text(x=i,y=n+5,s=v,fontsize=5,ha='center')
-ax.legend(handles=[Patch(color=i) for i in ['b','orange']],labels=['predicted','MS supported'],loc='upper left',bbox_to_anchor=(1,1),frameon=False)
-ax.set_xticks(np.arange(len(srr_to_id)))
-ax.set_xticklabels([item.replace('OvCa','P')for item in srr_to_id.values()],rotation=60,fontsize=8)
-ax.set_xlabel('Ovarian Cancer Patients')
-ax.set_ylabel('Number of Peptides')
-plt.savefig('stack_barplot.pdf',bbox_inches='tight')
-plt.close()
+# # stack barplot
+# srr_to_id = pd.read_csv('meta.txt',sep='\t',index_col=0).squeeze().to_dict()
+# fig,ax = plt.subplots()
+# all_n = []
+# all_v = []
+# for i,(srr,id_) in enumerate(srr_to_id.items()):
+#     db = '{}_secondAligned.sortedByCoord.out.bed_unique2.fasta'.format(srr)
+#     n = subprocess.run(['wc','-l','./fasta/{}'.format(db)],stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[0].split(' ')[0]
+#     n = int(n)/2
+#     all_n.append(n)
+#     pep_path = 'MS/{}/combined/txt/peptides.txt'.format(id_)
+#     pep = pd.read_csv(pep_path,sep='\t',index_col=0)
+#     pep = pep.loc[pep['Proteins'].notna(),:]
+#     v = pep.shape[0]
+#     v = int(v)
+#     all_v.append(v)
+#     ax.bar(x=i,height=n,bottom=0,color='b')
+#     ax.bar(x=i,height=v,bottom=n-v,color='orange')
+#     ax.text(x=i,y=n+5,s=v,fontsize=5,ha='center')
+# ax.legend(handles=[Patch(color=i) for i in ['b','orange']],labels=['predicted','MS supported'],loc='upper left',bbox_to_anchor=(1,1),frameon=False)
+# ax.set_xticks(np.arange(len(srr_to_id)))
+# ax.set_xticklabels([item.replace('OvCa','P')for item in srr_to_id.values()],rotation=60,fontsize=8)
+# ax.set_xlabel('Ovarian Cancer Patients')
+# ax.set_ylabel('Number of Peptides')
+# plt.savefig('stack_barplot.pdf',bbox_inches='tight')
+# plt.close()
 
-rate = np.array(all_v) / np.array(all_n)
-'''
-[77, 28, 18, 16, 12, 21, 160, 143, 43, 12, 25, 15, 29, 42]
-[1140.0, 439.0, 739.0, 348.0, 579.0, 330.0, 988.0, 446.0, 732.0, 529.0, 843.0, 519.0, 502.0, 604.0]
-[0.06754386 0.06378132 0.02435724 0.04597701 0.02072539 0.06363636
- 0.16194332 0.3206278  0.05874317 0.02268431 0.02965599 0.02890173
- 0.05776892 0.06953642]
+# rate = np.array(all_v) / np.array(all_n)
+# '''
+# [77, 28, 18, 16, 12, 21, 160, 143, 43, 12, 25, 15, 29, 42]
+# [1140.0, 439.0, 739.0, 348.0, 579.0, 330.0, 988.0, 446.0, 732.0, 529.0, 843.0, 519.0, 502.0, 604.0]
+# [0.06754386 0.06378132 0.02435724 0.04597701 0.02072539 0.06363636
+#  0.16194332 0.3206278  0.05874317 0.02268431 0.02965599 0.02890173
+#  0.05776892 0.06953642]
 
- 0.07399163277018352
-'''
-sys.exit('stop')
-
+#  0.07399163277018352
+# '''
 
 
 
 
 
+# output supp1 table, MS results and other information
+os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ovarian/MS')
+all_patients = subprocess.run('for folder in *; do if [ -d $folder ]; then echo $folder; fi; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
+os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ovarian')
+patient_2_sample = pd.read_csv('sample_hla.txt',sep='\t',index_col=0)['sample_name'].to_dict()
+freq_df = pd.read_csv('result/frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
+aa_2_uid_first = {}
+uid_2_ts_mean = {}
+uid_2_ts_mle = {}
+for item,ts_mean,ts_mle in zip(*[freq_df.index,freq_df['tumor_specificity_mean'],freq_df['tumor_specificity_mle']]):
+    aa,uid = item.split(',')
+    aa_2_uid_first.setdefault(aa,[]).append(uid)
+    uid_2_ts_mean[uid] = ts_mean
+    uid_2_ts_mle[uid] = ts_mle
+aa_2_uid_second = {aa:','.join(uid) for aa,uid in aa_2_uid_first.items()}
+jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
+with pd.ExcelWriter('supp_table_ms.xlsx') as writer:
+    for p in all_patients:
+        print(p)
+        sample = patient_2_sample[p]
+        df = pd.read_csv('result/frequency_stage2_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
+        snaf.report_candidates(jcmq,df,sample=sample,outdir='result/candidates',criterion=[('netMHCpan_el',0,'<=',2),])
+        cand = pd.read_csv('result/candidates/T_antigen_candidates_{}.txt'.format(sample),sep='\t',index_col=0)
+        aa_2_binding = {}
+        aa_2_immuno = {}
+        for antigen,sub_df in cand.groupby(by='peptide'):
+            dict_binding = pd.Series(index=sub_df['hla'].values,data=sub_df['binding_affinity'].values).to_dict()
+            dict_immuno = pd.Series(index=sub_df['hla'].values,data=sub_df['immunogenicity'].values).to_dict()
+            aa_2_binding[antigen] = dict_binding
+            aa_2_immuno[antigen] = dict_immuno
+        os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ovarian/MS/{}/combined/txt'.format(p))
+        pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
+        col_uid = []
+        col_ts_mean = []
+        col_ts_mle = []
+        col_nmp = []
+        col_di = []
+        for aa,protein in zip(*[pep.index,pep['Proteins']]):
+            if pd.notna(protein):
+                uid = aa_2_uid_second[aa]
+                means = []
+                mles = []
+                for u in uid.split(','):
+                    means.append(str(uid_2_ts_mean[u]))
+                    mles.append(str(uid_2_ts_mle[u]))
+                means = ','.join(means)
+                mles = ','.join(mles)
+                nmp = aa_2_binding[aa]
+                di = aa_2_immuno[aa]
+            else:
+                uid, means, mles, nmp, di = pd.NA, pd.NA, pd.NA, pd.NA, pd.NA
+            col_uid.append(uid)
+            col_ts_mean.append(means)
+            col_ts_mle.append(mles)
+            col_nmp.append(nmp)
+            col_di.append(di)
+        pep['uid'] = col_uid
+        pep['tumor_specificity_mean'] = col_ts_mean
+        pep['tumor_specificity_mle'] = col_ts_mle
+        pep['binding_netMHCpan'] = col_nmp
+        pep['immunogenicity_deepimmuno'] = col_di
+        pep.to_excel(writer,sheet_name=p)
+        os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ovarian')
 
-# # output supp1 table, MS results and other information
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS')
-# all_patients = subprocess.run('for folder in *; do if [ -d $folder ]; then echo $folder; fi; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis')
-# patient_2_sample = pd.read_csv('sample_hla.txt',sep='\t',index_col=0)['sample_name'].to_dict()
-# freq_df = pd.read_csv('result/frequency_stage2_verbosity1_uid_gene_coord_mean_mle.txt',sep='\t',index_col=0)
-# aa_2_uid_first = {}
-# uid_2_ts_mean = {}
-# uid_2_ts_mle = {}
-# for item,ts_mean,ts_mle in zip(*[freq_df.index,freq_df['tumor_specificity_mean'],freq_df['tumor_specificity_mle']]):
-#     aa,uid = item.split(',')
-#     aa_2_uid_first.setdefault(aa,[]).append(uid)
-#     uid_2_ts_mean[uid] = ts_mean
-#     uid_2_ts_mle[uid] = ts_mle
-# aa_2_uid_second = {aa:','.join(uid) for aa,uid in aa_2_uid_first.items()}
-# jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
-# with pd.ExcelWriter('/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/supp1_table.xlsx') as writer:
-#     for p in all_patients:
-#         print(p)
-#         sample = patient_2_sample[p]
-#         df = pd.read_csv('result/frequency_stage2_verbosity1_uid.txt',sep='\t',index_col=0)
-#         snaf.report_candidates(jcmq,df,sample=sample,outdir='result/candidates',criterion=[('netMHCpan_el',0,'<=',2),])
-#         cand = pd.read_csv('result/candidates/T_antigen_candidates_{}.txt'.format(sample),sep='\t',index_col=0)
-#         aa_2_binding = {}
-#         aa_2_immuno = {}
-#         for antigen,sub_df in cand.groupby(by='peptide'):
-#             dict_binding = pd.Series(index=sub_df['hla'].values,data=sub_df['binding_affinity'].values).to_dict()
-#             dict_immuno = pd.Series(index=sub_df['hla'].values,data=sub_df['immunogenicity'].values).to_dict()
-#             aa_2_binding[antigen] = dict_binding
-#             aa_2_immuno[antigen] = dict_immuno
-#         os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/{}/combined/txt'.format(p))
-#         pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
-#         col_uid = []
-#         col_ts_mean = []
-#         col_ts_mle = []
-#         col_nmp = []
-#         col_di = []
-#         for aa,protein in zip(*[pep.index,pep['Proteins']]):
-#             if pd.notna(protein):
-#                 uid = aa_2_uid_second[aa]
-#                 means = []
-#                 mles = []
-#                 for u in uid.split(','):
-#                     means.append(str(uid_2_ts_mean[u]))
-#                     mles.append(str(uid_2_ts_mle[u]))
-#                 means = ','.join(means)
-#                 mles = ','.join(mles)
-#                 nmp = aa_2_binding[aa]
-#                 di = aa_2_immuno[aa]
-#             else:
-#                 uid, means, mles, nmp, di = pd.NA, pd.NA, pd.NA, pd.NA, pd.NA
-#             col_uid.append(uid)
-#             col_ts_mean.append(means)
-#             col_ts_mle.append(mles)
-#             col_nmp.append(nmp)
-#             col_di.append(di)
-#         pep['uid'] = col_uid
-#         pep['tumor_specificity_mean'] = col_ts_mean
-#         pep['tumor_specificity_mle'] = col_ts_mle
-#         pep['binding_netMHCpan'] = col_nmp
-#         pep['immunogenicity_deepimmuno'] = col_di
-#         pep.to_excel(writer,sheet_name=p)
-#         os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis')
-
-with pd.ExcelWriter('/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/supp1_table.xlsx', mode='a') as writer:
+with pd.ExcelWriter('supp_table_ms.xlsx', mode='a') as writer:
     # add look up table
     lookup = pd.read_csv('sample_hla.txt',sep='\t',index_col=0)
     lookup.to_excel(writer,sheet_name='lookup_table')
