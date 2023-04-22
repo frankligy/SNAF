@@ -424,7 +424,8 @@ def unit_run(uid,base_sample,region,task_name):
     # snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
     # snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=True,tumor=df)
     # snaf.JunctionCountMatrixQuery.deserialize('result_new/after_prediction.p').visualize(uid=uid,sample=sample,outdir='Frank_inspection',criterion=criterion)
-    snaf.gtex_visual_combine(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
+    dff = snaf.gtex_visual_combine(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
+    dff.to_csv('HAAASFETL_adata_df.txt',sep='\t')
     # snaf.prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path,bam_contig_rename,query_region=region,skip_copy=False, min_junction=1,task_name=task_name)
 
 def flank_chrom(chrom,offset):
@@ -457,10 +458,10 @@ RASA3
 gene is highly expressed, but splicing is unique, very tumor specific
 adipose tissue ERR315343 use this as control instead breast is also highly expressed TCGA-BH-A0H7-11A-13R-A089-07
 '''
-unit_run(uid='ENSG00000185989:E5.1_114128541-E18.1',
-         base_sample='TCGA-DA-A1HY-06A-11R-A18T-07',
-         region=flank_chrom('chr13:114073837-114128541',(10000,10000)),
-         task_name='_VAPGEAKNL')
+# unit_run(uid='ENSG00000185989:E5.1_114128541-E18.1',
+#          base_sample='TCGA-DA-A1HY-06A-11R-A18T-07',
+#          region=flank_chrom('chr13:114073837-114128541',(10000,10000)),
+#          task_name='_VAPGEAKNL')
 
 '''
 YALANIKWI
