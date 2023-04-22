@@ -181,7 +181,7 @@ def get_coverage(t_result,allele,outdir='.'):
 
 
     .. csv-table:: coverage
-        :file: ../doc/_static/coverage.csv
+        :file: ../docs/_static/coverage.csv
         :widths: 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10
         :header-rows: 1   
 
