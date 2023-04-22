@@ -180,8 +180,8 @@ def get_coverage(t_result,allele,outdir='.'):
         snaf.downstream.get_coverage(t_result='result_new/T_candidates/T_antigen_candidates_all.txt',allele='A')
 
 
-    .. csv-table:: annotation txt file
-        :file: ./_static/coverage.csv
+    .. csv-table:: coverage
+        :file: ../doc/_static/coverage.csv
         :widths: 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10
         :header-rows: 1   
 
