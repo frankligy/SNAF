@@ -1,0 +1,171 @@
+SRR	study	study_description	annotation	cond	pair-end
+SRR5960229	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960231	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960233	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960234	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960235	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960236	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960237	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960239	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960240	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960241	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960242	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960245	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960247	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960249	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D5	TRUE	pair-end
+SRR5960251	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D12	TRUE	pair-end
+SRR5960253	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D12	TRUE	pair-end
+SRR5960256	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D12	TRUE	pair-end
+SRR5960258	GSE102983	reverse skin fibroblast to mesenchymal stem cell	mesenchymal stem cell-LC D15	TRUE	pair-end
+SRR5960261	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D5	TRUE	pair-end
+SRR5960262	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D5	TRUE	pair-end
+SRR5960263	GSE102983	reverse skin fibroblast to mesenchymal stem cell	mesenchymal stem cell-LC D15	TRUE	pair-end
+SRR5960264	GSE102983	reverse skin fibroblast to mesenchymal stem cell	mesenchymal stem cell-LC D15	TRUE	pair-end
+SRR5960265	GSE102983	reverse skin fibroblast to mesenchymal stem cell	mesenchymal stem cell-LC D15	TRUE	pair-end
+SRR5960270	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D12	TRUE	pair-end
+SRR5960272	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960273	GSE102983	reverse skin fibroblast to mesenchymal stem cell	mesenchymal stem cell-LC D15	TRUE	pair-end
+SRR5960274	GSE102983	reverse skin fibroblast to mesenchymal stem cell	mesenchymal stem cell-LC D15	TRUE	pair-end
+SRR5960275	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D5	TRUE	pair-end
+SRR5960276	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D5	TRUE	pair-end
+SRR5960277	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960278	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960280	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960228	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960230	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960232	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960238	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960243	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960244	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960246	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960248	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D12	TRUE	pair-end
+SRR5960250	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D5	TRUE	pair-end
+SRR5960252	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D12	TRUE	pair-end
+SRR5960254	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D12	TRUE	pair-end
+SRR5960255	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D12	TRUE	pair-end
+SRR5960257	GSE102983	reverse skin fibroblast to mesenchymal stem cell	mesenchymal stem cell-LC D15	TRUE	pair-end
+SRR5960259	GSE102983	reverse skin fibroblast to mesenchymal stem cell	mesenchymal stem cell-LC D15	TRUE	pair-end
+SRR5960260	GSE102983	reverse skin fibroblast to mesenchymal stem cell	mesenchymal stem cell-LC D15	TRUE	pair-end
+SRR5960266	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D5	TRUE	pair-end
+SRR5960267	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960268	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast	FALSE	pair-end
+SRR5960269	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D12	TRUE	pair-end
+SRR5960271	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960279	GSE102983	reverse skin fibroblast to mesenchymal stem cell	bone mesenchymal stem cell	TRUE	pair-end
+SRR5960281	GSE102983	reverse skin fibroblast to mesenchymal stem cell	fibroblast induced D5	TRUE	pair-end
+SRR6829681	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4WT, biorep1,techrep1"	FALSE	pair-end
+SRR6829682	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4WT, biorep1,techrep2"	FALSE	pair-end
+SRR6829683	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4WT, biorep1,techrep3"	FALSE	pair-end
+SRR6829684	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4WT, biorep2,techrep1"	FALSE	pair-end
+SRR6829685	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4WT, biorep2,techrep2"	FALSE	pair-end
+SRR6829686	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4WT, biorep2,techrep3"	FALSE	pair-end
+SRR6829687	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4WT, biorep3,techrep1"	FALSE	pair-end
+SRR6829688	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4WT, biorep3,techrep2"	FALSE	pair-end
+SRR6829689	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4WT, biorep3,techrep3"	FALSE	pair-end
+SRR6829690	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4GFP,biorep1,techrep1"	FALSE	pair-end
+SRR6829691	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4GFP,biorep1,techrep2"	FALSE	pair-end
+SRR6829692	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4GFP,biorep1,techrep3"	FALSE	pair-end
+SRR6829693	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4GFP,biorep2,techrep1"	FALSE	pair-end
+SRR6829694	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4GFP,biorep2,techrep2"	FALSE	pair-end
+SRR6829695	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4GFP,biorep3,techrep1"	FALSE	pair-end
+SRR6829696	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4GFP,biorep3,techrep2"	FALSE	pair-end
+SRR6829697	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4GFP,biorep3,techrep3"	FALSE	pair-end
+SRR6829698	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4KD,biorep1,techrep1"	TRUE	pair-end
+SRR6829699	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4KD,biorep1,techrep2"	TRUE	pair-end
+SRR6829700	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4KD,biorep1,techrep3"	TRUE	pair-end
+SRR6829701	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4KD,biorep2,techrep1"	TRUE	pair-end
+SRR6829702	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4KD,biorep2,techrep2"	TRUE	pair-end
+SRR6829703	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4KD,biorep2,techrep3"	TRUE	pair-end
+SRR6829704	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4KD,biorep3,techrep1"	TRUE	pair-end
+SRR6829705	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4KD,biorep3,techrep2"	TRUE	pair-end
+SRR6829706	GSE111786	knock down KLF4 to reverse keratinocyte to precusor state	"KLF4KD,biorep3,techrep3"	TRUE	pair-end
+SRR11595760	GSE149189	"compare fetal dermal papilla with dermal sheath cup, interfollicular dermal and adult DP"	fetus DP	TRUE	single-end
+SRR11595761	GSE149189	"compare fetal dermal papilla with dermal sheath cup, interfollicular dermal and adult DP"	fetus DP	TRUE	single-end
+SRR11595762	GSE149189	"compare fetal dermal papilla with dermal sheath cup, interfollicular dermal and adult DP"	fetus DSC	FALSE	single-end
+SRR11595763	GSE149189	"compare fetal dermal papilla with dermal sheath cup, interfollicular dermal and adult DP"	fetus DSC	FALSE	single-end
+SRR11595764	GSE149189	"compare fetal dermal papilla with dermal sheath cup, interfollicular dermal and adult DP"	fetus IFD	FALSE	single-end
+SRR11595765	GSE149189	"compare fetal dermal papilla with dermal sheath cup, interfollicular dermal and adult DP"	fetus IFD	FALSE	single-end
+SRR11595766	GSE149189	"compare fetal dermal papilla with dermal sheath cup, interfollicular dermal and adult DP"	adult DP	FALSE	single-end
+SRR11595767	GSE149189	"compare fetal dermal papilla with dermal sheath cup, interfollicular dermal and adult DP"	adult DP	FALSE	single-end
+SRR18143861	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143862	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143863	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143864	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143865	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143866	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143867	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143868	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143869	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143870	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143871	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143872	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1_TERT_immortalization	TRUE	pair-end
+SRR18143873	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2_low_oxygen	FALSE	pair-end
+SRR18143874	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2_low_oxygen	FALSE	pair-end
+SRR18143875	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2_low_oxygen	FALSE	pair-end
+SRR18143876	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2_low_oxygen	FALSE	pair-end
+SRR18143877	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2_low_oxygen	FALSE	pair-end
+SRR18143878	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2_low_oxygen	FALSE	pair-end
+SRR18143879	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2_low_oxygen	FALSE	pair-end
+SRR18143880	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2_low_oxygen	FALSE	pair-end
+SRR18143881	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143882	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143883	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143884	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143885	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143886	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143887	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143888	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143889	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143890	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143891	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143892	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143893	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143894	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143895	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143896	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_2	TRUE	pair-end
+SRR18143897	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_1	TRUE	pair-end
+SRR18143898	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_1	TRUE	pair-end
+SRR18143899	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_1	TRUE	pair-end
+SRR18143900	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_1	TRUE	pair-end
+SRR18143901	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_1	TRUE	pair-end
+SRR18143902	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_1	TRUE	pair-end
+SRR18143903	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_1	TRUE	pair-end
+SRR18143904	GSE197471	test loss of DNA methylation rate and cell cycle	Neonatal_foreskin_fibroblast_1	TRUE	pair-end
+SRR18143905	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_skin_fibroblast_1	TRUE	pair-end
+SRR18143906	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_skin_fibroblast_1	TRUE	pair-end
+SRR18143907	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_skin_fibroblast_1	TRUE	pair-end
+SRR18143908	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_skin_fibroblast_1	TRUE	pair-end
+SRR18143909	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_skin_fibroblast_1	TRUE	pair-end
+SRR18143910	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_skin_fibroblast_1	TRUE	pair-end
+SRR18143911	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_skin_fibroblast_1	TRUE	pair-end
+SRR18143912	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_skin_fibroblast_1	TRUE	pair-end
+SRR18143913	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_smooth_muscle_cell_1	TRUE	pair-end
+SRR18143914	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_smooth_muscle_cell_1	TRUE	pair-end
+SRR18143915	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_smooth_muscle_cell_1	TRUE	pair-end
+SRR18143916	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_smooth_muscle_cell_1	TRUE	pair-end
+SRR18143917	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_smooth_muscle_cell_1	TRUE	pair-end
+SRR18143918	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_smooth_muscle_cell_1	TRUE	pair-end
+SRR18143919	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_smooth_muscle_cell_1	TRUE	pair-end
+SRR18143920	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_smooth_muscle_cell_1	TRUE	pair-end
+SRR18143921	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_endothelial_cell_1	TRUE	pair-end
+SRR18143922	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_endothelial_cell_1	TRUE	pair-end
+SRR18143923	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_endothelial_cell_1	TRUE	pair-end
+SRR18143924	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_endothelial_cell_1	TRUE	pair-end
+SRR18143925	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_endothelial_cell_1	TRUE	pair-end
+SRR18143926	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_endothelial_cell_1	TRUE	pair-end
+SRR18143927	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_endothelial_cell_1	TRUE	pair-end
+SRR18143928	GSE197471	test loss of DNA methylation rate and cell cycle	Adult_vascular_endothelial_cell_1	TRUE	pair-end
+SRR18143929	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1	TRUE	pair-end
+SRR18143930	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1	TRUE	pair-end
+SRR18143931	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1	TRUE	pair-end
+SRR18143932	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1	TRUE	pair-end
+SRR18143933	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1	TRUE	pair-end
+SRR18143934	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1	TRUE	pair-end
+SRR18143935	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1	TRUE	pair-end
+SRR18143936	GSE197471	test loss of DNA methylation rate and cell cycle	Fetal_skin_fibroblast_1	TRUE	pair-end
+SRR19165247	GSE202700	MXD4 knockdown reverse to cutaneous precursor	MXD4 knockdown	TRUE	pair-end
+SRR19165248	GSE202700	MXD4 knockdown reverse to cutaneous precursor	MXD4 knockdown	TRUE	pair-end
+SRR19165249	GSE202700	MXD4 knockdown reverse to cutaneous precursor	MXD4 knockdown	TRUE	pair-end
+SRR19165250	GSE202700	MXD4 knockdown reverse to cutaneous precursor	WT	FALSE	pair-end
+SRR19165251	GSE202700	MXD4 knockdown reverse to cutaneous precursor	WT	FALSE	pair-end
+SRR19165252	GSE202700	MXD4 knockdown reverse to cutaneous precursor	WT	FALSE	pair-end

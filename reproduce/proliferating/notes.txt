@@ -1,0 +1,1 @@
+SRR18143890 is excluded due to an alignment error that later fixed by newer STAR version, but here we have to use 2.4.1h so no solution, at the end, 169 samples were collected
