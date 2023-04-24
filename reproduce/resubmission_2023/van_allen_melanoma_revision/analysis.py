@@ -44,8 +44,6 @@ full_dict = {}   # {SRR2660032_secondAligned.sortedByCoord.out.bed:hla_string}
 for p,f in patient_dict.items():
     full_dict[f] = hla_dict[p]
 
-
-
 # # run SNAF
 # df = snaf.get_reduced_junction_matrix(pc='counts.original.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 # netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
@@ -57,32 +55,32 @@ for p,f in patient_dict.items():
 # snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
 # surface.initialize(db_dir=db_dir)
 
-# T antigen
-# jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result',filter_mode='maxmin')
+# # T antigen
+# jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result_new',filter_mode='maxmin')
 # hlas = [hla_string.split(',') for hla_string in df.columns.map(full_dict)]
-# jcmq.run(hlas=hlas,outdir='./result')
-# snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
+# jcmq.run(hlas=hlas,outdir='./result_new')
+# snaf.JunctionCountMatrixQuery.generate_results(path='./result_new/after_prediction.p',outdir='./result_new')
 
-
-
-# survival analysis
+# # survival analysis
 # survival = pd.read_csv('all_patients_hla.txt',sep='\t',index_col=0) 
 reverse_patient_dict = {v:k for k,v in patient_dict.items()}
 # for stage in [0,2,3]: 
-#     burden = pd.read_csv('result/burden_stage{}.txt'.format(stage),sep='\t',index_col=0)
+#     burden = pd.read_csv('result_new/burden_stage{}.txt'.format(stage),sep='\t',index_col=0)
+#     burden_subset = burden.loc[burden.iloc[:,-1]!=0,:]
+#     unique_n_neojunctions = list(set(burden_subset.index.tolist())) # 15000, 9282, 9089
 #     burden.columns = burden.columns.map(reverse_patient_dict).values
-#     burden_output,quantiles = snaf.survival_analysis(burden,survival,n=2,stratification_plot='result/survival/stage{}_stratify.pdf'.format(stage),survival_plot='result/survival/stage{}_survival.pdf'.format(stage),survival_duration='overall_survival',survival_event='dead')
-#     if stage == 3:
-#         burden_output.to_csv('result/survival/burden3_patient_high_low_group.txt',sep='\t')
+#     burden_output,quantiles = snaf.survival_analysis(burden,survival,n=2,stratification_plot='result_new/survival/stage{}_stratify.pdf'.format(stage),survival_plot='result_new/survival/stage{}_survival.pdf'.format(stage),survival_duration='overall_survival',survival_event='dead')
+#     burden_output.to_csv('result_new/survival/burden{}_patient_high_low_group.txt'.format(stage),sep='\t')
 
-# snaf.downstream.survival_regression(freq='result/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',remove_quote=True,
+
+# snaf.downstream.survival_regression(freq='result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',remove_quote=True,
 #                                     rename_func=lambda x:reverse_patient_dict[x],survival='all_patients_hla.txt',survival_duration='overall_survival',survival_event='dead',
-#                                     pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',outdir='result/survival',mode='binary')
+#                                     pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',outdir='result_new/survival',mode='binary')
 
-df_tcga = pd.read_csv('../TCGA_melanoma/result/survival/survival_regression_binary_final_results.txt',sep='\t',index_col=0)
-df_van = pd.read_csv('result/survival/survival_regression_binary_final_results.txt',sep='\t',index_col=0)
+df_tcga = pd.read_csv('../TCGA_melanoma/result_new/survival/survival_regression_binary_final_results.txt',sep='\t',index_col=0)
+df_van = pd.read_csv('result_new/survival/survival_regression_binary_final_results.txt',sep='\t',index_col=0)
 cross_df = df_tcga.join(df_van,how='inner',lsuffix='_tcga',rsuffix='_van')
-cross_df.to_csv('result/survival/cross_df.txt',sep='\t')
+cross_df.to_csv('result_new/survival/cross_df.txt',sep='\t')
 
 sys.exit('stop')
 
