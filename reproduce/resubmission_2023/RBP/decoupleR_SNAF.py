@@ -115,6 +115,16 @@ net = net.loc[net['weight']!=0,:]
 # estimate, norm, corr, pvals = dc.run_wsum(mat=expr,net=net)
 # estimate.to_csv(os.path.join(root_path,'decoupler','wsum_estimate.txt'),sep='\t')
 
+
+# see if any highly-expressed or lowly-expressed gene in high group would be SF
+gene_lowly_in_high = pd.read_csv('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result_new/survival/gene_list_highly_in_low.txt',sep='\t',index_col=0,header=None).index.tolist()
+gene_highly_in_high = pd.read_csv('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result_new/survival/gene_list.txt',sep='\t',index_col=0,header=None).index.tolist()
+sfs = prior.columns.tolist()
+common_reduce = list(set(sfs).intersection(set(gene_lowly_in_high)))
+common_increase = list(set(sfs).intersection(set(gene_highly_in_high)))
+print(common_reduce)
+print(common_increase)
+
 # add metadata on MDT
 sfa = pd.read_csv('mdt_estimate.txt',sep='\t',index_col=0).T
 group = pd.read_csv('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result_new/survival/groups.txt',sep='\t',index_col=0,header=None)
@@ -160,6 +170,10 @@ ax.set_xticklabels(df['index'],fontsize=2,rotation=90)
 ax.set_ylim([0,-0.35])
 ax.set_xlabel('RBP')
 ax.set_ylabel('negative correlation w/ burden')
+rbps = ['HNRNPA2B1','HNRNPM','SRSF1','HNRNPK','HNRNPA1','U2AF1','U2AF2','SF3B1','QKI','SRSF5']
+for item,x,y in zip(df['index'],df.index,df['s']):
+    if item in rbps:
+        ax.text(x=x,y=y,s=item,fontsize=2)
 plt.savefig('result.pdf',bbox_inches='tight')
 plt.close()
 sys.exit('stop')
