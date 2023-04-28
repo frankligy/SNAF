@@ -20,18 +20,18 @@ mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
 
-# # get reduced junction
-df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# # # get reduced junction
+# df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
-# run SNAF
-netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
-tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
-gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
-add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+# # run SNAF
+# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 
-snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
-surface.initialize(db_dir=db_dir)
+# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+# surface.initialize(db_dir=db_dir)
 
 # 4 common neoantigens for immuno assay
 # cand = pd.read_csv('result_new/T_candidates/T_antigen_candidates_all.txt',sep='\t',index_col=0)
@@ -120,11 +120,11 @@ stage 3: 915.2754237288135 2486.0 74.0
 #                                      mode='static',outdir='result_new/survival',genes_to_highlight=['LST1','HCST','IL32','CD3D','S100A8','MZB1','IGLC4','ADAM10','ARFGEF2','MIB1','KIF3B','TNPO1','PTPN11','ANKRD52','TGFBR1'])
 
 # visualize RBP specifically
-rbps = ['YTHDC2', 'SDAD1', 'TARDBP', 'UCHL5', 'SRSF1', 'PUM1', 'GNL3', 'PNPT1', 'DHX30', 'GRSF1', 'HLTF', 'PSIP1', 'DDX52', 'EIF4B', 'SND1', 'PABPC1', 'WDR43', 'AGO2', 'STAU1', 'SSB', 'HNRNPU', 'EIF2S2', 'FAM120A', 'RBM39', 'SNRNP200', 'EIF4G1', 'HSPD1', 'DDX55', 'DDX21', 'PPIG', 'DKC1', 'FIP1L1', 'LARP4', 'YWHAG', 'RCC2', 'EIF4G2', 'MSI2', 'WDR3', 'EIF3A', 'PRPF4', 'PRPF8', 'SERBP1', 'CELF1', 'AQR', 'SUPV3L1', 'FTO', 'NUSAP1', 'XPO5', 'AGO1', 'FMR1', 'SF3B1', 'DNAJC21', 'TROVE2', 'DDX27', 'ADAR', 'KHDRBS1', 'TIAL1', 'CPEB4', 'KRR1', 'FXR1', 'AGO3', 'XPO1', 'NIPBL', 'EIF2S1', 'HNRNPF', 'XRN1', 'DDX42', 'ZC3H11A', 'PUM2', 'AKAP1', 'DROSHA', 'EFTUD2', 'MTPAP', 'DDX1', 'NUFIP2', 'IGF2BP2', 'G3BP1', 'QKI', 'IGF2BP3', 'LARP7', 'GEMIN5', 'DDX3X', 'DDX6', 'TIA1', 'SLTM', 'TRIM56', 'MBNL1', 'SRFBP1', 'AGGF1', 'SUGP2', 'FUBP1', 'ZNF800', 'SF3A3', 'G3BP2', 'MAK16', 'RBM25', 'METAP2', 'CPSF6', 'ZRANB2', 'SSRP1', 'NOLC1', 'UTP18', 'NSUN2', 'FASTKD2', 'WRN', 'ESF1', 'ILF3', 'RBFOX2', 'SART3', 'PABPC4', 'PHF6', 'ABCF1', 'NAA15', 'SRP68', 'XRN2', 'MATR3']
-rbp_select = ['NAA15','WDR43','HLTF','NOLC1','PUM2','SF3B1','SRSF1','RBFOX2','DROSHA','MBNL1','QKI','']
-snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',up_cutoff=0.58,down_cutoff=-0.58,
-                                     mode='static',outdir='result_new/survival',genes_to_highlight=rbp_select)
-sys.exit('stop')
+# rbps = ['YTHDC2', 'SDAD1', 'TARDBP', 'UCHL5', 'SRSF1', 'PUM1', 'GNL3', 'PNPT1', 'DHX30', 'GRSF1', 'HLTF', 'PSIP1', 'DDX52', 'EIF4B', 'SND1', 'PABPC1', 'WDR43', 'AGO2', 'STAU1', 'SSB', 'HNRNPU', 'EIF2S2', 'FAM120A', 'RBM39', 'SNRNP200', 'EIF4G1', 'HSPD1', 'DDX55', 'DDX21', 'PPIG', 'DKC1', 'FIP1L1', 'LARP4', 'YWHAG', 'RCC2', 'EIF4G2', 'MSI2', 'WDR3', 'EIF3A', 'PRPF4', 'PRPF8', 'SERBP1', 'CELF1', 'AQR', 'SUPV3L1', 'FTO', 'NUSAP1', 'XPO5', 'AGO1', 'FMR1', 'SF3B1', 'DNAJC21', 'TROVE2', 'DDX27', 'ADAR', 'KHDRBS1', 'TIAL1', 'CPEB4', 'KRR1', 'FXR1', 'AGO3', 'XPO1', 'NIPBL', 'EIF2S1', 'HNRNPF', 'XRN1', 'DDX42', 'ZC3H11A', 'PUM2', 'AKAP1', 'DROSHA', 'EFTUD2', 'MTPAP', 'DDX1', 'NUFIP2', 'IGF2BP2', 'G3BP1', 'QKI', 'IGF2BP3', 'LARP7', 'GEMIN5', 'DDX3X', 'DDX6', 'TIA1', 'SLTM', 'TRIM56', 'MBNL1', 'SRFBP1', 'AGGF1', 'SUGP2', 'FUBP1', 'ZNF800', 'SF3A3', 'G3BP2', 'MAK16', 'RBM25', 'METAP2', 'CPSF6', 'ZRANB2', 'SSRP1', 'NOLC1', 'UTP18', 'NSUN2', 'FASTKD2', 'WRN', 'ESF1', 'ILF3', 'RBFOX2', 'SART3', 'PABPC4', 'PHF6', 'ABCF1', 'NAA15', 'SRP68', 'XRN2', 'MATR3']
+# rbp_select = ['NAA15','WDR43','HLTF','NOLC1','PUM2','SF3B1','SRSF1','RBFOX2','DROSHA','MBNL1','QKI','']
+# snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',up_cutoff=0.58,down_cutoff=-0.58,
+#                                      mode='static',outdir='result_new/survival',genes_to_highlight=rbp_select)
+
 # snaf.downstream.prepare_GO_analysis('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',outdir='result_new/survival',direction='<',lc_cutoff=-0.58,adjp_cutoff=0.05)
 # snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20221201-205821/gene_list-GO.txt','result_new/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20221201-205720/gene_list-BioMarkers.txt'],
 #                                     skiprows_list=[17,16],category_list=['Ontology Name','Gene-Set Name'],outdir='result_new/survival',
@@ -135,7 +135,18 @@ sys.exit('stop')
 
 # # coverage analysis
 # snaf.downstream.get_coverage(t_result='result_new/T_candidates/T_antigen_candidates_all.txt',allele='A')
-# sys.exit('stop')
+
+# common neoantigen characteristis
+# freq3 = pd.read_csv('result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
+# freq3_shared = freq3.loc[freq3['n_sample']>472*0.15,:]
+# genes = set(freq3_shared['symbol'].values)
+# with open('result_new/common/gene_list.txt','w') as f:
+#     for gene in genes:
+#         f.write('{}\n'.format(gene))
+# snaf.downstream.visualize_GO_result(path_list=['result_new/common/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230428-094602/gene_list-GO.txt'],
+#                                     skiprows_list=[17],category_list=['Ontology Name'],outdir='result_new/common',
+#                                     mode='static',ontology_to_highlight={'melanocyte differentiation':'melanocyte differentiation',
+#                                     'melanosome membrane':'melanosome membrane','pigment cell differentiation':'pigment cell differentiation','melanin metabolic process':'melanin metabolic process'},ylims=(10e-5,10e-1),xlims=(-1,16))
 
 
 '''B cell neoantigen'''
@@ -258,6 +269,7 @@ plot concat stacked barplot
 # os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
 # plt.savefig('MS_plot_concat_stacked.pdf',bbox_inches='tight')
 # plt.close()
+
 
 
 '''
@@ -383,8 +395,9 @@ occurence concat histogram or kde plot
 # series_unique = pd.Series(dict_unique)
 # series_unique.name = 'occurence'
 # fig,ax = plt.subplots()
-# sns.kdeplot(data=series_common.to_frame(),x='occurence',ax=ax,clip=[-0.05,15])
-# sns.kdeplot(data=series_unique.to_frame(),x='occurence',ax=ax,clip=[-0.05,15])
+# ax.set_xlim([-2,12])
+# sns.kdeplot(data=series_common.to_frame(),x='occurence',ax=ax,clip=[-2,15])
+# sns.kdeplot(data=series_unique.to_frame(),x='occurence',ax=ax,clip=[-2,15])
 # import matplotlib.patches as mpatches
 # ax.legend(handles=[mpatches.Patch(color=i) for i in ['#4B71B0','#DE8353']],labels=['common neoantigen','unique neoantigen'],loc='upper left',bbox_to_anchor=(1,1),frameon=False)
 # plt.savefig('MS_occurence_concat_kde.pdf',bbox_inches='tight');plt.close()
@@ -558,11 +571,11 @@ TCGA-D9-A148-06A-11R-A18S-07
 SLC45A2
 chr5:33954504-33963931
 '''
-unit_run(uid='ENSG00000164175:E3.2_33963931-E4.2',
-         base_sample='TCGA-D9-A148-06A-11R-A18S-07',
-         region=flank_chrom('chr5:33954504-33963931',(1000,1000)),
-         task_name='_SLC45A2')
-sys.exit('stop')
+# unit_run(uid='ENSG00000164175:E3.2_33963931-E4.2',
+#          base_sample='TCGA-D9-A148-06A-11R-A18S-07',
+#          region=flank_chrom('chr5:33954504-33963931',(1000,1000)),
+#          task_name='_SLC45A2')
+
 
 
 '''compare against the proliferative tissues'''
@@ -633,117 +646,106 @@ reduce valid Neojunction from 15017 to 14553 because they are present in added c
 #     for s in symbols:
 #         if s != 'unknown_gene':
 #             f.write('{}\n'.format(s))
-snaf.visualize_GO_result(path_list=['/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result_proliferate_new/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230423-141705/gene_list-GO.txt'],
-                         skiprows_list=[17],category_list=['Ontology Name'],outdir='result_proliferate_new',mode='static',ylims=(10e-25,10e-1),
-                         ontology_to_highlight=
-                             {'cell cycle':'cell cycle',
-                              'cell division':'cell division',
-                              'cell cycle process':'cell cycle process',
-                              'chromosome segregation':'chromosome segregation',
-                              'spindle':'spindle',
-                              'cytoskeleton':'cytoskeleton',
-                              'regulation of cell cycle process':'regulation of cell cycle process'})
+# snaf.visualize_GO_result(path_list=['/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result_proliferate_new/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230423-141705/gene_list-GO.txt'],
+#                          skiprows_list=[17],category_list=['Ontology Name'],outdir='result_proliferate_new',mode='static',ylims=(10e-25,10e-1),
+#                          ontology_to_highlight=
+#                              {'cell cycle':'cell cycle',
+#                               'cell division':'cell division',
+#                               'cell cycle process':'cell cycle process',
+#                               'chromosome segregation':'chromosome segregation',
+#                               'spindle':'spindle',
+#                               'cytoskeleton':'cytoskeleton',
+#                               'regulation of cell cycle process':'regulation of cell cycle process'})
 
-sys.exit('stop')
+
 
 
 
 '''write peptide.txt to a merged xlsx file for publication, supp3 table'''
-os.chdir('/data/salomonis-archive/MS/melanoma/raw')
-all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
-os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
-all_patients.pop(all_patients.index('Mel-16'))
-df = pd.read_csv('result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
-df['uid'] = [item.split(',')[1] for item in df.index]
-df['aa'] = [item.split(',')[0] for item in df.index]
-uid_2_ts_mean = pd.Series(data=df['tumor_specificity_mean'].values,index=df['uid'].values).to_dict()
-uid_2_ts_mle = pd.Series(data=df['tumor_specificity_mle'].values,index=df['uid'].values).to_dict()
-aa_2_uid = pd.Series(data=df['uid'].values,index=df['aa'].values).to_dict()
-with pd.ExcelWriter('supp_table_ms.xlsx') as writer:
-    for p in all_patients:
-        os.chdir('/data/salomonis-archive/MS/melanoma/raw/{}/combined/txt'.format(p))
-        pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
-        col_mean = []
-        col_mle = []
-        for aa,protein in zip(*[pep.index,pep['Proteins']]):
-            if pd.notna(protein):
-                u = protein.split(',')[0].lstrip('>')
-                mean = uid_2_ts_mean[u]
-                mle = uid_2_ts_mle[u]
-            else:
-                mean,mle = pd.NA, pd.NA
-            col_mean.append(mean)
-            col_mle.append(mle)
-        pep['tumor_specificity_mean'] = col_mean
-        pep['tumor_specificity_mle'] = col_mle
-        pep.to_excel(writer,sheet_name=p)
-    os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
-    # common neoantigens table
-    df = pd.read_csv('MS_common_occurence.txt',sep='\t',index_col=0)
-    df['uid'] = [aa_2_uid[item] for item in df.index]
-    df['tumor_specificity_mean'] = [uid_2_ts_mean[item] for item in df['uid']]
-    df['tumor_specificity_mle'] = [uid_2_ts_mle[item] for item in df['uid']]
-    df.to_excel(writer,sheet_name='common_neoantigens')
-    # add description
-    dic = {
-        'Sequence':'The amino acid sequence of the identified peptide',
-        'N-term cleavage window':'Sequence window from -15 to 15 around the N-terminal cleavage site of this peptide',
-        'C-term cleavage window':'Sequence window from -15 to 15 around the C-terminal cleavage site of this peptide',
-        'Amino acid before':'The amino acid in the protein sequence before the peptide',
-        'First amino acid':'The amino acid in the first position of the peptide sequence',
-        'Second amino acid':'The amino acid in the second position of the peptide sequence',
-        'Second last amino acid':'The amino acid in the second last position of the peptide sequence',
-        'Last amino acid':'The amino acid in the last position of the peptide sequence',
-        'Amino acid after':'The amino acid in the protein sequence after the peptide',
-        'N Count':'The number of instances of the "N" amino acid contained within the sequence, N indicates amino acid letter',
-        'Length':'The length of the sequence stored in the column "Sequence"',
-        'Missed cleavages':'Number of missed enzymatic cleavages',
-        'Mass':'Monoisotopic mass of the peptide',
-        'Proteins':'Identifiers of proteins this peptide is associated with',
-        'Leading razor protein':'Identifier of the leading protein in the protein group which uses this peptide for quantification. (Either unique or razor)',
-        'Start position':'Position of the first amino acid of this peptide in the protein sequence. (one-based)',
-        'End position':'Position of the last amino acid of this peptide in the protein sequence. (one-based)',
-        'Unique (Groups)':'When marked with "+", this particular peptide is unique to a single protein group in the proteinGroups file',
-        'Unique (Proteins)':'When marked with "+", this particular peptide is unique to a single protein sequence in the fasta file(s)',
-        'Charges':'All charge states that have been observed',
-        'PEP':'Posterior Error Probability of the identification. This value essentially operates as a p-value, where smaller is more significant',
-        'Score':'Highest Andromeda score for the associated MS/MS spectra',
-        'Experient [n]': 'Number of evidence entries for this "Experiment [n]"',
-        'Intensity':'Summed up eXtracted Ion Current (XIC) of all isotopic clusters associated with the identified AA sequence. In case of a labeled experiment this is the total intensity of all the isotopic patterns in the label cluster',
-        'Reverse':'When marked with "+", this particular peptide was found to be part of a protein derived from the reversed part of the decoy database. These should be removed for further data analysis',
-        'Potential contaminant':'When marked with '+', this particular peptide was found to be part of a commonly occurring contaminant. These should be removed for further data analysis',
-        'id':'A unique (consecutive) identifier for each row in the peptides table, which is used to cross-link the information in this table with the information stored in the other tables',
-        'Protein group IDs':'The identifiers of the protein groups this peptide was linked to, referenced against the proteinGroups table',
-        'Mod. peptide IDs':'Identifier(s) for peptide sequence(s), associated with the peptide, referenced against the corresponding modified peptides table',
-        'Evidence IDs':'Identifier(s) for analyzed peptide evidence associated with the protein group referenced against the evidence table',
-        'MS/MS IDs':'The identifiers of the MS/MS scans identifying this peptide, referenced against the msms table',
-        'Best MS/MS':'The identifier of the best (in terms of quality) MS/MS scan identifying this peptide, referenced against the msms table',
-        'Oxidation (M) site IDs':'Identifier(s) for site(s) associated with the protein group, which show(s) evidence of the modification, referenced against the appropriate modification site file',
-        'Taxonomy IDs':'Taxonomy identifiers',
-        'MS/MS Count':'The number of MS/MS evidence',
-        'tumor_specificity_mean':'The average raw read counts for each parental NeoJunction',
-        'tumor_specificity_mle':'The Tumor specificity score derived using Maximum Likelihood Estimation(MLE)',
-    }
-    pd.Series(data=dic,name='description').to_excel(writer,sheet_name='description')
-
-sys.exit('stop')
-
-
-
-### Step2: necessary secondary results
-# df = pd.read_csv('./result/frequency_stage3_verbosity1_uid.txt',sep='\t',index_col=0)
-# snaf.downstream.add_gene_symbol_frequency_table(df=df).to_csv('./result/frequency_stage3_verbosity1_uid_gene_symbol.txt',sep='\t')
-# jcmq = snaf.JunctionCountMatrixQuery.deserialize(name='./result/after_prediction.p')
-# jcmq.visualize(uid='ENSG00000167291:E38.6-E39.1',sample='TCGA-DA-A1I1-06A-12R-A18U-07.bed',outdir='./result')
+# os.chdir('/data/salomonis-archive/MS/melanoma/raw')
+# all_patients = subprocess.run('for file in *; do echo $file; done',shell=True,stdout=subprocess.PIPE,universal_newlines=True).stdout.split('\n')[:-1]
+# os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
+# all_patients.pop(all_patients.index('Mel-16'))
+# df = pd.read_csv('result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
+# df['uid'] = [item.split(',')[1] for item in df.index]
+# df['aa'] = [item.split(',')[0] for item in df.index]
+# uid_2_ts_mean = pd.Series(data=df['tumor_specificity_mean'].values,index=df['uid'].values).to_dict()
+# uid_2_ts_mle = pd.Series(data=df['tumor_specificity_mle'].values,index=df['uid'].values).to_dict()
+# aa_2_uid = pd.Series(data=df['uid'].values,index=df['aa'].values).to_dict()
+# with pd.ExcelWriter('supp_table_ms.xlsx') as writer:
+#     for p in all_patients:
+#         os.chdir('/data/salomonis-archive/MS/melanoma/raw/{}/combined/txt'.format(p))
+#         pep = pd.read_csv('peptides.txt',sep='\t',index_col=0)
+#         col_mean = []
+#         col_mle = []
+#         for aa,protein in zip(*[pep.index,pep['Proteins']]):
+#             if pd.notna(protein):
+#                 u = protein.split(',')[0].lstrip('>')
+#                 mean = uid_2_ts_mean[u]
+#                 mle = uid_2_ts_mle[u]
+#             else:
+#                 mean,mle = pd.NA, pd.NA
+#             col_mean.append(mean)
+#             col_mle.append(mle)
+#         pep['tumor_specificity_mean'] = col_mean
+#         pep['tumor_specificity_mle'] = col_mle
+#         pep.to_excel(writer,sheet_name=p)
+#     os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
+#     # common neoantigens table
+#     df = pd.read_csv('MS_common_occurence.txt',sep='\t',index_col=0)
+#     df['uid'] = [aa_2_uid[item] for item in df.index]
+#     df['tumor_specificity_mean'] = [uid_2_ts_mean[item] for item in df['uid']]
+#     df['tumor_specificity_mle'] = [uid_2_ts_mle[item] for item in df['uid']]
+#     df.to_excel(writer,sheet_name='common_neoantigens')
+#     # add description
+#     dic = {
+#         'Sequence':'The amino acid sequence of the identified peptide',
+#         'N-term cleavage window':'Sequence window from -15 to 15 around the N-terminal cleavage site of this peptide',
+#         'C-term cleavage window':'Sequence window from -15 to 15 around the C-terminal cleavage site of this peptide',
+#         'Amino acid before':'The amino acid in the protein sequence before the peptide',
+#         'First amino acid':'The amino acid in the first position of the peptide sequence',
+#         'Second amino acid':'The amino acid in the second position of the peptide sequence',
+#         'Second last amino acid':'The amino acid in the second last position of the peptide sequence',
+#         'Last amino acid':'The amino acid in the last position of the peptide sequence',
+#         'Amino acid after':'The amino acid in the protein sequence after the peptide',
+#         'N Count':'The number of instances of the "N" amino acid contained within the sequence, N indicates amino acid letter',
+#         'Length':'The length of the sequence stored in the column "Sequence"',
+#         'Missed cleavages':'Number of missed enzymatic cleavages',
+#         'Mass':'Monoisotopic mass of the peptide',
+#         'Proteins':'Identifiers of proteins this peptide is associated with',
+#         'Leading razor protein':'Identifier of the leading protein in the protein group which uses this peptide for quantification. (Either unique or razor)',
+#         'Start position':'Position of the first amino acid of this peptide in the protein sequence. (one-based)',
+#         'End position':'Position of the last amino acid of this peptide in the protein sequence. (one-based)',
+#         'Unique (Groups)':'When marked with "+", this particular peptide is unique to a single protein group in the proteinGroups file',
+#         'Unique (Proteins)':'When marked with "+", this particular peptide is unique to a single protein sequence in the fasta file(s)',
+#         'Charges':'All charge states that have been observed',
+#         'PEP':'Posterior Error Probability of the identification. This value essentially operates as a p-value, where smaller is more significant',
+#         'Score':'Highest Andromeda score for the associated MS/MS spectra',
+#         'Experient [n]': 'Number of evidence entries for this "Experiment [n]"',
+#         'Intensity':'Summed up eXtracted Ion Current (XIC) of all isotopic clusters associated with the identified AA sequence. In case of a labeled experiment this is the total intensity of all the isotopic patterns in the label cluster',
+#         'Reverse':'When marked with "+", this particular peptide was found to be part of a protein derived from the reversed part of the decoy database. These should be removed for further data analysis',
+#         'Potential contaminant':'When marked with '+', this particular peptide was found to be part of a commonly occurring contaminant. These should be removed for further data analysis',
+#         'id':'A unique (consecutive) identifier for each row in the peptides table, which is used to cross-link the information in this table with the information stored in the other tables',
+#         'Protein group IDs':'The identifiers of the protein groups this peptide was linked to, referenced against the proteinGroups table',
+#         'Mod. peptide IDs':'Identifier(s) for peptide sequence(s), associated with the peptide, referenced against the corresponding modified peptides table',
+#         'Evidence IDs':'Identifier(s) for analyzed peptide evidence associated with the protein group referenced against the evidence table',
+#         'MS/MS IDs':'The identifiers of the MS/MS scans identifying this peptide, referenced against the msms table',
+#         'Best MS/MS':'The identifier of the best (in terms of quality) MS/MS scan identifying this peptide, referenced against the msms table',
+#         'Oxidation (M) site IDs':'Identifier(s) for site(s) associated with the protein group, which show(s) evidence of the modification, referenced against the appropriate modification site file',
+#         'Taxonomy IDs':'Taxonomy identifiers',
+#         'MS/MS Count':'The number of MS/MS evidence',
+#         'tumor_specificity_mean':'The average raw read counts for each parental NeoJunction',
+#         'tumor_specificity_mle':'The Tumor specificity score derived using Maximum Likelihood Estimation(MLE)',
+#     }
+#     pd.Series(data=dic,name='description').to_excel(writer,sheet_name='description')
 
 
 
 '''neoantigen analysis'''
-# 1. physicalchemical properties and occurence frequency
-# snaf.downstream.analyze_neoantigens(freq_path='result/frequency_stage3_verbosity1_uid.txt',junction_path='result/burden_stage0.txt',total_samples=472,outdir='result',mers=None,fasta=False)
-# snaf.run_dash_T_antigen(input_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/result/shared_vs_unique_neoantigen_all.txt',
-#                         output_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/result')
-# snaf.downstream.plot_umap_neoantigen(df_path='result/mer9_umap_embed_df.txt',outdir='result')
+# snaf.downstream.analyze_neoantigens(freq_path='result_new/frequency_stage3_verbosity1_uid.txt',junction_path='result_new/burden_stage0.txt',total_samples=472,outdir='result_new',mers=None,fasta=False)
+# snaf.run_dash_T_antigen(input_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result_new/shared_vs_unique_neoantigen_all.txt',
+#                         output_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma/result_new')
+snaf.downstream.plot_umap_neoantigen(df_path='result_new/mer9_umap_embed_df.txt',outdir='result_new')
         
 
 

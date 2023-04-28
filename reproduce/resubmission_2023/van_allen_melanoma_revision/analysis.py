@@ -77,19 +77,30 @@ reverse_patient_dict = {v:k for k,v in patient_dict.items()}
 #                                     rename_func=lambda x:reverse_patient_dict[x],survival='all_patients_hla.txt',survival_duration='overall_survival',survival_event='dead',
 #                                     pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',outdir='result_new/survival',mode='binary')
 
-df_tcga = pd.read_csv('../TCGA_melanoma/result_new/survival/survival_regression_binary_final_results.txt',sep='\t',index_col=0)
-df_van = pd.read_csv('result_new/survival/survival_regression_binary_final_results.txt',sep='\t',index_col=0)
-cross_df = df_tcga.join(df_van,how='inner',lsuffix='_tcga',rsuffix='_van')
-cross_df.to_csv('result_new/survival/cross_df.txt',sep='\t')
+# df_tcga = pd.read_csv('../TCGA_melanoma/result_new/survival/survival_regression_binary_final_results.txt',sep='\t',index_col=0)
+# df_van = pd.read_csv('result_new/survival/survival_regression_binary_final_results.txt',sep='\t',index_col=0)
+# cross_df = df_tcga.join(df_van,how='inner',lsuffix='_tcga',rsuffix='_van')
+# cross_df.to_csv('result_new/survival/cross_df.txt',sep='\t')
 
+# # see the shared neoantigens
+# freq3_van = pd.read_csv('result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
+# freq3_tcga = pd.read_csv('../TCGA_melanoma/result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
+# freq3_van_shared = freq3_van.loc[freq3_van['n_sample']>39*0.15,:]
+# print(freq3_van_shared)  # 8422
+# freq3_tcga_shared = freq3_tcga.loc[freq3_tcga['n_sample']>472*0.15,:]
+# print(freq3_tcga_shared)  # 940
+# common = set(freq3_van_shared.index).intersection(set(freq3_tcga_shared.index))
+# print(len(common))  # 439
+
+# neoantigen motif
+snaf.downstream.analyze_neoantigens(freq_path='result_new/frequency_stage3_verbosity1_uid.txt',junction_path='result_new/burden_stage0.txt',total_samples=39,outdir='result_new',mers=[9],fasta=True)
+# snaf.run_dash_T_antigen(input_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/Van_Allen/result_new/shared_vs_unique_neoantigen_all.txt',
+#                         output_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/Van_Allen/result_new')
+# snaf.downstream.plot_umap_neoantigen(df_path='result/mer9_umap_embed_df.txt',outdir='result')
 sys.exit('stop')
 
 
-# 2. embed neoantigen to umap
-# snaf.downstream.analyze_neoantigens(freq_path='result/frequency_stage3_verbosity1_uid.txt',junction_path='result/burden_stage0.txt',total_samples=39,outdir='result',mers=None,fasta=False)
-# snaf.run_dash_T_antigen(input_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/immunotherapy/allen/result/shared_vs_unique_neoantigen_all.txt',
-#                         output_abs_path='/data/salomonis2/LabFiles/Frank-Li/neoantigen/immunotherapy/allen/result')
-# snaf.downstream.plot_umap_neoantigen(df_path='result/mer9_umap_embed_df.txt',outdir='result')
+
 
 
 # survival correlation
