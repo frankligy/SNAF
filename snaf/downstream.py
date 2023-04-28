@@ -165,6 +165,61 @@ def survival_regression_psi_atomic(freq,ea,survival,survival_duration,survival_e
             df_data.append((uid,pep,junc,n_valid_sample,wald_z_score,wald_p_value))
     return df_data
 
+def plot_event_type(pea,uids,rel,outdir):
+    '''
+    plot the event type based on provided uid list
+
+    :param pea: string, the path to the EventAnnotation file
+    :param uids: dict, key is the name of each category, value is a list of non-overlapping uids
+    :param rel: bool, whether to compute relative or absolute value
+    :param outdir: string, the output directory
+
+    Examples::
+
+        snaf.downstream.plot_event_type(pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',uids={'common':common_uid,'unique':unique_uid},rel=True,outdir='result_new')
+    '''
+    # {nan, "alt5'-alt3'", "alt-3'|cassette-exon", 'intron-retention', "alt-3'", "alt-5'", "alt-5'|cassette-exon", 'trans-splicing', 'altPromoter', 'alt-C-term', 'cassette-exon'}
+    valid_type = ["cassette-exon","alt-3'","alt-5'","intron-retention","alt-C-term","altPromoter","trans-splicing"]
+    valid_color = {"cassette-exon":'#3F61A6',
+                    "alt-3'":'#07B2D9',
+                    "alt-5'":'#F27B35',
+                    "intron-retention":'#64BF4B',
+                    "alt-C-term":'#A5A4A4',
+                    "altPromoter":'#F2A413',
+                    "trans-splicing":'#9F69AC'}
+    df = pd.read_csv(pea,sep='\t')
+    df['foreground'] = [':'.join(item.split('|')[0].split(':')[1:]) for item in df['UID']]
+    evc_list = []
+    for k,uid in uids.items():
+        evc = df.loc[df['foreground'].isin(set(uid)),:]['EventAnnotation'].value_counts()
+        evc.name = k
+        evc_list.append(evc)
+    evc_all = pd.concat(evc_list,axis=1,join='outer')
+    cond = []
+    for item in evc_all.index:
+        if item in set(valid_type):
+            cond.append(True)
+        else:
+            cond.append(False)
+    evc_all = evc_all.loc[cond,:]
+    if rel:
+        evc_all = evc_all / evc_all.sum(axis=0)
+    # plot
+    fig,ax = plt.subplots()
+    current_left = np.array([0] * evc_all.shape[1])
+    for i in range(evc_all.shape[0]):
+        v = evc_all.iloc[i,:].values
+        t = evc_all.iloc[i,:].name
+        ax.barh(y=np.arange(evc_all.shape[1]),width=v,height=0.5,left=current_left,color=valid_color[t])
+        current_left = current_left + v
+    import matplotlib.patches as mpatches
+    ax.legend(handles=[mpatches.Patch(color=i) for i in valid_color.values()],labels=list(valid_color.keys()),frameon=False,loc='upper left',bbox_to_anchor=(0,-0.2),ncol=2)
+    ax.set_yticks(np.arange(evc_all.shape[1]))
+    ax.set_yticklabels(evc_all.columns.tolist(),fontsize=4)
+    ax.grid(alpha=0.2)
+    plt.savefig(os.path.join(outdir,'event_type_plot.pdf'),bbox_inches='tight')
+    plt.close()
+    return evc_all
 
 def get_coverage(t_result,allele,outdir='.'):
     '''
@@ -180,7 +235,7 @@ def get_coverage(t_result,allele,outdir='.'):
         snaf.downstream.get_coverage(t_result='result_new/T_candidates/T_antigen_candidates_all.txt',allele='A')
 
 
-    .. csv-table:: coverage
+    .. csv-table:: annotation txt file
         :file: ../docs/_static/coverage.csv
         :widths: 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10
         :header-rows: 1   
@@ -448,7 +503,7 @@ def visualize_GO_result(path_list,skiprows_list,category_list,mode='interactive'
             
 
         
-def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_contig_rename, query_region, skip_copy=False, min_junction=3, width=10, ann_height=4, height=2, task_name=''):
+def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_contig_rename, query_region, skip_copy=False, min_junction=3, width=10, ann_height=4, height=2, fix_y_scale=True, task_name=''):
     '''
     Given a bunch of bam file and cognate bai files, we want to generate sashimi plot in an automatic way using ggsashimi package singularity image, this image is pulled using::
 
@@ -470,6 +525,7 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_c
     :param width: float, the width in pct for the plot
     :param ann_height: float, the height in pct for the annotation
     :param height: float, the height in pct for the sashimi plot
+    :param fix_y_scale: bool, whether to fix y scale, default to True
     :param task_name: string, default is empty string, add this as a suffix to generated sashimi.pdf 
 
     :return cmd: string, the singularity cmd that you should type in the console when cd to the outdir
@@ -542,7 +598,10 @@ def prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path, bam_c
     with open(os.path.join(outdir,'palette.txt'),'w') as f:
         for c in colors[:n]:
             f.write('{}\n'.format(c))
-    cmd = 'singularity run -W $PWD -B $PWD:$PWD {} -b input_bams.tsv -c {} -C 3 -M {} --width {} --fix-y-scale -g gencode.v36.annotation.gtf --ann-height={} --height={} -P palette.txt'.format(os.path.join(sif_anno_path,'ggsashimi.sif'),query_region,min_junction,width,ann_height,height)
+    if fix_y_scale:
+        cmd = 'singularity run -W $PWD -B $PWD:$PWD {} -b input_bams.tsv -c {} -C 3 -M {} --width {} --fix-y-scale -g gencode.v36.annotation.gtf --ann-height={} --height={} -P palette.txt'.format(os.path.join(sif_anno_path,'ggsashimi.sif'),query_region,min_junction,width,ann_height,height)
+    else:
+        cmd = 'singularity run -W $PWD -B $PWD:$PWD {} -b input_bams.tsv -c {} -C 3 -M {} --width {} -g gencode.v36.annotation.gtf --ann-height={} --height={} -P palette.txt'.format(os.path.join(sif_anno_path,'ggsashimi.sif'),query_region,min_junction,width,ann_height,height)
     print(cmd)
     # execuate assuming singularity has been loaded
     old_pwd = os.getcwd()

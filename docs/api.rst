@@ -169,6 +169,10 @@ Prepare Sashimi plot
 ~~~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.prepare_sashimi_plot
 
+Plot Splicing Event Type
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.plot_event_type
+
 
 
 

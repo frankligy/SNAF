@@ -235,6 +235,8 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
         ax.set_ylim(ylim)
     plt.savefig(os.path.join(outdir,'gtex_visual_combine_norm_{}_{}.pdf'.format(norm,identifier)),bbox_inches='tight')
     plt.close()
+
+    return df
     
 
 
