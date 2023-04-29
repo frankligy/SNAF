@@ -20,18 +20,18 @@ mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
 
-# # # get reduced junction
-# df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# # get reduced junction
+df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
-# # run SNAF
-# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
-# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
-# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
-# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+# run SNAF
+netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 
-# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
-# surface.initialize(db_dir=db_dir)
+snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+surface.initialize(db_dir=db_dir)
 
 # 4 common neoantigens for immuno assay
 # cand = pd.read_csv('result_new/T_candidates/T_antigen_candidates_all.txt',sep='\t',index_col=0)
@@ -421,6 +421,12 @@ further explore the identity of common neoantigens
 # os.chdir('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/TCGA_melanoma')
 # pd.DataFrame.from_records(data=identified_common_neoantigens,columns=['peptide','uid','PEP','Score','patient']).to_csv('identified_common_neoantigens.txt',sep='\t')
 
+# common versus unique event type
+# freq = pd.read_csv('result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
+# common_uid = list(set([item.split(',')[1] for item in freq.loc[freq['n_sample']>472*0.15,:].index]))
+# unique_uid = list(set([item.split(',')[1] for item in freq.loc[freq['n_sample']==1,:].index]))
+# snaf.downstream.plot_event_type(pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',uids={'common':common_uid,'unique':unique_uid},rel=True,outdir='result_new')
+
 '''
 inspect those candidates for junction validity and tumor specificity
 '''
@@ -450,17 +456,17 @@ def unit_run(uid,base_sample,region,task_name):
     bam_path_list = ['/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-SKCM/TCGA_SKCM-BAMs/bams/{}.bam'.format(base_sample)] + control_bam_path_list
     bai_path_list = ['/data/salomonis-archive/BAMs/NCI-R01/TCGA/TCGA-SKCM/TCGA_SKCM-BAMs/bams/{}.bam.bai'.format(base_sample)] + control_bai_path_list
     sif_anno_path = '/data/salomonis2/software/ggsashimi'
-    outdir = 'Frank_inspection/sashimi'
+    outdir = 'result_new/common/sashimi'
     bam_contig_rename = [False] + [False] * 5
     criterion=[('netMHCpan_el', 0, '<=', 2),('deepimmuno_immunogenicity',1,'==','True')]
 
-    snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
-    snaf.gtex_visual_combine_plotly(uid=uid,outdir='Frank_inspection',norm=True,tumor=df)
-    snaf.JunctionCountMatrixQuery.deserialize('result_new/after_prediction.p').visualize(uid=uid,sample=sample,outdir='Frank_inspection',criterion=criterion)
+    snaf.gtex_visual_combine_plotly(uid=uid,outdir='result_new/common',norm=False,tumor=df)
+    snaf.gtex_visual_combine_plotly(uid=uid,outdir='result_new/common',norm=True,tumor=df)
+    snaf.JunctionCountMatrixQuery.deserialize('result_new/after_prediction.p').visualize(uid=uid,sample=sample,outdir='result_new/common',criterion=criterion)
 
     # dff = snaf.gtex_visual_combine(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
     # dff.to_csv('HAAASFETL_adata_df.txt',sep='\t')
-    snaf.prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path,bam_contig_rename,query_region=region,skip_copy=False, min_junction=1,task_name=task_name)
+    # snaf.prepare_sashimi_plot(bam_path_list,bai_path_list,outdir,sif_anno_path,bam_contig_rename,query_region=region,skip_copy=False, min_junction=1,task_name=task_name)
 
 def flank_chrom(chrom,offset):
     chrom = chrom.split('(')[0]
@@ -472,8 +478,6 @@ def flank_chrom(chrom,offset):
     assemble = '{}:{}-{}'.format(sec1,new_sec2,new_sec3)
     return assemble
 
-
-
 # df = pd.read_csv('candidates.csv',sep=',')
 # offset = (1000,1000)
 # lis = [(row.UID,row.sample,flank_chrom(row.chrom,offset),row.Index) for row in df.itertuples()]
@@ -481,6 +485,48 @@ def flank_chrom(chrom,offset):
 # item = lis[48]
 # print(item[0])
 # unit_run(item[0],item[1],item[2],'{}_offset_{}'.format(item[3],offset))
+
+'''find sashimi plots for those common neoantigens'''
+freq3 = pd.read_csv('result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
+freq3 = freq3.loc[freq3['n_sample']>472*0.15,:]
+occurence = pd.read_csv('MS_common_occurence.txt',sep='\t',index_col=0)
+occurence = occurence.loc[occurence['occurence']>0,:].index.tolist()
+freq3['peptide'] = [item.split(',')[0] for item in freq3.index]
+freq3['junction'] = [item.split(',')[1] for item in freq3.index]
+freq3['ms_evidence'] = freq3['peptide'].isin(set(occurence))
+freq3 = freq3.loc[freq3['ms_evidence'],:]
+col = []
+for item in freq3['symbol']:
+    if '-AS' in item or 'LINC' in item or 'unknown_gene' in item or 'LOC' in item:
+        col.append(False)
+    else:
+        col.append(True)
+freq3 = freq3.loc[col,:]
+freq3 = freq3.loc[freq3['tumor_specificity_mean']<1,:]
+freq3.drop_duplicates(subset=['junction'],inplace=True)
+
+count = snaf.remove_trailing_coord('counts.TCGA-SKCM.txt',sep='\t')
+col = []
+from ast import literal_eval
+freq3['samples'] = [literal_eval(item) for item in freq3['samples']]
+for row in freq3.itertuples():
+    uid = row.junction
+    base_sample = row.samples[0].split('.')[0]
+    c = count.at[uid,base_sample+'.bed']
+    col.append(c)
+freq3['count'] = col
+# freq3.to_csv('result_new/common/sashimi_checklist.txt',sep='\t')
+
+for row in freq3.itertuples():
+    uid = row.junction
+    base_sample = row.samples[0].split('.')[0]
+    unit_run(uid,base_sample,None,None)
+sys.exit('stop')
+
+
+
+
+
 
 # specifically, generate publication-quality sashimi for 8 validated hits
 '''
