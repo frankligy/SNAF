@@ -167,8 +167,54 @@ stage 3: 915.2754237288135 2486.0 74.0
 # surface.run_dash_B_antigen(pkl='result_new/surface/surface_antigen_lr.p',candidates='result_new/surface/candidates_3_lr_None_False.txt',prediction_mode='long_read',
 #                            python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
 
+# some statistics of identified hits
+sr_str3_false = pd.read_csv('result_new/surface/B_candidates/sr_str3_report_None_False.txt',sep='\t',index_col=0)
+false_uid = [j+','+e for j,e in zip(sr_str3_false['NeoJunction'],sr_str3_false['evidence'])]
+all_uid_str3 = list(set(false_uid))   # 378
 
+sr_str4_false = pd.read_csv('result_new/surface/B_candidates/sr_str4_report_None_False.txt',sep='\t',index_col=0)
+false_uid = [j+','+e for j,e in zip(sr_str4_false['NeoJunction'],sr_str4_false['evidence'])]
+all_uid_str4 = list(set(false_uid))   
 
+str3_pass_str4 = list(set(all_uid_str3).intersection(set(all_uid_str4)))  # 37
+
+sr_str5_false = pd.read_csv('result_new/surface/B_candidates/sr_str5_report_None_False.txt',sep='\t',index_col=0)
+false_uid = [j+','+e for j,e in zip(sr_str5_false['NeoJunction'],sr_str5_false['evidence'])]
+all_uid_str5 = list(set(false_uid))   
+
+str4_pass_str5 = list(set(all_uid_str4).intersection(set(all_uid_str5)))  # 17
+
+# show SIRPA example
+# snaf.gtex_visual_combine(uid='ENSG00000198053:E7.2-E13.1_1915159',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
+
+# show EDA2R example
+'''deletion and insertion can be wrong depending on which ref_seq you chose but by large the classification is correct, 
+  extracellular prediction can be wrong if the topology is complicated, None in validation column in str4 may due to gtf issue
+  the most inclusive result is None_False, if you need extracellular, go to None_True, if you need deletion or insertion, go to relevant subsets'''
+# snaf.gtex_visual_combine(uid='ENSG00000131080:E6.1-E8.1',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
+# surface.run_dash_B_antigen(pkl='result_new/surface/surface_antigen_sr.p',candidates='result_new/surface/candidates_5_sr_None_False.txt',prediction_mode='short_read',
+#                            python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+
+lr_str3_false = pd.read_csv('result_new/surface/B_candidates/lr_str3_report_None_False.txt',sep='\t',index_col=0)
+false_uid = [j+','+e for j,e in zip(lr_str3_false['NeoJunction'],lr_str3_false['evidence'])]
+all_uid_str3 = list(set(false_uid))     # 1207
+
+unique_valid_sr = set(sr_str5_false['peptide_sequence'].tolist())
+unique_valid_lr = set(lr_str3_false['peptide_sequence'].tolist())
+total_valid = unique_valid_sr.union(unique_valid_lr)  # 562
+
+# show SLC45A2
+# snaf.gtex_visual_combine(uid='ENSG00000164175:E3.2_33963931-E4.2',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
+
+# explore all other examples
+'''when sorting by mean count in ascending order, common disquanlification reasons are
+(1) although lowly in normal, not high in tumor either
+(2) too disruptive sequence when considering intron retention or novel exon or other
+(3) ref seq used internally were not comprehensive enough, so actually a documented isoform
+(4) weired one like circular rna'''
+surface.run_dash_B_antigen(pkl='result_new/surface/surface_antigen_lr.p',candidates='result_new/surface/candidates_3_lr_None_False.txt',prediction_mode='long_read',
+                           python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+sys.exit('stop')
 
 ## MS validation
 # df = pd.read_csv('result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)

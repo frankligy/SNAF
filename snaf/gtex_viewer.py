@@ -154,7 +154,7 @@ def gtex_visual_combine_plotly(uid,outdir='',norm=False,tumor=None):
     fig.write_html(os.path.join(outdir,'gtex_visual_combine_plotly_norm_{}_{}.html'.format(norm,identifier)))
 
 
-def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,ylim=None):
+def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,ylim=None,group_by_tissue=True):
     ''' 
     Visualize the gtex expression and tumor specificity for splicing event (combine into one plot)
 
@@ -164,6 +164,7 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
     :param figsize: tuple, the (width,height) of the figure
     :param tumor: pandas dataframe, the tumor df to compare with
     :param ylim: tuple, modify the ylim of the (bottom, top) of the figure
+    :param group_by_tissue: bool, whether to group the normal smaples by tissue or not, default is True
 
     Example::
 
@@ -207,6 +208,10 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
         c_list_1 = np.concatenate([np.array(['g']*sub_df.shape[0]) for sub_df in sorted_sub_df_list[:-1]]).tolist()
         c_list_2 = ['r'] * sorted_sub_df_list[-1].shape[0]
         c_list = c_list_1 + c_list_2
+
+    if not group_by_tissue:
+        sorted_sub_df_list = [df,tumor_sub_df]
+
     for i,sub_df in enumerate(sorted_sub_df_list):
         sub_df.sort_values(by='value',inplace=True)
         n = sub_df.shape[0]
@@ -218,13 +223,13 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
             if j == n-1:
                 v_delimiter.append(x)
                 x += 1
-    # ax.plot(x_list,y_list,marker='o',linestyle='',markerfacecolor='r',markeredgewidth=0.1,color='k',markersize=2)
     ax.scatter(x_list,y_list,s=2,c=c_list,marker='o')
     for v in v_delimiter[1:-1]:
         ax.axvline(v,linestyle='--',linewidth=0.5)
     xtick = [(v + v_delimiter[i+1])/2 for i,v in enumerate(v_delimiter[:-1])]
     ax.set_xticks(xtick)
     ax.set_xticklabels(xticklabel,rotation=90,fontsize=1)
+    
     ax.set_title(title)
     ylabel = 'Raw read counts'
     if norm:
@@ -233,7 +238,7 @@ def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,y
     ax.set_xlabel('Normal Tissues --> Tumor')
     if ylim is not None:
         ax.set_ylim(ylim)
-    plt.savefig(os.path.join(outdir,'gtex_visual_combine_norm_{}_{}.pdf'.format(norm,identifier)),bbox_inches='tight')
+    plt.savefig(os.path.join(outdir,'gtex_visual_combine_norm_{}_{}_groupbytissue_{}.pdf'.format(norm,identifier,group_by_tissue)),bbox_inches='tight')
     plt.close()
 
     return df
