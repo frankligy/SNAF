@@ -268,6 +268,11 @@ ts_junctions = jcmq.valid # 16799
 ee = pd.read_csv('altanalyze_output/AltResults/AlternativeOutput/Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',sep='\t')
 uids = list(set([':'.join(item.split('|')[0].split(':')[1:]) for item in ee['UID']]))  # 34245
 common = list(set(ts_junctions).intersection(set(uids)))  # 542
+with open('common_542_junction.txt','w') as f:
+    for item in common:
+        f.write('{}\n'.format(item))
+
+
 
 n = []
 o = []
