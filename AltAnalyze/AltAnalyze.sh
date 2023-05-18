@@ -2,7 +2,7 @@
 
 
 # process the command-line arguments
-# cd /mnt
+cd /mnt
 echo "Current folder is "$PWD
 mode=$1
 
@@ -99,11 +99,12 @@ elif [ "$mode" == "identify" ]; then
     function run_BAMtoBED() {
     
     echo "start to get junction bed"
-    python /usr/src/app/altanalyze/import_scripts/BAMtoJunctionBED.py --i ${bam_folder}/$1 \
+    echo ${bam_folder}
+    python /usr/src/app/altanalyze/import_scripts/BAMtoJunctionBED.py --i "${bam_folder}/$1" \
         --species Hs --r /usr/src/app/altanalyze/AltDatabase/EnsMart91/ensembl/Hs/Hs_Ensembl_exon.txt
 
     echo "start to get exon bed"
-    python /usr/src/app/altanalyze/import_scripts/BAMtoExonBED.py --i ${bam_folder}/$1  \
+    python /usr/src/app/altanalyze/import_scripts/BAMtoExonBED.py --i "${bam_folder}/$1"  \
         --r /usr/src/app/altanalyze/AltDatabase/EnsMart91/ensembl/Hs/Hs.bed --s Hs  
 
     return 0
