@@ -1,6 +1,19 @@
 Change Log
 ============
 
+
+Version 0.7.0 (2023.05.23)
+---------------------------
+
+This is a release since the paper's original resubmission, in the past year, we added a ton of new features, main changes are briefly summarized below:
+
+#. differential gene analysis, differential splicing analysis, gene enrichment analysis
+#. hla coverage analysis, for each pHLA, what percentage of the population it can cover (benefit)
+#. enhanced and more flexible control database, adding two normal cohorts by default, and allowing user to add customized
+#. improved algorithms for MLE tumor specificity score, and external BayesTS score (https://github.com/frankligy/BayesTS)
+#. improved output for both T and B antigens
+#. fix multiple bugs
+
 Version 0.6.0 (2022.07.11)
 ----------------------------
 

@@ -143,7 +143,7 @@ generate these output files::
 Now in the ``result`` folder, your file layout should be as below:
 
 .. image:: ./_static/T_result.png
-    :height: 400px
+    :height: 280px
     :width: 500px
     :align: center
     :target: target
@@ -167,7 +167,7 @@ For each stage, you may see the following categories of results:
 For the final immunogenic neoantigen, we have detailed reports in ``T_candidates`` folder:
 
 .. image:: ./_static/T_result_candidates.png
-    :height: 300px
+    :height: 250px
     :width: 500px
     :align: center
     :target: target
@@ -402,7 +402,7 @@ Alternatively, you can use one of our internal pan-cancer long-read isoform data
 In your result folder, if running short_read mode, you will be able to get following results:
 
 .. image:: ./_static/B_short_read.png
-    :height: 400px
+    :height: 280px
     :width: 500px
     :align: center
     :target: target

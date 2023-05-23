@@ -85,3 +85,46 @@ But what if you only have bam files, no worreis, just convert them to fastq firs
 After that, the result as a tsv file will be generated (30min probably), you can write your own parsing script for post-processing. In addition, this process can be parallelized,
 I often write it into a shell function, and use linux parallel tool to run like 20 jobs at the same time to speed thing up.
 
+
+4. AltAnalyze steps take too long
+-------------------------------------
+
+So AltAnalyze first convert your bam file to bed file one by one, and based on the cores you specified, it can parallelize stuffs but still you can only have like 50 cores 
+per node in your HPC, and maybe there are memory issues for docker, if you have thousands of samples, you can do it in a more flexible way::
+
+    #!/bin/bash
+
+
+    function run() {
+        mkdir ./tmp/$1
+        cp ./bam/$1.bam ./tmp/$1
+        cd ./tmp/$1
+        docker run -v $PWD:/mnt altanalyze bam_to_bed $1.bam
+        cd ../..
+    }
+
+    # pre
+    mkdir tmp
+    mkdir bed
+
+    cd ./bam
+    for file in *.bam; do echo $(basename -s .bam $file); done > ../samples.txt 
+    cd ..
+
+    # run
+    export -f run
+    export TMPDIR=/Users/ligk2e/Desktop
+    cat samples.txt | xargs -n 1 -P 4 -I {} bash -c "run {}"
+
+    # post
+    while read line; do 
+        mv ./tmp/${line}/${line}.bam.bai ./bam
+        mv ./tmp/${line}/*.bed ./bed
+        done < samples.txt
+    rm -r ./tmp
+
+The idea is you still in your foler where /bam folder sits, you define a function where it only run bam_to_bed step, this can maximize the efficiency for generating bed fildes. Then once all bed
+files are generated, you can run bed_to_junction in one go::
+
+    docker run -v $PWD:/mnt altanalyze bed_to_junction bed
+
