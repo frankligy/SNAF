@@ -124,6 +124,10 @@ gtex_visual_per_tissue_count
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.gtex_viewer.gtex_visual_per_tissue_count
 
+get_all_normal_h5ad
+~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.gtex.get_all_normal_h5ad
+
 Miscellaneous
 ------------------
 

@@ -294,6 +294,24 @@ def split_array_to_chunks(array,cores=None):
     return sub_arrays
 
 
+def get_all_normal_h5ad(uids,outdir,name):
+    '''
+    Get the normal tissue expression as a h5ad file, so that you can run BayesTS analysis (https://github.com/frankligy/BayesTS#interface-with-snaf)
+
+    :param uids: list, all the uids you'd like to query
+    :param outdir: string, the output directory
+    :param name: string, the h5ad name
+
+    Example::
+
+        get_all_normal_h5ad(uids=uids,outdir='.',name='junction')
+        
+    '''
+    adata_new = adata[uids,:]
+    print(adata_new)
+    adata_new.write(os.path.join(outdir,'{}.h5ad'))
+
+
 def add_tumor_specificity_frequency_table(df,method='mean',remove_quote=True,cores=None):
     '''
     add tumor specificty to each neoantigen-uid in the frequency table produced by SNAF T pipeline
