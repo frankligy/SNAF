@@ -11,13 +11,13 @@ Step 1: AltAnalyze
 A docker image can be downloaded from DockerHub and run using one line of code::
 
     # build the image
-    docker pull frankligy123/altanalyze:0.5.0.1
+    docker pull frankligy123/altanalyze:0.7.0.1
 
 
 Alternatively, lots of HPC on university or institution use Singularity instead of docker::
 
     # pull the image
-    singularity build --sandbox altanalyze/ docker://frankligy123/altanalyze:0.5.0.1
+    singularity build --sandbox altanalyze/ docker://frankligy123/altanalyze:0.7.0.1
 
 
 Step 2: SNAF
@@ -42,7 +42,8 @@ Step 4: (Optional) Install netMHCpan4.1 and TMHMM2.0
 
 .. note::
 
-    Check the Video tutorial for this step: `Install netMHCpan4.1 and TMHMM2.0 for SNAF <https://www.youtube.com/watch?v=KrAzbR5mRIQ>`_.
+    It is highly recommended to install this two tools. Check the Video tutorial 
+    for this step: `Install netMHCpan4.1 and TMHMM2.0 for SNAF <https://www.youtube.com/watch?v=KrAzbR5mRIQ>`_.
 
 By default, SNAF uses MHCflurry to predict which peptides will undergo MHC presentation, however, users can optionally install 
 netMHCpan4.1 to be used instead. TMHMM2.0 is used for topology prediction in the B-antigen membrane protein workflow if installed. If not installed, results may be less accurate. 

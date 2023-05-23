@@ -19,13 +19,17 @@ Running AltAnalyze to identify alternative splicing events
 -----------------------------------------------------------
 
 The analysis starts with a group of bam files, with each BAM corresponding to single patient sample. For example, if you have all the bam files stored in ``/user/ligk2e/bam``,
-the full path to the folder is the only command you need to run in this step (See Installation for more detail)::
+Please make sure you are in ``/user/ligk2e`` and run the following code::
 
-    # run the container, the below command assume a folder named bam is in your current folder on the host machine
-    docker run -v $PWD:/usr/src/app/run -t frankligy123/altanalyze:0.5.0.1 bam
+    # using docker
+    # -v mount the current folder to the /mnt folder in docker system, so that docker can access your bam folder
+    # first argument is the running mode, we set to "identify"
+    # second argument is the bam folder, we set to "bam"
+    # the third argument is the number of cores to use, we set to 4
+    docker run -v $PWD:/mnt -t frankligy123/altanalyze:0.7.0.1 identify bam 4
 
     # if using singularity
-    singularity run -B $PWD:/usr/src/app/run --writable altanalyze/ bam
+    singularity run -B $PWD:/mnt --writable altanalyze/ identify bam 4
 
 .. warning::
 
@@ -42,9 +46,9 @@ occurence of a certain junction.
 
 .. note::
 
-    In ``altanalyze/ExpressionInput`` folder, you will find ``counts.original.txt`` and ``counts.original.pruned.txt``, in cohort level analysis (like dozens or hundreds)
-    of samples, we suggest using "pruned" one as additional filetering steps have been implemented to only keep splicing events that meet certain minimum read count (20)
-    and minimum frequency across cohort (>75%). In case where you only have < 10 samples, you may want to use "non-pruned" one to increase the sensitivity.
+    In ``altanalyze/ExpressionInput`` folder, you will find ``counts.original.full.txt`` and ``counts.original.pruned.txt``, the former is the splicing junction whereas the latter 
+    is the alternative splicing events. The latter can better filter out those constitutive junctions (if exon2-exon3 always occur it is a constitutive junction instead of alternative splicing
+    event). We recommend using the latter, but when you only have few samples (n<10), using the former can increase the sensitivity.
 
 .. csv-table:: junction count matrix
     :file: ./_static/sample.csv
@@ -88,13 +92,16 @@ Load the packages::
 
 The first step is to load our downloaded reference data into the memory to facilitate the repeated retrieval of the data while running::
 
-    # database directory (where you extract the reference tarball file)
+    # database directory (where you extract the reference tarball file) and netMHCpan folder
     db_dir = '/user/ligk2e/download'  
-    # instantiate (if using netMHCpan)
     netMHCpan_path = '/user/ligk2e/netMHCpan-4.1/netMHCpan'
-    snaf.initialize(db_dir=db_dir,gtex_mode='count',binding_method='netMHCpan',software_path=netMHCpan_path)
-    # instantiate (if not using netMHCpan)
-    snaf.initialize(db_dir=db_dir,gtex_mode='count',binding_method='MHCflurry',software_path=None)
+    # demonstrate how to add additional control database
+    tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+    gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+    add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+    # initiate
+    snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+
 
 .. note::
 
@@ -342,8 +349,6 @@ Then we run the B pipeline::
 
     # if using TMHMM
     surface.run(membrane_tuples,outdir='result',tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
-    # if not using TMHMM
-    surface.run(membrane_tuples,outdir='result',tmhmm=False,software_path=None)
 
 After this step, a pickle file will again be deposited to the ``result`` folder. However, we do want to generate human-readable results::
 
