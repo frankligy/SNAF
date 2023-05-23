@@ -140,7 +140,7 @@ generate these output files::
 
     snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
 
-Now in the ``result`` folder, your file layout should be as below:
+Now in the ``result`` folder, your file layout should be as below (amplify the webpage to see more clearly):
 
 .. image:: ./_static/T_result.png
     :height: 280px
@@ -164,10 +164,10 @@ For each stage, you may see the following categories of results:
 * ``x_neoantigen_frequency{0-3}.pdf``: This is a visual representation of neoantigen frequency as a sorted barplot, where each bar is a neoantigen and the height is its occurence across cohorts.
 * ``x_occurence_frequency{0-3}.pdf``: This is an alternative visualization of neoantigen frequency as a histplot, interval (x-axis) with the occurence of each neoantigen across the cohort.
 
-For the final immunogenic neoantigen, we have detailed reports in ``T_candidates`` folder:
+For the final immunogenic neoantigen, we have detailed reports in ``T_candidates`` folder (amplify the webpage to see more clearly):
 
 .. image:: ./_static/T_result_candidates.png
-    :height: 250px
+    :height: 220px
     :width: 500px
     :align: center
     :target: target
@@ -399,7 +399,7 @@ Alternatively, you can use one of our internal pan-cancer long-read isoform data
                 tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
     surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='long_read',validation_gtf=None)
 
-In your result folder, if running short_read mode, you will be able to get following results:
+In your result folder, if running short_read mode, you will be able to get following results (amplify the webpage to see more clearly):
 
 .. image:: ./_static/B_short_read.png
     :height: 280px
