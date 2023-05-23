@@ -140,10 +140,16 @@ generate these output files::
 
     snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
 
-Now in the ``result`` folder, we can have neoantigen burden files associated with each stage of the workflow. A  ``stage``
-refers to different stages in the neoantigen production process, first and foremost, a neoantigen is derived from a neojunction (splicing event), then all potential
-peptides will be generated after in-silico translation, followed by MHC presentation and MHC-peptide complex formation to elicit a T cell response. We argue that exporting
-neoantigens at each stages are useful for various downstream analyses.
+Now in the ``result`` folder, your file layout should be as below:
+
+.. image:: ./_static/T_result.png
+    :height: 400px
+    :width: 500px
+    :align: center
+    :target: target
+
+``NeoJunction_statistics_maxmin.txt`` contains the filtering step regarding how each junctions were either filered out or retained by each control database. For each stage, it means different 
+steps in the neoantigen production:
 
 * ``stage 0``: neojunction, the number of tumor-specific junction reads
 * ``stage 1``: peptides that are predicted (3-way in-silico translation) from each neojunction
@@ -154,9 +160,17 @@ For each stage, you may see the following categories of results:
 
 * ``burden_stage{0-3}.txt``: This file characterizes the patient level neoantigen burden (See below concrete example).
 * ``frequency_stage{0-3}.txt``: This file chracterizes each specific neoantigen, how many times does it occur across the whole cohort? 
-* ``frequency_stage{0-3}_verbosity1_uid.txt``: This is an enhanced version of frequency.txt file, where each row contains both the neoantigen and the source junction uid. This file can be further enhanced by adding :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`. See :ref:`reference_to_compatibility`.
+* ``frequency_stage{0-3}_verbosity1_uid_gene_symbol_coord_mean_mle.txt``: This is an enhanced version of frequency.txt file, where each row contains both the neoantigen and the source junction uid. This file can be further enhanced by adding :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`. See :ref:`reference_to_compatibility`.
 * ``x_neoantigen_frequency{0-3}.pdf``: This is a visual representation of neoantigen frequency as a sorted barplot, where each bar is a neoantigen and the height is its occurence across cohorts.
 * ``x_occurence_frequency{0-3}.pdf``: This is an alternative visualization of neoantigen frequency as a histplot, interval (x-axis) with the occurence of each neoantigen across the cohort.
+
+For the final immunogenic neoantigen, we have detailed reports in ``T_candidates`` folder:
+
+.. image:: ./_static/T_result_candidates.png
+    :height: 300px
+    :width: 500px
+    :align: center
+    :target: target
 
 The burden matrix should look like the below, where the last column and last row represent the mean burden for each feature and the total burden for each sample. Since this output only illustrates
 the last 10 columns and rows, all of the entries are zero, to give the user a sense of the file layout.
@@ -173,14 +187,6 @@ Neoantigen frequency plot shows the distinctive pattern between shared neoantige
     :width: 500px
     :align: center
     :target: target
-
-Users can also report T cell Neoantigen associated with a speficic sample (precision medicine) by running :ref:`reference_to_report_candidates`. The candidates reported
-will look like the below table:
-
-.. csv-table:: individual report candidate
-    :file: ./_static/T_sample_candidates.csv
-    :widths: 10,10,10,10,10,10,10
-    :header-rows: 1
 
 Interface to proteomics validation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -243,6 +249,26 @@ usually we want to first deserialize the resultant pickle object back to memory 
     :align: center
     :target: target
 
+It is also quite important to know the tumor specificity of each junction, which can be visualized in various ways as below::
+
+    # interactive
+    snaf.gtex_visual_combine_plotly(uid=uid,outdir='result_new/common',norm=False,tumor=df)
+    # static
+    dff = snaf.gtex_visual_combine(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
+
+.. image:: ./_static/interactive.png
+    :height: 300px
+    :width: 500px
+    :align: center
+    :target: target
+
+.. image:: ./_static/static.png
+    :height: 400px
+    :width: 500px
+    :align: center
+    :target: target
+
+
 Survival Analysis
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -263,6 +289,17 @@ to be the same, that's why we need a few lines of code for parsing below::
     :width: 600px
     :align: center
     :target: target
+
+We can also perform Cox regression analysis to see if the precense of a particular neoantigne is associated with survival or not::
+
+    snaf.downstream.survival_regression(freq='result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',remove_quote=True,
+                                        rename_func=lambda x:'-'.join(x.split('-')[:4]),survival='TCGA-SKCM.survival.tsv',
+                                        pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',outdir='result_new/survival',mode='binary')
+
+.. csv-table:: cox regression
+    :file: ./_static/cox.csv
+    :widths: 10,10,10,10,10,10
+    :header-rows: 1
 
 Mutation Association Analysis
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -345,17 +382,30 @@ We first obtain the membrane splicing events::
     df = pd.read_csv('altanalyze_output/ExpressionInput/counts.original.pruned.txt',sep='\t',index_col=0)
     membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df)
 
-Then we run the B pipeline::
+There are two modes for running B-pipeline, one is de novo prediction of full isoform from short-read, and validate those prediction by providing an additional long-read gtf.
+Alternatively, you can use one of our internal pan-cancer long-read isoform database to predict the full-length isoform. The former is called ``short_read`` mode, the latter is called 
+``long_read`` mode::
 
-    # if using TMHMM
-    surface.run(membrane_tuples,outdir='result',tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
+    # short_read mode
+    surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='short_read',n_stride=2,
+                gtf=None,
+                tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
+    surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='short_read',validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
 
-After this step, a pickle file will again be deposited to the ``result`` folder. However, we do want to generate human-readable results::
 
-    # if having gtf file for long-read data
-    surface.generate_results(pickle_path='./result/surface_antigen.p',outdir='result',strigency=5,gtf='./SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf') 
-    # if not having 
-    surface.generate_results(pickle_path='./result/surface_antigen.p',outdir='result',strigency=3,gtf=None)
+    # long_read mode
+    surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='long_read',n_stride=2,
+                gtf='/data/salomonis2/LabFiles/Frank-Li/refactor/data/2021UHRRIsoSeq_SQANTI3_filtered.gtf',
+                tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
+    surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='long_read',validation_gtf=None)
+
+In your result folder, if running short_read mode, you will be able to get following results:
+
+.. image:: ./_static/B_short_read.png
+    :height: 400px
+    :width: 500px
+    :align: center
+    :target: target
 
 Different strigencies are explanined below:
 
@@ -368,6 +418,11 @@ Different strigencies are explanined below:
 An output called ``candidates.txt`` is what we are looking for, to facilitate the inspection of the result, let's use the B antigen viewer shown below. Also, 
 we can generate a more readable and publication-quality table for the candidate by using :ref:`reference_to_report_B_candidates`.
 
+Particurly, a more human-readable results can be found in ``B_candidates`` folder, you should examine a file named ``sr_str3_report_None_False.txt`` which is a superset for other output,
+``str`` controls the strigency, ``deletion/insertion/None`` indicate whether the candidate has deleted or inserted neo-epitope, None is the combination of both. ``False/True`` represents whether
+the candidate will be extracellular or not, False is the superset of True.
+
+The long-read mode output is similar and the file names should be self-explanable if you can follow the above clarificaitons.
 
 Interactive neoantigen viewer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
