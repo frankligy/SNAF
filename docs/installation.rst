@@ -16,7 +16,7 @@ A docker image can be downloaded from DockerHub and run using one line of code::
 
 Alternatively, lots of HPC on university or institution use Singularity instead of docker::
 
-    # pull the image
+    # pull the image, you may need singularity/3.1 if you run into any error
     singularity build --sandbox altanalyze/ docker://frankligy123/altanalyze:0.7.0.1
 
 
