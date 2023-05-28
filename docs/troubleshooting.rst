@@ -67,7 +67,7 @@ Here we provide one solution using Optitype, which has been on top-performing HL
 run like that::
 
 
-    # build image using singularity
+    # build image using singularity, you may have to use singularity/3.1 if you run into any errors
     singularity build my_software.sif docker://fred2/optitype
 
     # run it, assuming the fastq file is in the current directory

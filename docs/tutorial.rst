@@ -28,7 +28,7 @@ Please make sure you are in ``/user/ligk2e`` and run the following code::
     # the third argument is the number of cores to use, we set to 4
     docker run -v $PWD:/mnt -t frankligy123/altanalyze:0.7.0.1 identify bam 4
 
-    # if using singularity
+    # if using singularity, you may have to use singularity/3.1 if you run into any error
     singularity run -B $PWD:/mnt --writable altanalyze/ identify bam 4
 
 .. warning::
