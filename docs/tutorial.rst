@@ -75,7 +75,7 @@ looks like below example::
 
 .. note::
 
-    Optitype is again tool that is super easy to install as they provide the docker version, the input you need is the fastq file 
+    Optitype is again a tool that is super easy to install as they provide the docker version, the input you need is the fastq file 
     for your patient RNA-Seq sample, just follow their `GitHub instructions <https://github.com/FRED-2/OptiType>`_. You can use your 
     own favorite HLA typing tool as well. All we need is the HLA typing information. I provide the Optitype script I used here: :ref:`reference_to_hla_typing`.
 
@@ -92,30 +92,36 @@ Load the packages::
 
 The first step is to load our downloaded reference data into the memory to facilitate the repeated retrieval of the data while running::
 
+    # read in the splicing junction matrix
+    df = pd.read_csv('/user/ligk2e/altanalyze_output/ExpressionInput/counts.original.pruned.txt',index_col=0,sep='\t')
+
     # database directory (where you extract the reference tarball file) and netMHCpan folder
     db_dir = '/user/ligk2e/download'  
     netMHCpan_path = '/user/ligk2e/netMHCpan-4.1/netMHCpan'
-    # demonstrate how to add additional control database
+
+    # demonstrate how to add additional control database, see below note for more
     tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
     gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
     add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+
     # initiate
     snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
 
 
 .. note::
 
-    Explaination of ``gtex_mode`` argument: We provide two ways for GTEx filtering, one is using splicing junction count (``gtex_mode='count'``),
-    The another is using splicing percent spliced in (PSI) so that ``gtex_mode='psi'``, since in this tutorial we are using splicing junction 
-    count matrix as the quantification of the splicing junction, we call the count mode for GTEx filtering. We allow user to supply a PSI 
-    matrix, in this case, you should set ``gtex_mode='psi'``.
+    RNA expression is tissue specific, which is distinct from DNA mutation, where you just need to compare with one paratumor normal tissue.
+    It is important to have a as comprehensive as possible normal tissue database, we initially provide the GTEx database containing >2500 samples
+    spanning over 54 tissue types. We further provide TCGA paratumor database an additional GTEx skin tissue for this melanoma analysis. User can 
+    add as many h5ad as the normal control. In terms of how to contruct the h5ad or dataframe, please refer to the API->MHC bound peptide(T antigen)
+    ->intialize, and the description of the ``add_control`` parameter.
+
 
 Running the T antigen workflow
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We first instantiate ``JunctionCountMatrixQuery`` object, here the ``df`` is the junction count matrix (a pandas dataframe) that we refer to above.::
 
-    df = pd.read_csv('altanalyze_output/ExpressionInput/counts.original.pruned.txt',sep='\t',index_col=0)
     jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df)
 
 We will parse the HLA type ``sample_hla.txt`` file into a nested list. The goal  is to have a python nested list ``hlas``, where each element in 
@@ -143,7 +149,7 @@ generate these output files::
 Now in the ``result`` folder, your file layout should be as below (amplify the webpage to see more clearly):
 
 .. image:: ./_static/T_result.png
-    :height: 280px
+    :height: 250px
     :width: 500px
     :align: center
     :target: target
@@ -160,14 +166,15 @@ For each stage, you may see the following categories of results:
 
 * ``burden_stage{0-3}.txt``: This file characterizes the patient level neoantigen burden (See below concrete example).
 * ``frequency_stage{0-3}.txt``: This file chracterizes each specific neoantigen, how many times does it occur across the whole cohort? 
-* ``frequency_stage{0-3}_verbosity1_uid_gene_symbol_coord_mean_mle.txt``: This is an enhanced version of frequency.txt file, where each row contains both the neoantigen and the source junction uid. This file can be further enhanced by adding :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`. See :ref:`reference_to_compatibility`.
+* ``frequency_stage{0-3}_verbosity1_uid_gene_symbol_coord_mean_mle.txt``: This is an enhanced version of frequency.txt file.
 * ``x_neoantigen_frequency{0-3}.pdf``: This is a visual representation of neoantigen frequency as a sorted barplot, where each bar is a neoantigen and the height is its occurence across cohorts.
 * ``x_occurence_frequency{0-3}.pdf``: This is an alternative visualization of neoantigen frequency as a histplot, interval (x-axis) with the occurence of each neoantigen across the cohort.
 
-For the final immunogenic neoantigen, we have detailed reports in ``T_candidates`` folder (amplify the webpage to see more clearly):
+For the final immunogenic neoantigen, we have detailed reports in ``T_candidates`` folder (amplify the webpage to see more clearly), here each row represent
+a peptide-HLA combination, so that binding affinity and immunogenicity are also reported.
 
 .. image:: ./_static/T_result_candidates.png
-    :height: 220px
+    :height: 180px
     :width: 500px
     :align: center
     :target: target
