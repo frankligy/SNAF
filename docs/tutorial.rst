@@ -91,6 +91,7 @@ Load the packages::
     import os,sys
     import pandas as pd
     import numpy as np
+    import anndata as ad
     import snaf
 
 The first step is to load our downloaded reference data into the memory to facilitate the repeated retrieval of the data while running::
@@ -125,7 +126,10 @@ Running the T antigen workflow
 
 We first instantiate ``JunctionCountMatrixQuery`` object, here the ``df`` is the junction count matrix (a pandas dataframe) that we refer to above.::
 
-    jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df)
+    jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=30,add_control=add_control,outdir='result')
+
+``cores`` specifies the number of cores to use, ``add_control`` is the additional control database that we refer to above, ``outdir`` is the output directory
+where all the results will be stored. The ``JunctionCountMatrixQuery`` object is the main object that will be used in the following steps.
 
 We will parse the HLA type ``sample_hla.txt`` file into a nested list. The goal  is to have a python nested list ``hlas``, where each element in 
 ``hlas`` is another list, for example [HLA-A*02:01,HLA-A*02:01,HLA-B*39:10,HLA-B*15:01,HLA-C*03:03,HLA-C*12:03].  Make sure the order of the element is consistent
