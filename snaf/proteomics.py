@@ -269,7 +269,7 @@ def change_length(doc,minPepLen,maxPeptideMass,minPeptideLengthForUnspecificSear
     return doc
 
 
-def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
+def set_maxquant_configuration(base,dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
                                outname='mqpar.xml',protein_fdr=0.01,peptide_fdr=0.01,site_fdr=0.01,include_contaminants=True,var_mods=['Oxidation (M)', 'Acetyl (Protein N-term)', 'Carbamidomethyl (C)'],fix_mods=None,
                                minPepLen=8,maxPeptideMass=4600,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25):
     '''
@@ -277,6 +277,7 @@ def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
     we load a single raw file, a single fasta file, reduce carbamidomethyl from fixed modification to variable modification and allow match run, otherwise,
     we retain all default parameters.
 
+    :param base: string, path to the base mqpar.xml file, we proivde orbitrap_match_run_v2.0.3.1 and bruker_tims_match_run_v2.0.3.1 on Github
     :param dbs: list, each element is the path to the database fasta file
     :param n_threads: int, how many threads will be used for MaxQuant search
     :param inputs: list, each element is the path to the raw file
@@ -305,10 +306,10 @@ def set_maxquant_configuration(dbs,n_threads,inputs,enzymes,enzyme_mode,outdir,
                     '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#5.raw',
                     '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#6.raw']
             outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48'
-            snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,outdir=outdir)
+            snaf.proteomics.set_maxquant_configuration(base='orbitrap_match_run_v2.0.3.1',dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,outdir=outdir)
 
     '''
-    with open (os.path.join(os.path.dirname(__file__),'mqpar.xml'),'r') as fr:
+    with open (base,'r') as fr:
         doc = xmltodict.parse(fr.read()) 
         doc = add_database_file(doc,dbs)
         doc = numThreads(doc,n_threads)

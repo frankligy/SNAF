@@ -14,21 +14,21 @@ from scipy.sparse import csr_matrix, find
 from tqdm import tqdm
 import re
 
-try:
-    import pymc3 as pm   # conda install -c conda-forge pymc3 mkl-service
-    import theano
-    import arviz as az
-except ImportError:
-    print('''
-        Optional package pymc3 is not installed, it is for calculating tumor specificity using hirerarchical bayesian model
-        For Linux: https://github.com/pymc-devs/pymc/wiki/Installation-Guide-(Linux)
-        For MacOS: https://github.com/pymc-devs/pymc/wiki/Installation-Guide-(MacOS)
-        For PC:    https://github.com/pymc-devs/pymc/wiki/Installation-Guide-(Windows)
-    ''')
+# try:
+#     import pymc3 as pm   # conda install -c conda-forge pymc3 mkl-service
+#     import theano
+#     import arviz as az
+# except ImportError:
+#     print('''
+#         Optional package pymc3 is not installed, it is for calculating tumor specificity using hirerarchical bayesian model
+#         For Linux: https://github.com/pymc-devs/pymc/wiki/Installation-Guide-(Linux)
+#         For MacOS: https://github.com/pymc-devs/pymc/wiki/Installation-Guide-(MacOS)
+#         For PC:    https://github.com/pymc-devs/pymc/wiki/Installation-Guide-(Windows)
+#     ''')
 
-'''
-this script is to query the tumor specificity of the junction
-'''
+# '''
+# this script is to query the tumor specificity of the junction
+# '''
 
 
 def gtex_configuration(df,gtex_db,t_min_arg,n_max_arg,normal_cutoff_arg,tumor_cutoff_arg,normal_prevalance_cutoff_arg,tumor_prevalance_cutoff_arg,add_control=None):
@@ -94,6 +94,24 @@ def gtex_configuration(df,gtex_db,t_min_arg,n_max_arg,normal_cutoff_arg,tumor_cu
     tumor_prevalance_cutoff = tumor_prevalance_cutoff_arg
 
     return adata
+
+
+def get_all_normal_h5ad(uids,outdir,name):
+    '''
+    Get the normal tissue expression as a h5ad file, so that you can run BayesTS analysis (https://github.com/frankligy/BayesTS#interface-with-snaf)
+
+    :param uids: list, all the uids you'd like to query
+    :param outdir: string, the output directory
+    :param name: string, the h5ad name
+
+    Example::
+
+        get_all_normal_h5ad(uids=uids,outdir='.',name='junction')
+        
+    '''
+    adata_new = adata[uids,:]
+    print(adata_new)
+    adata_new.write(os.path.join(outdir,'{}.h5ad'))
 
 
 def multiple_crude_sifting(junction_count_matrix,add_control,dict_exonlist,outdir,filter_mode):
@@ -292,24 +310,6 @@ def split_array_to_chunks(array,cores=None):
             item_in_group.append(array[i])
         sub_arrays.append(item_in_group)
     return sub_arrays
-
-
-def get_all_normal_h5ad(uids,outdir,name):
-    '''
-    Get the normal tissue expression as a h5ad file, so that you can run BayesTS analysis (https://github.com/frankligy/BayesTS#interface-with-snaf)
-
-    :param uids: list, all the uids you'd like to query
-    :param outdir: string, the output directory
-    :param name: string, the h5ad name
-
-    Example::
-
-        get_all_normal_h5ad(uids=uids,outdir='.',name='junction')
-        
-    '''
-    adata_new = adata[uids,:]
-    print(adata_new)
-    adata_new.write(os.path.join(outdir,'{}.h5ad'))
 
 
 def add_tumor_specificity_frequency_table(df,method='mean',remove_quote=True,cores=None):
