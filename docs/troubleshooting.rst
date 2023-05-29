@@ -128,3 +128,15 @@ files are generated, you can run bed_to_junction in one go::
 
     docker run -v $PWD:/mnt altanalyze bed_to_junction bed
 
+4. Recommended alignment workflow
+-------------------------------------
+
+While We accept any sort of bam files, we indeed notice slight differences in the identified junctions when different human references and aligner version were used.
+Since we are using TCGA paratumor as one of the control dataset, in our internal workflow, we strictly followed the GDC protocol for how to align the RNA-seq data
+for the purpose of splicing detection. The full commands, parameters and explanation can be found in `SNAF align splice <https://github.com/frankligy/SNAF/tree/main/images/alignment_splice>`_.
+Particularly, a few things need to keep in mind:
+
+#. Using the GDC fasta reference and the Gencode v36 GTF file to maximize reproduction of the TCGA results
+#. Make sure to do it in the two pass, such that you need to additionally build an intermediate index for each sample incorporating the novel junctions detected from first pass
+#. Using STAR 2.4.0 as this is the one used in TCGA pipeline
+#. Other parameters, just make sure to use the TCGA parameters

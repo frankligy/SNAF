@@ -88,12 +88,12 @@ STAR --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/hu
 
 **Notes**
 
-1. The only difference is add `--outFileNamePrefix`
+1. The only difference compared to GDC manual is add `--outFileNamePrefix`
 
 ```bash
 # build second index
 STAR --runMode genomeGenerate \
-     --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/human_gencode_v36_all_scaffold_star_index_v2.6.1_$1 \
+     --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/GenomeRef_$1 \
      --genomeFastaFiles GRCh38.d1.vd1.fa \
      --sjdbOverhang 100 \
      --runThreadN 8 \
@@ -108,7 +108,7 @@ STAR --runMode genomeGenerate \
 
 ```bash
 # pass2
-STAR --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/human_gencode_v36_all_scaffold_star_index_v2.6.1_$1 \
+STAR --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/GenomeRef_$1 \
      --readFilesIn $FASTQ1 $FASTQ2 \
      --runThreadN 8 \
      --outFilterMultimapScoreRange 1 \
@@ -119,9 +119,9 @@ STAR --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/hu
      --sjdbScore 2 \
      --alignSJDBoverhangMin 1 \
      --genomeLoad NoSharedMemory \
-     --limitBAMsortRAM 0 \
+     --limitBAMsortRAM 100000000000 \
      --readFilesCommand gunzip -c \
-     --outFileNamePrefix $DIR/$SAMPLE \
+     --outFileNamePrefix $DIR/${SAMPLE}_second \
      --outFilterMatchNminOverLread 0.33 \
      --outFilterScoreMinOverLread 0.33 \
      --sjdbOverhang 100 \
