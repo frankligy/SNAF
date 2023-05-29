@@ -50,7 +50,7 @@ TCGA-A1-A0SN-01A-11R-A144-07.bam
 # build initial index
 module load STAR/2.4.0h
 STAR --runMode genomeGenerate \
-     --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/human_gencode_v36_all_scaffold_star_index_v2.6.1 \
+     --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/human_index \
      --genomeFastaFiles GRCh38.d1.vd1.fa \
      --runThreadN 8 \
      --sjdbGTFfile gencode.v36.annotation.gtf \
