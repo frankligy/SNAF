@@ -38,6 +38,8 @@ Please make sure you are in ``/user/ligk2e`` and run the following code::
 
     2. make sure there are no existing folders named ``/bed`` and ``/altanalyze_output`` in the same level of your ``/bam`` folder.
 
+    3. For your bam file, make sure no ``__``(double underscore) is present as this is a preserved delimiter in the program, just rename it
+
 
 The output of this step contains different useful readouts, including splicing junction quantification, splicing event quantification and gene expression, but the most important output that will be used
 in the following step is the junction count matrix. The junction count matrix will be the ``altanalyze_output/ExpressionInput/counts.original.pruned.txt``. Let us take a look at a subsampled junction count matrix, each row represent a splicing junction
