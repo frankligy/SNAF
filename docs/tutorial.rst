@@ -216,15 +216,16 @@ we chop them into 9 and 10 mers without duplicates. Then we remove overlapping c
 
     jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
     os.mkdir('./fasta')
-    chop_normal_pep_db(fasta_path='human_uniprot_proteome.fasta',output_path='./fasta',mers=[9,10],allow_duplicates=False)
+    snaf.chop_normal_pep_db(fasta_path='../SNAF_ecosystem/snaf_aux/human_uniprot_proteome.fasta',output_path='./fasta/human_proteome_uniprot_9_10_mers_unique.fasta',mers=[9,10],allow_duplicates=False)
     for sample in df.columns:
-        jcmq.show_neoantigen_as_fasta(outdir='./fasta',name='neoantigen_{}.fasta'.format(sample),stage=2,verbosity=1,contain_uid=True,sample=sample)
-        snaf.proteomics.remove_redundant('./fasta/neoantigen_{}.fasta'.format(sample),'./fasta/neoantigen_{}_unique.fasta'.format(sample))
-        # human_proteome_uniprot_9_10_mers_unique.fasta is generated from command above
-        snaf.proteomics.compare_two_fasta(fa1_path='./fasta/human_proteome_uniprot_9_10_mers_unique.fasta', 
-                                        fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
-                                        write_unique2=True,prefix='{}_'.format(sample))
-        # here write_unique2 means we only report peptides that are unique to second fasta file, which is our candidates fasta files.
+        jcmq.show_neoantigen_as_fasta(outdir='./fasta',name='neoantigen_{}.fasta'.format(sample),stage=3,verbosity=1,contain_uid=True,sample=sample)
+        snaf.remove_redundant('./fasta/neoantigen_{}.fasta'.format(sample),'./fasta/neoantigen_{}_unique.fasta'.format(sample))
+        snaf.compare_two_fasta(fa1_path='./fasta/human_proteome_uniprot_9_10_mers_unique.fasta',
+                            fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
+                            write_unique2=True,prefix='{}_'.format(sample))
+
+The above assume we want to validate the immunogenic neoantigens (stage 3) identified for each patients. You can certainly construct other fastq files
+based on the SNAF-T output, and use the auxiliary functions (`remove_redundant` and `compare_two_fasta`) to remove redundant peptides and overlapping peptides.
 
 Usually, MS software requires a customized fasta database, you've already had that right now. Depending on which MS software you use, the configuration steps
 can vary, but we recommend using `MaxQuant <https://www.maxquant.org/>`_ here which is highly regarded. MaxQuant requires to compile a configuration files called 
@@ -234,15 +235,14 @@ raw files you are using, below is using Thermo Orbitrap::
     dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933726.Aligned.sortedByCoord.out.bed_unique2.fasta']
     inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#1.raw',
               '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#2.raw',
-              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#3.raw',
-              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#4.raw',
-              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#5.raw',
-              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#6.raw']
+              '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#3.raw']
     outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48'
-    snaf.proteomics.set_maxquant_configuration(dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
+    snaf.proteomics.set_maxquant_configuration(base='mqpar.mxl',dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
                                                outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
 
-A automatically generated configuration file (mqpar.xml) will be shown in the outdir that you specified. More information can be found in the :ref:`reference_to_proteomics`.
+Above, we need a base 'mqpar.mxl' file to modify upon, we provide a few `base files <https://github.com/frankligy/SNAF/tree/main/maxquant>_`, if your 
+MS raw files are not in these formats, you can either contact me or just follow the MaxQuant GUI instructions. A automatically generated configuration 
+file (mqpar.xml) will be shown in the outdir that you specified. More information can be found in the :ref:`reference_to_proteomics`.
 
 Visualization
 ~~~~~~~~~~~~~~~~~
