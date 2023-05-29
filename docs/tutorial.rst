@@ -457,6 +457,7 @@ Similar to T antigen, users can explore all the altered surface protein for B an
 importantly, please specify the full path to the python executable you use to run your python script, below using long_read mode result as an example::
 
     surface.run_dash_B_antigen(pkl='result/surface/surface_antigen_lr.p',candidates='result/surface/candidates_3_lr_None_False.txt',
+                               prediction_mode='long_read',
                                python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
 
 .. note::
