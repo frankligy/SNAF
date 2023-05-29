@@ -371,14 +371,27 @@ As a separate workflow, the B-antigen pipeline aims to priotize the altered surf
 Instantiating B pipeline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We again load some necessary reference data files to RAM::
+We should copy the first part of T antigen pipeline and add additional initialization step for surface antigen::
 
-    # same as T antigen pipeline
+    import os,sys
+    import pandas as pd
+    import numpy as np
+    import anndata as ad
     import snaf
-    import pandas
-    db_dir = '/user/ligk2e/download'  
+
+    # copy the first part of T antigen pipeline
+
+    # read in the splicing junction matrix
+    df = pd.read_csv('/user/ligk2e/altanalyze_output/ExpressionInput/counts.original.pruned.txt',index_col=0,sep='\t')
+    # database directory (where you extract the reference tarball file) and netMHCpan folder
+    db_dir = '/user/ligk2e/download'
     netMHCpan_path = '/user/ligk2e/netMHCpan-4.1/netMHCpan'
-    snaf.initialize(db_dir=db_dir,gtex_mode='count',binding_method='netMHCpan',software_path=netMHCpan_path)
+    # demonstrate how to add additional control database, see below note for more
+    tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+    gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+    add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+    # initiate
+    snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
 
     # additional instantiation steps
     from snaf import surface
@@ -390,24 +403,28 @@ Running the program
 We first obtain the membrane splicing events::
 
     df = pd.read_csv('altanalyze_output/ExpressionInput/counts.original.pruned.txt',sep='\t',index_col=0)
-    membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df)
+    membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df,add_control=add_control,outdir='result_new/surface')
 
 There are two modes for running B-pipeline, one is de novo prediction of full isoform from short-read, and validate those prediction by providing an additional long-read gtf.
 Alternatively, you can use one of our internal pan-cancer long-read isoform database to predict the full-length isoform. The former is called ``short_read`` mode, the latter is called 
 ``long_read`` mode::
 
     # short_read mode
-    surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='short_read',n_stride=2,
+    surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='short_read',
                 gtf=None,
-                tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
-    surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='short_read',validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
+                tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
+    surface.generate_full_results(outdir='result_new/surface',mode='short_read',
+                                  freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',
+                                  validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
 
 
     # long_read mode
-    surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='long_read',n_stride=2,
+    surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='long_read',
                 gtf='/data/salomonis2/LabFiles/Frank-Li/refactor/data/2021UHRRIsoSeq_SQANTI3_filtered.gtf',
-                tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm',serialize=True)
-    surface.generate_full_results(outdir='result_new/surface',freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',mode='long_read',validation_gtf=None)
+                tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
+    surface.generate_full_results(outdir='result_new/surface',mode='long_read',
+                                  freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',
+                                  validation_gtf=None)
 
 In your result folder, if running short_read mode, you will be able to get following results (amplify the webpage to see more clearly):
 
@@ -426,7 +443,7 @@ Different strigencies are explanined below:
 * ``strigency 5``: The novel isoform also needs to have long-read or EST support (whole ORF needs to be the same as full-length)
 
 An output called ``candidates.txt`` is what we are looking for, to facilitate the inspection of the result, let's use the B antigen viewer shown below. Also, 
-we can generate a more readable and publication-quality table for the candidate by using :ref:`reference_to_report_B_candidates`.
+we automatically generate a more readable and publication-quality table for each category of candidates by using :ref:`reference_to_report_B_candidates`.
 
 Particurly, a more human-readable results can be found in ``B_candidates`` folder, you should examine a file named ``sr_str3_report_None_False.txt`` which is a superset for other output,
 ``str`` controls the strigency, ``deletion/insertion/None`` indicate whether the candidate has deleted or inserted neo-epitope, None is the combination of both. ``False/True`` represents whether
