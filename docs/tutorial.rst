@@ -33,12 +33,13 @@ Please make sure you are in ``/user/ligk2e`` and run the following code::
 
 .. warning::
 
+
     1. What if you only have one bam file? Our original Altanalyze codebase was designed for cohort-level splicing analysis (so at least 2 samples). 
     As a workaround, a quick fix is to copy your bam file to another one (sample.bam, sample_copy.bam), put them all in a folder, then run the pipeline.
 
-    2. make sure there are no existing folders named ``/bed`` and ``/altanalyze_output`` in the same level of your ``/bam`` folder.
+    2. Make sure there are no existing folders named ``/bed`` and ``/altanalyze_output`` in the same level of your ``/bam`` folder.
 
-    3. For your bam file, make sure no ``__``(double underscore) is present as this is a preserved delimiter in the program, just rename it
+    3. For your bam file, make sure no ``__`` (double underscore) is present as this is a preserved delimiter in the program, just rename it
 
 
 The output of this step contains different useful readouts, including splicing junction quantification, splicing event quantification and gene expression, but the most important output that will be used
