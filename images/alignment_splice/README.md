@@ -65,7 +65,7 @@ STAR --runMode genomeGenerate \
 
 ```bash
 # pass1
-STAR --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/human_gencode_v36_all_scaffold_star_index_v2.6.1 \
+STAR --genomeDir /data/salomonis-archive/FASTQs/NCI-R01/TestRun_Aligner/Frank/human_index \
      --readFilesIn $FASTQ1 $FASTQ2 \
      --runThreadN 8 \
      --outFilterMultimapScoreRange 1 \
