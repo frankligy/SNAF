@@ -454,9 +454,9 @@ Interactive neoantigen viewer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Similar to T antigen, users can explore all the altered surface protein for B antigen, we need the ``pickle object`` and the ``candidates`` file,
-importantly, please specify the full path to the python executable you use to run your python script::
+importantly, please specify the full path to the python executable you use to run your python script, below using long_read mode result as an example::
 
-    surface.run_dash_B_antigen(pkl='result/surface_antigen.p',candidates='result/candidates_5.txt',
+    surface.run_dash_B_antigen(pkl='result/surface/surface_antigen_lr.p',candidates='result/surface/candidates_3_lr_None_False.txt',
                                python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
 
 .. note::
