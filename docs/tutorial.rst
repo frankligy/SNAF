@@ -402,7 +402,6 @@ Running the program
 
 We first obtain the membrane splicing events::
 
-    df = pd.read_csv('altanalyze_output/ExpressionInput/counts.original.pruned.txt',sep='\t',index_col=0)
     membrane_tuples = snaf.JunctionCountMatrixQuery.get_membrane_tuples(df,add_control=add_control,outdir='result_new/surface')
 
 There are two modes for running B-pipeline, one is de novo prediction of full isoform from short-read, and validate those prediction by providing an additional long-read gtf.
