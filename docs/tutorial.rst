@@ -209,31 +209,27 @@ Now imagine we have a handful of predicted short-peptides that potentially can b
 whether they are supported by public or in-house MS (either untargeted or targetted HLA-bound immunopeptidome) datasets. We provide a set of functions that can make 
 this validation process easier.
 
-First, we want to extract all candidate and write them into a fasta file::
+First, we want to extract all candidate and write them into a fasta file, we iterate all the samples in a for loop, we remove the identical peptides, becasue same peptide can be generated from different junctions.
+Next, we want to remove all peptides that are overlapping with human proteome, you can download any preferred human proteome database (UCSC or Uniprot), we provide
+a reference fasta `human_uniprot_proteome.fasta` downloaded from Uniprot downloaded at Jan 2020, available at `SNAF GitHub <https://raw.githubusercontent.com/frankligy/SNAF/main/images/proteomics/human_proteome_uniprot.fasta>`_,
+we chop them into 9 and 10 mers without duplicates. Then we remove overlapping candidates, all the above is like below::
 
     jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
-    sample = 'SRR5933735.Aligned.sortedByCoord.out'
-    jcmq.show_neoantigen_as_fasta(outdir='./fasta',name='neoantigen_{}.fasta'.format(sample),stage=2,verbosity=1,contain_uid=True,sample=sample)
-
-Then, we want to remove identical peptides, becasue same peptide can be generated from different junctions::
-
-    snaf.proteomics.remove_redundant('./fasta/neoantigen_{}.fasta'.format(sample),'./fasta/neoantigen_{}_unique.fasta'.format(sample))
-
-Next, we want to remove all peptides that are overlapping with human proteome, you can download any preferred human proteome database (UCSC or Uniprot), we provide
-a reference fasta `human_uniprot_proteome.fasta` downloaded from Uniprot downloaded at Jan 2020, available at `Synapse <https://www.synapse.org/#!Synapse:syn32057176/files/>`_,
-we chop them into 9 and 10 mers without duplicates. Then we remove overlapping candidates::
-
+    os.mkdir('./fasta')
     chop_normal_pep_db(fasta_path='human_uniprot_proteome.fasta',output_path='./fasta',mers=[9,10],allow_duplicates=False)
-    # human_proteome_uniprot_9_10_mers_unique.fasta is generated from command above
-    snaf.proteomics.compare_two_fasta(fa1_path='./fasta/human_proteome_uniprot_9_10_mers_unique.fasta', 
-                                      fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
-                                      write_unique2=True,prefix='{}_'.format(sample))
-    # here write_unique2 means we only report peptides that are unique to second fasta file, which is our candidates fasta files.
+    for sample in df.columns:
+        jcmq.show_neoantigen_as_fasta(outdir='./fasta',name='neoantigen_{}.fasta'.format(sample),stage=2,verbosity=1,contain_uid=True,sample=sample)
+        snaf.proteomics.remove_redundant('./fasta/neoantigen_{}.fasta'.format(sample),'./fasta/neoantigen_{}_unique.fasta'.format(sample))
+        # human_proteome_uniprot_9_10_mers_unique.fasta is generated from command above
+        snaf.proteomics.compare_two_fasta(fa1_path='./fasta/human_proteome_uniprot_9_10_mers_unique.fasta', 
+                                        fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
+                                        write_unique2=True,prefix='{}_'.format(sample))
+        # here write_unique2 means we only report peptides that are unique to second fasta file, which is our candidates fasta files.
 
 Usually, MS software requires a customized fasta database, you've already had that right now. Depending on which MS software you use, the configuration steps
 can vary, but we recommend using `MaxQuant <https://www.maxquant.org/>`_ here which is highly regarded. MaxQuant requires to compile a configuration files called 
-`mqpar.xml` which stores the setting for the search engine, the databases that will be used and the input raw files, manually adjusting it can be a pain, so we provide
-a handy function to automatically do so::
+`mqpar.xml` which stores the setting for the search engine, we provide a programatical API to modify the config file based on different instrument, database and 
+raw files you are using, below is using Thermo Orbitrap::
 
     dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933726.Aligned.sortedByCoord.out.bed_unique2.fasta']
     inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#1.raw',
