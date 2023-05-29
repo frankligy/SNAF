@@ -470,36 +470,6 @@ importantly, please specify the full path to the python executable you use to ru
     :align: center
     :target: target
 
-Tumor Specificity (GTEx)
-----------------------------
-
-For a specific splicing event, we can visualize its tumor specificity by comparing its expression in tumor versus normal tissue::
-
-    snaf.gtex_visual_combine('ENSG00000167291:E38.6-E39.1',norm=True,outdir='result',tumor=df)
-
-here ``norm`` argument controls whether to normalize the raw read count to Count Per Million (CPM) to account for sequencing depth bias.
-
-.. image:: ./_static/gtex_combine.png
-    :height: 400px
-    :width: 500px
-    :align: center
-    :target: target
-
-You can also view each tissue type separately::
-
-    snaf.gtex_visual_subplots('ENSG00000198053:E7.2-E13.1_1915159',norm=True,outdir='result')
-
-.. image:: ./_static/gtex_subplots.png
-    :height: 400px
-    :width: 500px
-    :align: center
-    :target: target
-
-.. note::
-
-    SNAF also provide quantitative measurement for tumor specificity, to calculate the tumor specificity for each neojunction, 
-    we need to run :ref:`reference_to_add_specificity`. We can report mean GTEx read count, Maximum likelihood Estimation and hierarchical Bayesian estimation,
-    the detailed mathematical equations are shown in the preprint.
 
 .. _reference_to_compatibility:
 
