@@ -225,7 +225,7 @@ we chop them into 9 and 10 mers without duplicates. Then we remove overlapping c
                             write_unique2=True,prefix='{}_'.format(sample))
 
 The above assume we want to validate the immunogenic neoantigens (stage 3) identified for each patients. You can certainly construct other fastq files
-based on the SNAF-T output, and use the auxiliary functions (`remove_redundant` and `compare_two_fasta`) to remove redundant peptides and overlapping peptides.
+based on the SNAF-T output, and use the auxiliary functions (``remove_redundant`` and ``compare_two_fasta``) to remove redundant peptides and overlapping peptides.
 
 Usually, MS software requires a customized fasta database, you've already had that right now. Depending on which MS software you use, the configuration steps
 can vary, but we recommend using `MaxQuant <https://www.maxquant.org/>`_ here which is highly regarded. MaxQuant requires to compile a configuration files called 
