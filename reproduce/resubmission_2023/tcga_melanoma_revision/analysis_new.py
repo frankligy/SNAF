@@ -23,15 +23,15 @@ mpl.rcParams['font.family'] = 'Arial'
 # # get reduced junction
 df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
 
-# run SNAF
-netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
-db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
-tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
-gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
-add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
+# # run SNAF
+# netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
+# db_dir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/data'
+# tcga_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','tcga_matched_control_junction_count.h5ad'))
+# gtex_skin_ctrl_db = ad.read_h5ad(os.path.join(db_dir,'controls','gtex_skin_count.h5ad'))
+# add_control = {'tcga_control':tcga_ctrl_db,'gtex_skin':gtex_skin_ctrl_db}
 
-snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
-surface.initialize(db_dir=db_dir)
+# snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
+# surface.initialize(db_dir=db_dir)
 
 # 4 common neoantigens for immuno assay
 # cand = pd.read_csv('result_new/T_candidates/T_antigen_candidates_all.txt',sep='\t',index_col=0)
@@ -115,23 +115,22 @@ stage 3: 915.2754237288135 2486.0 74.0
 # do DEG and GO
 # snaf.downstream.prepare_DEG_analysis('result_new/burden_stage3.txt','result_new/survival/burden3_patient_high_low_group.txt',
 #                                      rename_func=lambda x:'-'.join(x.split('-')[:4]),
-#                                      outdir='result_new/survival',encoding={'low':'1','high':'2'})
-# snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',up_cutoff=0.58,down_cutoff=-0.58,
+#                                      outdir='result_new/survival',encoding={'low':'2','high':'1'})
+# snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high_mod.txt',up_cutoff=0.58,down_cutoff=-0.58,
 #                                      mode='static',outdir='result_new/survival',genes_to_highlight=['LST1','HCST','IL32','CD3D','S100A8','MZB1','IGLC4','ADAM10','ARFGEF2','MIB1','KIF3B','TNPO1','PTPN11','ANKRD52','TGFBR1'])
 
 # visualize RBP specifically
-# rbps = ['YTHDC2', 'SDAD1', 'TARDBP', 'UCHL5', 'SRSF1', 'PUM1', 'GNL3', 'PNPT1', 'DHX30', 'GRSF1', 'HLTF', 'PSIP1', 'DDX52', 'EIF4B', 'SND1', 'PABPC1', 'WDR43', 'AGO2', 'STAU1', 'SSB', 'HNRNPU', 'EIF2S2', 'FAM120A', 'RBM39', 'SNRNP200', 'EIF4G1', 'HSPD1', 'DDX55', 'DDX21', 'PPIG', 'DKC1', 'FIP1L1', 'LARP4', 'YWHAG', 'RCC2', 'EIF4G2', 'MSI2', 'WDR3', 'EIF3A', 'PRPF4', 'PRPF8', 'SERBP1', 'CELF1', 'AQR', 'SUPV3L1', 'FTO', 'NUSAP1', 'XPO5', 'AGO1', 'FMR1', 'SF3B1', 'DNAJC21', 'TROVE2', 'DDX27', 'ADAR', 'KHDRBS1', 'TIAL1', 'CPEB4', 'KRR1', 'FXR1', 'AGO3', 'XPO1', 'NIPBL', 'EIF2S1', 'HNRNPF', 'XRN1', 'DDX42', 'ZC3H11A', 'PUM2', 'AKAP1', 'DROSHA', 'EFTUD2', 'MTPAP', 'DDX1', 'NUFIP2', 'IGF2BP2', 'G3BP1', 'QKI', 'IGF2BP3', 'LARP7', 'GEMIN5', 'DDX3X', 'DDX6', 'TIA1', 'SLTM', 'TRIM56', 'MBNL1', 'SRFBP1', 'AGGF1', 'SUGP2', 'FUBP1', 'ZNF800', 'SF3A3', 'G3BP2', 'MAK16', 'RBM25', 'METAP2', 'CPSF6', 'ZRANB2', 'SSRP1', 'NOLC1', 'UTP18', 'NSUN2', 'FASTKD2', 'WRN', 'ESF1', 'ILF3', 'RBFOX2', 'SART3', 'PABPC4', 'PHF6', 'ABCF1', 'NAA15', 'SRP68', 'XRN2', 'MATR3']
-# rbp_select = ['NAA15','WDR43','HLTF','NOLC1','PUM2','SF3B1','SRSF1','RBFOX2','DROSHA','MBNL1','QKI','']
-# snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',up_cutoff=0.58,down_cutoff=-0.58,
-#                                      mode='static',outdir='result_new/survival',genes_to_highlight=rbp_select)
+# rbps = ['EIF4G2', 'HLTF', 'DDX3X', 'NOLC1', 'G3BP2', 'XRN2', 'FAM120A', 'WDR3', 'NAA15', 'PNPT1', 'DDX21', 'XPO1', 'ZC3H11A', 'PUM1', 'ADAR', 'WDR43', 'EIF3A', 'PUM2', 'UCHL5', 'ZRANB2']
+# snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high_mod.txt',up_cutoff=0.58,down_cutoff=-0.58,
+#                                      mode='static',outdir='result_new/survival',genes_to_highlight=rbps)
 
-# snaf.downstream.prepare_GO_analysis('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',outdir='result_new/survival',direction='<',lc_cutoff=-0.58,adjp_cutoff=0.05)
-# snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20221201-205821/gene_list-GO.txt','result_new/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20221201-205720/gene_list-BioMarkers.txt'],
-#                                     skiprows_list=[17,16],category_list=['Ontology Name','Gene-Set Name'],outdir='result_new/survival',
-#                                     mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-50,10e-1))
-# snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230407-100025/gene_list-GO.txt'],
+# snaf.downstream.prepare_GO_analysis('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',outdir='result_new/survival',direction='>',lc_cutoff=0.58,adjp_cutoff=0.05)
+# snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20230528-192111/gene_list_up_in_low-BioMarkers.txt','result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230528-192137/gene_list_up_in_low-GO.txt'],
+#                                     skiprows_list=[16,17],category_list=['Gene-Set Name','Ontology Name'],outdir='result_new/survival',
+#                                     mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-85,10e-1))
+# snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230528-192717/gene_list_up_in_high-GO.txt'],
 #                                     skiprows_list=[17],category_list=['Ontology Name'],outdir='result_new/survival',
-#                                     mode='static',ontology_to_highlight={'metabolic process':'metabolic process','nucleic acid metabolic process':'nucleic acid metabolic process','nitrogen compound metabolic process':'nitrogen compound metabolic process','regulation of cellular metabolic process':'regulation of cellular metabolic process','response to DNA damage stimulus':'response to DNA damage stimulus'},ylims=(10e-80,10e-1))
+#                                     mode='static',ontology_to_highlight={'cellular protein metabolic processs':'metabolic process','regulation of DNA endoreduplication':'DNA endoreduplication','cadherin binding':'cadherin binding','synapse part':'synapse part','cellular component organization or biogenesis':'cellular biogenesis','nucleoside-triphosphatase activity':'nucleoside-triphosphatase activity','positive regulation of macromolecule metabolic process':'regulation of metabolic'},ylims=(10e-35,10e-0))
 
 # # coverage analysis
 # snaf.downstream.get_coverage(t_result='result_new/T_candidates/T_antigen_candidates_all.txt',allele='A')
@@ -212,9 +211,19 @@ total_valid = unique_valid_sr.union(unique_valid_lr)  # 562
 (2) too disruptive sequence when considering intron retention or novel exon or other
 (3) ref seq used internally were not comprehensive enough, so actually a documented isoform
 (4) weired one like circular rna'''
-surface.run_dash_B_antigen(pkl='result_new/surface/surface_antigen_lr.p',candidates='result_new/surface/candidates_3_lr_None_False.txt',prediction_mode='long_read',
-                           python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+# surface.run_dash_B_antigen(pkl='result_new/surface/surface_antigen_lr.p',candidates='result_new/surface/candidates_3_lr_None_False.txt',prediction_mode='long_read',
+#                            python_executable='/data/salomonis2/LabFiles/Frank-Li/refactor/neo_env/bin/python3.7')
+
+# show four examples, ANO10, IGSF11, NALCN, MET_new
+snaf.gtex_visual_combine(uid='ENSG00000092421:E22.1-E24.1_116468915',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
+snaf.gtex_visual_combine(uid='ENSGOOOOOO57019:E5.1-I5.1_98867438',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
 sys.exit('stop')
+snaf.gtex_visual_combine(uid='ENSG00000160746:I21.1_43457363-E22.1',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
+snaf.gtex_visual_combine(uid='ENSG00000144847:E4.4-E8.1',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
+snaf.gtex_visual_combine(uid='ENSG00000102452:U0.1_101417117-E2.1',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
+snaf.gtex_visual_combine(uid='ENSG00000105976:E15.2-E17.2_116763110',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
+sys.exit('stop')
+
 
 ## MS validation
 # df = pd.read_csv('result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',sep='\t',index_col=0)
@@ -582,7 +591,7 @@ Mel4
 TCGA-DA-A1HY-06A-11R-A18T-07
 RASA3
 gene is highly expressed, but splicing is unique, very tumor specific
-adipose tissue ERR315343 use this as control instead breast is also highly expressed TCGA-BH-A0H7-11A-13R-A089-07
+adipose tissue ERR315343 use this as control (not using) instead using breast tcga paratumor TCGA-BH-A0H7-11A-13R-A089-07
 '''
 # unit_run(uid='ENSG00000185989:E5.1_114128541-E18.1',
 #          base_sample='TCGA-DA-A1HY-06A-11R-A18T-07',

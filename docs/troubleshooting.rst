@@ -128,7 +128,7 @@ files are generated, you can run bed_to_junction in one go::
 
     docker run -v $PWD:/mnt altanalyze bed_to_junction bed
 
-4. Recommended alignment workflow
+5. Recommended alignment workflow
 -------------------------------------
 
 While We accept any sort of bam files, we indeed notice slight differences in the identified junctions when different human references and aligner version were used.
@@ -140,3 +140,21 @@ Particularly, a few things need to keep in mind:
 #. Make sure to do it in the ``two pass``, such that you need to additionally build an intermediate index for each sample incorporating the novel junctions detected from first pass
 #. Using ``STAR 2.4.0`` as this is the one used in TCGA pipeline
 #. Other parameters, just make sure to use the TCGA parameters
+
+
+6. Running MaxQuant in Linux
+-------------------------------------
+
+You can certainly check their own website and user group, but I provide the way that usually work for me::
+
+    # make sure you install the right version (these two version guarantee to work)
+    module load mono/5.20.1
+    module load dotnet/3.1.425
+
+    # run maxquant using the downloaded .exe and the modifed mqpar.xml file
+    mono /path/to/MaxQuant_2.0.3.1/bin/MaxQuantCmd.exe /path/to/mqpar.xml
+
+
+
+
+
