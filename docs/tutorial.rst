@@ -364,8 +364,8 @@ convenient visualization function to generate routine visualization::
                                           mode='static',outdir='result_new/survival',genes_to_highlight=['LST1','HCST','IL32','CD3D','S100A8','MZB1','IGLC4','ADAM10','ARFGEF2','MIB1','KIF3B','TNPO1','PTPN11','ANKRD52','TGFBR1'])
 
 .. image:: ./_static/DEG.png
-    :height: 500px
-    :width: 500px
+    :height: 400px
+    :width: 600px
     :align: center
     :target: target
 
@@ -401,8 +401,8 @@ and ``GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived
                                         mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-85,10e-1))
 
 .. image:: ./_static/GO.png
-    :height: 500px
-    :width: 500px
+    :height: 400px
+    :width: 600px
     :align: center
     :target: target
 
