@@ -290,8 +290,9 @@ to be the same, that's why we need a few lines of code for parsing below::
     survival = pd.read_csv('TCGA-SKCM.survival.tsv',sep='\t',index_col=0)  # 463
     burden = pd.read_csv('result/burden_stage2.txt',sep='\t',index_col=0).loc['burden',:].iloc[:-1]  # 472
     burden.index = ['-'.join(sample.split('-')[0:4]) for sample in burden.index]
-    # convenient function for survival
-    snaf.survival_analysis(burden,survival,n=2,stratification_plot='result/stage2_stratify.pdf',survival_plot='result/stage2_survival.pdf')
+    # convenient function for survival, and save the output for whether a sample is in which group (high, low)
+    burden_output, _ = snaf.survival_analysis(burden,survival,n=2,stratification_plot='result/stage2_stratify.pdf',survival_plot='result/stage2_survival.pdf')
+    burden_output.to_csv('result/sample_to_burden_group.txt',sep='\t')
 
 
 .. image:: ./_static/survival.png
@@ -300,7 +301,11 @@ to be the same, that's why we need a few lines of code for parsing below::
     :align: center
     :target: target
 
-We can also perform Cox regression analysis to see if the precense of a particular neoantigne is associated with survival or not::
+We can also perform Cox regression analysis to see if the precense of a particular neoantigne is associated with survival or not, it can also be whether the 
+presence of a neoantigen is associated with responding to immunotherapy or not, here the rename function is to convert the sample name from your ``freq`` file
+to the sample name in ``survival`` file, the ``pea`` is the path to a file usually located at your ``altanalyze_output/AltResults/AlternativeOutput`` folder called
+``Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt``, the mode is either ``binary`` or ``psi``, it dictates whether to just binarize (presence or absence) of 
+a junction or use the junction presence level as well::
 
     snaf.downstream.survival_regression(freq='result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',remove_quote=True,
                                         rename_func=lambda x:'-'.join(x.split('-')[:4]),survival='TCGA-SKCM.survival.tsv',
@@ -310,6 +315,97 @@ We can also perform Cox regression analysis to see if the precense of a particul
     :file: ./_static/cox.csv
     :widths: 10,10,10,10,10,10
     :header-rows: 1
+
+
+Differential Gene/Splicing Analysis and Gene Enrichment analysis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We can ask the questions, what are the differentially up-regulated or down-regulated genes and splicing events in high splicing burden patients compared to
+low burden group. And even further, for those up-regulated genes, what are the enriched pathway/ontology for these genes.
+
+To run differential gene or splicing analysis, we need to create a ``groups.txt`` file and a ``comps.txt`` file as below, both are tab delimited and
+no header line, the groups file specifiy the label of each sample, third column is the label and the second column is just a numerical of the label, and the 
+comps file is just one line with 1,tab,2,newline::
+
+    # groups.task.txt file
+    sample_1    1    high  
+    sample_2    1    high
+    sample_3    1    high
+    ...        ...    ...
+    sample_n    2     low 
+
+    # comps.task.txt file
+    1   2
+
+You can certainly build these two files yourself, but if you follow the tutorial so far, we have a convenient function to create these two files, the first 
+argument is the path to the burden file of the stage you want to query, the second argument is the path to the ``burden_output`` file created by ``snaf.survival_analysis``
+function shown above::
+
+    snaf.downstream.prepare_DEG_analysis('result/burden_stage3.txt','result/survival/burden3_patient_high_low_group.txt',
+                                         outdir='result/survival',encoding={'low':'1','high':'2'})
+
+Once you have these two files, you can run Differential anlaysis first using the docker again, for illustration purpose, imagine you copy the group file to 
+the folder where ``altanalyze_output`` folder sits from first step, and you are now in this folder::
+
+    # using singularity
+    singularity run -B $PWD:/mnt --writable ./altanalyze/ DE altanalyze_output groups.txt  # differential gene 
+    singularity run -B $PWD:/mnt --writable ./altanalyze/ DAS altanalyze_output groups.txt   # differential splicing
+
+    # using docker
+    docker run -v $PWD:/mnt frankligy123/altanalyze:0.7.0.1 DE altanalyze_output groups.txt  # differential gene 
+    docker run -v $PWD:/mnt frankligy123/altanalyze:0.7.0.1 DAS altanalyze_output groups.txt   # differential splicing
+
+After running that, your DEG results should be a file in ``altanalyze_output/ExpressionInput/DEGs-LogFold_0.0_adjp/GE.high_vs_low.txt``, the differential 
+splicing results should be a file in ``altanalyze_output/AlternativeOutput/Events-dPSI_0.0_rawp/PSI.high_vs_low.txt``. Once you have those files, you can use the 
+convenient visualization function to generate routine visualization::
+
+    # plot volcano
+    snaf.downstream.visualize_DEG_result('result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high_mod.txt',up_cutoff=0.58,down_cutoff=-0.58,
+                                          mode='static',outdir='result_new/survival',genes_to_highlight=['LST1','HCST','IL32','CD3D','S100A8','MZB1','IGLC4','ADAM10','ARFGEF2','MIB1','KIF3B','TNPO1','PTPN11','ANKRD52','TGFBR1'])
+
+.. image:: ./_static/DEG.png
+    :height: 500px
+    :width: 500px
+    :align: center
+    :target: target
+
+Finally, you can conduct gene enrichment analysis by first extract the top marker genes from your DE analysis above, we just need a ``gene_list.txt`` file as below::
+
+    # gene_list.txt file
+    gene1
+    gene2
+    ...
+    gene_n
+
+Again, you can create yourself, or use our convenient function::
+
+    snaf.downstream.prepare_GO_analysis(result_path='result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',
+                                        outdir='result_new/survival',direction='>',lc_cutoff=0.58,adjp_cutoff=0.05)
+
+This will create a gene_list file to extract genes that fullfil the cutoffs you set, and write to the ``outdir`` you set, now for illustration purpose, 
+imagine you copy the gene_list file to the folder where ``altanalyze_output`` folder sits from first step, and you are now in this folder::
+
+    # using singularity
+    singularity run -B $PWD:/mnt --writable ./altanalyze/ GO gene_list.txt
+
+    # using docker
+    docker run -v $PWD:/mnt frankligy123/altanalyze:0.7.0.1 GO gene_list.txt
+
+You should have two folders, one called ``GO_Elite_result_BioMarkers`` and another called ``GO_Elite_result_GeneOntology``, the first one contains 
+enriched biomarkers for cell type or published papers, second one contains enriched ontologies. The actual files are at ``GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20230528-192639/gene_list_up_in_high-BioMarkers.txt``
+and ``GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230528-192717/gene_list_up_in_high-GO.txt``, we again provide a visualization function::
+
+    # plot enrichment
+    snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20230528-192111/gene_list_up_in_low-BioMarkers.txt','result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230528-192137/gene_list_up_in_low-GO.txt'],
+                                        skiprows_list=[16,17],category_list=['Gene-Set Name','Ontology Name'],outdir='result_new/survival',
+                                        mode='static',ontology_to_highlight={'Adult Peripheral Blood Activated T cell (PMID32214235 top 100)':'T cells','antigen binding':'antigen binding','complement activation':'Complement Activation','immune response':'immune response','humoral immune response':'humoral immune response'},ylims=(10e-85,10e-1))
+
+.. image:: ./_static/GO.png
+    :height: 500px
+    :width: 500px
+    :align: center
+    :target: target
+
 
 Mutation Association Analysis
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
