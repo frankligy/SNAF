@@ -392,8 +392,8 @@ imagine you copy the gene_list file to the folder where ``altanalyze_output`` fo
     docker run -v $PWD:/mnt frankligy123/altanalyze:0.7.0.1 GO gene_list.txt
 
 You should have two folders, one called ``GO_Elite_result_BioMarkers`` and another called ``GO_Elite_result_GeneOntology``, the first one contains 
-enriched biomarkers for cell type or published papers, second one contains enriched ontologies. The actual files are at ``GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20230528-192639/gene_list_up_in_high-BioMarkers.txt``
-and ``GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230528-192717/gene_list_up_in_high-GO.txt``, we again provide a visualization function::
+enriched biomarkers for cell type or published papers, second one contains enriched ontologies. The actual files are at ``GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-{time_stamp}/gene_list-BioMarkers.txt``
+and ``GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-{time_stamp}/gene_list-GO.txt``, we again provide a visualization function::
 
     # plot enrichment
     snaf.downstream.visualize_GO_result(path_list=['result_new/survival/GO_Elite_result_BioMarkers/GO-Elite_results/CompleteResults/ORA/archived-20230528-192111/gene_list_up_in_low-BioMarkers.txt','result_new/survival/GO_Elite_result_GeneOntology/GO-Elite_results/CompleteResults/ORA/archived-20230528-192137/gene_list_up_in_low-GO.txt'],
