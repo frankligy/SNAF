@@ -337,13 +337,6 @@ comps file is just one line with 1,tab,2,newline::
     # comps.task.txt file
     1   2
 
-You can certainly build these two files yourself, but if you follow the tutorial so far, we have a convenient function to create these two files, the first 
-argument is the path to the burden file of the stage you want to query, the second argument is the path to the ``burden_output`` file created by ``snaf.survival_analysis``
-function shown above::
-
-    snaf.downstream.prepare_DEG_analysis('result/burden_stage3.txt','result/survival/burden3_patient_high_low_group.txt',
-                                         outdir='result/survival',encoding={'low':'1','high':'2'})
-
 Once you have these two files, you can run Differential anlaysis first using the docker again, for illustration purpose, imagine you copy the group file to 
 the folder where ``altanalyze_output`` folder sits from first step, and you are now in this folder::
 
@@ -369,6 +362,21 @@ convenient visualization function to generate routine visualization::
     :align: center
     :target: target
 
+Further, you can examine the different splicing event types::
+
+    # Event type difference
+    psi = pd.read_csv('PSI.grow_vs_senes.txt',sep='\t',index_col=0)
+    uid_in_exp = [':'.join(item.split('|')[0].split(':')[1:]) for item in psi.loc[(psi['dPSI']<0)&(psi['adjp']<0.05),:].index.tolist()]
+    uid_in_ctr = [':'.join(item.split('|')[0].split(':')[1:]) for item in psi.loc[(psi['dPSI']>0)&(psi['adjp']<0.05),:].index.tolist()]
+    snaf.plot_event_type(pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',uids={'exp':uid_in_exp,'ctl':uid_in_ctl},rel=False,outdir='./')
+
+.. image:: ./_static/DAS.png
+    :height: 400px
+    :width: 600px
+    :align: center
+    :target: target
+
+
 Finally, you can conduct gene enrichment analysis by first extract the top marker genes from your DE analysis above, we just need a ``gene_list.txt`` file as below::
 
     # gene_list.txt file
@@ -376,11 +384,6 @@ Finally, you can conduct gene enrichment analysis by first extract the top marke
     gene2
     ...
     gene_n
-
-Again, you can create yourself, or use our convenient function::
-
-    snaf.downstream.prepare_GO_analysis(result_path='result_new/survival/DEGs-LogFold_0.0_adjp/GE.low_vs_high.txt',
-                                        outdir='result_new/survival',direction='>',lc_cutoff=0.58,adjp_cutoff=0.05)
 
 This will create a gene_list file to extract genes that fullfil the cutoffs you set, and write to the ``outdir`` you set, now for illustration purpose, 
 imagine you copy the gene_list file to the folder where ``altanalyze_output`` folder sits from first step, and you are now in this folder::

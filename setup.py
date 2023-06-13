@@ -29,7 +29,8 @@ requires = [
     'flask=2.0.2',
     'dash==2.0.0',
     'dash-dangerously-set-inner-html==0.0.2',
-    'mygene==3.2.2'
+    'mygene==3.2.2',
+    'adjustText=0.8'
 ]
 
 setup(

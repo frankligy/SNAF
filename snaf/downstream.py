@@ -194,7 +194,7 @@ def plot_event_type(pea,uids,rel,outdir):
         evc = df.loc[df['foreground'].isin(set(uid)),:]['EventAnnotation'].value_counts()
         evc.name = k
         evc_list.append(evc)
-    evc_all = pd.concat(evc_list,axis=1,join='outer')
+    evc_all = pd.concat(evc_list,axis=1,join='outer').fillna(value=0)
     cond = []
     for item in evc_all.index:
         if item in set(valid_type):
