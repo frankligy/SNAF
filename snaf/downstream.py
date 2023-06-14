@@ -1012,9 +1012,9 @@ def calculate_psi(path_to_count,ensg,outdir):
 
     Examples::
 
-        snaf.calculate_psi(path_to_count='/gpfs/data/yarmarkovichlab/senescence/RNA_seq_align/altanalyze_output/ExpressionInput/counts.original.txt',
-                           ensg='ENSG00000151092',
-                           outdir='/gpfs/data/yarmarkovichlab/senescence/RNA_seq_align/result/inspection')
+        snaf.calculate_psi(path_to_count='./altanalyze_output/ExpressionInput/counts.original.txt',
+                           ensg='ENSG00000141510',
+                           outdir='./result/inspection')
 
 
     '''
