@@ -15,6 +15,7 @@ from tqdm import tqdm
 from copy import deepcopy
 import multiprocessing as mp
 import subprocess
+from copy import deepcopy
 
 '''
 this script contains survival analysis, mutation analysis
@@ -1000,6 +1001,105 @@ def analyze_neoantigens(freq_path,junction_path,total_samples,outdir,fasta=False
 
 
 
+def calculate_psi(path_to_count,ensg,outdir):
+    '''
+    Given the AltAnalyze detected splicing junction count matrix, we can interrogate the percent-spiced-in (PSI),
+    or in another word, the potential isoform usage of junctions.
+
+    :param path_to_count: string, the path to altnalyze_output/ExpressionInput/counts.original.txt
+    :param ensg: string, the ENSG ID for the gene you are interested in
+    :param outdir: string, the path to the output dir path
+
+    Examples::
+
+        snaf.calculate_psi(path_to_count='/gpfs/data/yarmarkovichlab/senescence/RNA_seq_align/altanalyze_output/ExpressionInput/counts.original.txt',
+                           ensg='ENSG00000151092',
+                           outdir='/gpfs/data/yarmarkovichlab/senescence/RNA_seq_align/result/inspection')
+
+
+    '''
+    # build gene-specific enahnced count file
+    count = pd.read_csv(path_to_count,sep='\t',index_col=0)
+    col_uid = []
+    col_gene = []
+    col_chrom = []
+    col_start = []  # logical start and end, not physical on the forward strand
+    col_end = []
+    col_strand = []
+    for item in count.index:
+        uid,coords = item.split('=')
+        chrom, coords = coords.split(':')
+        start, end = coords.split('-')
+        strand = '+' if start < end else '-'
+        gene = uid.split(':')[0]
+        col_uid.append(uid)
+        col_gene.append(gene)
+        col_chrom.append(chrom)
+        col_start.append(start)
+        col_end.append(end)
+        col_strand.append(strand)
+    for name,col in zip(['uid','gene','chrom','start','end','strand'],[col_uid,col_gene,col_chrom,col_start,col_end,col_strand]):
+        count[name] = col
+    count = count.loc[count['gene']==ensg,:]
+
+    # calculate per gene
+    return_data = []
+    count = count.set_index('uid')
+    uid2coords = count.apply(lambda x:[x['start'],x['end']],axis=1,result_type='reduce').to_dict()
+    for row in count.iterrows():
+        uid = row[0]
+        region = uid2coords[uid]
+        strand = row[1]['strand']
+        clique = find_uid_in_clique(uid,region,strand,uid2coords)
+        index_list = deepcopy(row[1].index.tolist())
+        for c in ['gene','chrom','start','end','strand']:
+            index_list.remove(c)
+        sample_columns = index_list
+        psi_values,bg_uid, cond = calculate_psi_core(clique,uid,count,sample_columns)
+        data = (uid,bg_uid,cond,*psi_values)
+        return_data.append(data)
+    df = pd.DataFrame.from_records(data=return_data,columns=['uid','bg_uid','cond']+sample_columns)
+    df.to_csv(os.path.join(outdir,'{}_psi.txt'.format(ensg)),sep='\t')
+
+
+def find_uid_in_clique(the_uid,region,strand,uid2coords):
+    clique = {the_uid:region}
+    for uid,coords in uid2coords.items():
+        if uid != the_uid:
+            if strand == '+':
+                cond = (max(int(region[0]),int(coords[0])) - min(int(region[1]),int(coords[1]))) < 0
+                if cond:  # they overlap
+                    clique[uid] = coords
+            elif strand == '-':
+                cond = (max(int(region[1]),int(coords[1])) - min(int(region[0]),int(coords[0]))) < 0
+                if cond: # they overlap
+                    clique[uid] = coords
+    return clique
+
+
+
+def is_valid(mat,uid):
+    num_incl_events = np.count_nonzero(mat[0,:] >= 20)
+    num_excl_events = np.count_nonzero(mat[1:,:].sum(axis=0) >= 20)
+    total_number_junctions = np.count_nonzero(mat.sum(axis=0) >= 20)
+    max_incl_exp = mat[0,:].max()
+    max_excl_exp = mat[1:,:].sum(axis=0).max()
+    ratio = max_excl_exp / max_incl_exp
+    return (num_incl_events > 1 and num_excl_events > 1 and total_number_junctions > 2 and ratio > 0.1)
+
+
+def calculate_psi_core(clique,uid,count,sample_columns):
+    sub_count = count.loc[list(clique.keys()),sample_columns]
+    mat = sub_count.values
+    psi = mat[0,:] / mat.sum(axis=0)
+    if sub_count.shape[0] > 1:
+        bg_uid = sub_count.index.tolist()[np.argmax(mat[1:,:].sum(axis=1)) + 1]
+        cond = is_valid(mat,uid)
+    else:  # no background event
+        bg_uid = 'None'      
+        cond = False
+    return psi,bg_uid,cond
+        
 
 
 

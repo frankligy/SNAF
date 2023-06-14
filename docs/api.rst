@@ -177,6 +177,10 @@ Plot Splicing Event Type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.downstream.plot_event_type
 
+Calculate PSI or isoform usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.downstream.calculate_psi
+
 
 
 
