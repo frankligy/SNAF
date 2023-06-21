@@ -269,7 +269,7 @@ It is also quite important to know the tumor specificity of each junction, which
     # interactive
     snaf.gtex_visual_combine_plotly(uid=uid,outdir='result_new/common',norm=False,tumor=df)
     # static
-    dff = snaf.gtex_visual_combine(uid=uid,outdir='Frank_inspection',norm=False,tumor=df)
+    dff = snaf.gtex_visual_combine(uid=uid,outdir='Frank_inspection',norm=False,tumor=df,group_by_tissue=False)
 
 .. image:: ./_static/interactive.png
     :height: 300px
