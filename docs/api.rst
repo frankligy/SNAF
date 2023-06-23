@@ -112,6 +112,10 @@ gtex_visual_combine_plotly
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.gtex_viewer.gtex_visual_combine_plotly
 
+gtex_visual_combine_barplot
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: snaf.gtex_viewer.gtex_visual_combine_barplot
+
 gtex_visual_subplots
 ~~~~~~~~~~~~~~~~~~~~~
 .. autofunction:: snaf.gtex_viewer.gtex_visual_subplots

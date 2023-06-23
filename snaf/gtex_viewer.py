@@ -154,6 +154,51 @@ def gtex_visual_combine_plotly(uid,outdir='',norm=False,tumor=None):
     fig.write_html(os.path.join(outdir,'gtex_visual_combine_plotly_norm_{}_{}.html'.format(norm,identifier)))
 
 
+def gtex_visual_combine_barplot(uid,norm=False,outdir='.',ylim=None,facecolor='#D99066',figsize=(6.4,4.8)):
+    '''
+    Shows the expression per tissue as bar plot
+
+    :param uid: string, the uid of junction or gene
+    :param norm: boolean, whether to normalize the raw count or not
+    :param outdir: string, the output directory
+    :param ylim: None or tuple, the lim of the y-axis
+    :param facecolor: string, the facecolor of the barplot, recommended: #D99066, #50BF80 #795D8C
+    :param figsize: tuple, the size of the figure
+
+    Examples::
+
+        gtex_visual_combine_barplot(uid=uid1,ylim=ylim,facecolor='#D99066',figsize=figsize,norm=norm,outdir=outdir)
+        
+    '''
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+    query = uid
+    try:
+        info = adata[[query],:]
+    except:
+        print('{} not detected in gtex, impute as zero'.format(query))
+        info = ad.AnnData(X=csr_matrix(np.full((1,adata.shape[1]),0)),obs=pd.DataFrame(data={'mean':[0]},index=[uid]),var=adata.var)  # weired , anndata 0.7.6 can not modify the X in place? anndata 0.7.2 can do that in scTriangulate
+    title = query
+    identifier = query.replace(':','_')
+    df = pd.DataFrame(data={'value':info.X.toarray().squeeze(),'tissue':info.var['tissue'].values},index=info.var_names)
+    if norm:
+        df['value'] = df['value'] / (info.var['total_count'])
+    tmp = []
+    for tissue,sub_df in df.groupby(by='tissue'):
+        tmp.append((sub_df,sub_df['value'].mean(),tissue))
+    fig,ax = plt.subplots(figsize=figsize)
+    ax.bar(x=np.arange(len(tmp)),height=[item[1] for item in tmp],color=facecolor)
+    ax.set_xticks(ticks=np.arange(len(tmp)),labels=[item[2] for item in tmp],fontsize=1,rotation=90)
+    ax.set_xlabel('Tissues')
+    if not norm:
+        ax.set_ylabel('Raw Average Counts')
+    else:
+        ax.set_ylabel('Normalized read counts (CPM)')
+    if ylim is not None:
+        ax.set_ylim(ylim)
+    plt.savefig(os.path.join(outdir,'gtex_visual_combine_barplot_norm_{}_{}.pdf'.format(norm,identifier)),bbox_inches='tight')
+    plt.close()
+
 def gtex_visual_combine(uid,norm=False,outdir='.',figsize=(6.4,4.8),tumor=None,ylim=None,group_by_tissue=True):
     ''' 
     Visualize the gtex expression and tumor specificity for splicing event (combine into one plot)
