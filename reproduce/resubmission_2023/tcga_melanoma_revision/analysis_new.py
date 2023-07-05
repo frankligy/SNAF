@@ -20,8 +20,9 @@ mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 
 
-# # get reduced junction
-df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# # # get reduced junction
+# df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt')
+# # df.to_csv('../ts/logic_gate/tcga_melanoma_df.txt',sep='\t')
 
 # # run SNAF
 # netMHCpan_path = '/data/salomonis2/LabFiles/Frank-Li/refactor/external/netMHCpan-4.1/netMHCpan'
@@ -33,11 +34,23 @@ df = snaf.get_reduced_junction_matrix(pc='counts.TCGA-SKCM.txt',pea='Hs_RNASeq_t
 # snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
 # surface.initialize(db_dir=db_dir)
 
+# show PMEL ENSG00000185664:E11.9-E12.2_55956189
+# uid = 'ENSG00000185664:E11.9-E12.2_55956189'
+# snaf.gtex_visual_combine(uid=uid,norm=False,outdir='Frank_inspection',tumor=df,group_by_tissue=False)
+# snaf.gtex_visual_combine(uid=uid,norm=True,outdir='Frank_inspection',tumor=df,group_by_tissue=False)
+# adata_gene = ad.read_h5ad('/data/salomonis2/LabFiles/Frank-Li/neoantigen/revision/ts/logic_gate/coding.h5ad')
+# snaf.gtex_viewer.gtex_viewer_configuration(adata_gene)
+# uid = 'ENSG00000185664'
+# snaf.gtex_visual_combine(uid=uid,norm=False,outdir='Frank_inspection',tumor=df,group_by_tissue=False)
+# snaf.gtex_visual_combine(uid=uid,norm=True,outdir='Frank_inspection',tumor=df,group_by_tissue=False)
+# sys.exit('stop')
+
 # 4 common neoantigens for immuno assay
 # cand = pd.read_csv('result_new/T_candidates/T_antigen_candidates_all.txt',sep='\t',index_col=0)
 # outdir = '4_common_inspect'
-# uid = 'ENSG00000071991:E12.1-E13.2_66509195'
+# uid = 'ENSG00000164175:E3.2_33963931-E4.2'
 # criterion=[('netMHCpan_el', 0, '<=', 2),('deepimmuno_immunogenicity',1,'==','True')]
+# criterion = [('netMHCpan_el', 0, '<=', 2)]
 # snaf.gtex_visual_combine_plotly(uid=uid,norm=False,outdir=outdir,tumor=df)
 # snaf.gtex_visual_combine_plotly(uid=uid,norm=True,outdir=outdir,tumor=df)
 # snaf.JunctionCountMatrixQuery.deserialize('result_new/after_prediction.p').visualize(uid,'TCGA-FS-A4FB-06A-11R-A266-07.bed',outdir=outdir,tumor=False,criterion=criterion)
@@ -82,6 +95,21 @@ stage 0: 527.9216101694915 1549.0 28.0
 stage 2: 1090.4300847457628 2981.0 75.0
 stage 3: 915.2754237288135 2486.0 74.0
 '''
+
+# build a table with each sample, and the associated three stage burden, and the classification
+lis = []
+for s in [0,2,3]:
+    burden = pd.read_csv('result_new/burden_stage{}.txt'.format(s),sep='\t',index_col=0)
+    a = burden.iloc[-1,:-1]
+    a.name = 'stage{}_burden'.format(s)
+    lis.append(a)
+stat_df = pd.concat(lis,axis=1)
+classify = pd.read_csv('result_new/survival/groups.txt',sep='\t',index_col=0,header=None)
+dic = classify[2].to_dict()
+stat_df['identity'] = stat_df.index.map(dic).values
+stat_df.to_csv('stat_table_number_of_burden.txt',sep='\t')
+sys.exit('stop')
+    
 
 # do survival and mutation analysis
 # survival = pd.read_csv('TCGA-SKCM.survival.tsv',sep='\t',index_col=0)
@@ -216,7 +244,7 @@ total_valid = unique_valid_sr.union(unique_valid_lr)  # 562
 
 # show four examples, ANO10, IGSF11, NALCN, MET_new
 snaf.gtex_visual_combine(uid='ENSG00000092421:E22.1-E24.1_116468915',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
-snaf.gtex_visual_combine(uid='ENSGOOOOOO57019:E5.1-I5.1_98867438',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
+snaf.gtex_visual_combine(uid='ENSG00000057019:E5.1-I5.1_98867438',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
 sys.exit('stop')
 snaf.gtex_visual_combine(uid='ENSG00000160746:I21.1_43457363-E22.1',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
 snaf.gtex_visual_combine(uid='ENSG00000144847:E4.4-E8.1',norm=False,outdir='result_new/surface',tumor=df,group_by_tissue=False)
