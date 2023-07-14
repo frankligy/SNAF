@@ -67,7 +67,7 @@ def calculate_psi_per_gene(count):
         
 
 
-
+        
 
 count = pd.read_csv('counts.original.txt',sep='\t',index_col=0)
 col_uid = []
