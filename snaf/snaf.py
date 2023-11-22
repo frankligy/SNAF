@@ -1176,7 +1176,13 @@ def hla_formatting(pre,pre_type,post_type):
     elif pre_type == 'netMHCpan_output' and post_type == 'deepimmuno':  # HLA-A*01:01 to HLA-A*0101
         post = [hla.replace(':','') for hla in pre]
     elif pre_type == 'deepimmuno' and post_type == 'netMHCpan_output': # HLA-A*0101 to HLA-A*01:01
-        post = [hla[:8] + ':' + hla[-2:] for hla in pre]
+        post = []
+        for hla in pre:
+            first = hla[:6] # HLA-A*
+            second = hla[6:8] # 01, it is so far always 2 digit, no case exceed 2 digit
+            third = hla[8:] # 01 or 101, it could be 3 digit
+            now = first + second + ':' + third
+            post.append(now)
     return post
 
 
