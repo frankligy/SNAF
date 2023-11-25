@@ -6,4 +6,4 @@ The input of RNA-SPRINT is the EventAnnotation file from AltAnalyze results (n_s
 
 We provided a `yml` file to reproduce the environment, but you can build youself based on the `RNA-SPRINT.py` code, should be pretty straightforward.
 
-To run that, you just need to change the capital variables indicated in the `RNA-SPRINT.py` file.
+To run that, you just need to change the capital variables indicated in the `RNA-SPRINT.py` file. And also download the prior network file from [Synapse](https://www.synapse.org/#!Synapse:syn53038679).
