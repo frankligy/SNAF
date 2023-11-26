@@ -97,18 +97,18 @@ stage 3: 915.2754237288135 2486.0 74.0
 '''
 
 # build a table with each sample, and the associated three stage burden, and the classification
-lis = []
-for s in [0,2,3]:
-    burden = pd.read_csv('result_new/burden_stage{}.txt'.format(s),sep='\t',index_col=0)
-    a = burden.iloc[-1,:-1]
-    a.name = 'stage{}_burden'.format(s)
-    lis.append(a)
-stat_df = pd.concat(lis,axis=1)
-classify = pd.read_csv('result_new/survival/groups.txt',sep='\t',index_col=0,header=None)
-dic = classify[2].to_dict()
-stat_df['identity'] = stat_df.index.map(dic).values
-stat_df.to_csv('stat_table_number_of_burden.txt',sep='\t')
-sys.exit('stop')
+# lis = []
+# for s in [0,2,3]:
+#     burden = pd.read_csv('result_new/burden_stage{}.txt'.format(s),sep='\t',index_col=0)
+#     a = burden.iloc[-1,:-1]
+#     a.name = 'stage{}_burden'.format(s)
+#     lis.append(a)
+# stat_df = pd.concat(lis,axis=1)
+# classify = pd.read_csv('result_new/survival/groups.txt',sep='\t',index_col=0,header=None)
+# dic = classify[2].to_dict()
+# stat_df['identity'] = stat_df.index.map(dic).values
+# stat_df.to_csv('stat_table_number_of_burden.txt',sep='\t')
+
     
 
 # do survival and mutation analysis
@@ -123,18 +123,18 @@ sys.exit('stop')
 #     burden_output.to_csv('result_new/survival/burden{}_patient_high_low_group.txt'.format(stage),sep='\t')
 
 
-# mutation = pd.read_csv('TCGA-SKCM.mutect2_snv.tsv',sep='\t',index_col=0)
+mutation = pd.read_csv('TCGA-SKCM.mutect2_snv.tsv',sep='\t',index_col=0)
 # # burden3 = pd.read_csv('result_new/burden_stage3.txt',sep='\t',index_col=0)
 # # burden3.rename(columns=lambda x:'-'.join(x.split('-')[:4]),inplace=True)
 # # snaf.mutation_analysis(mode='compute',burden=burden3,mutation=mutation,output='result_new/survival/mutation.txt')
 # # snaf.mutation_analysis(mode='plot',burden=burden3,mutation=mutation,output='result_new/survival/CAMKK2_mutation.txt',genes_to_plot=['CAMKK2'])
-# mutation_camkk2 = mutation.loc[mutation['gene']=='CAMKK2',:].index.tolist()
-# burden3 = pd.read_csv('result_new/survival/burden3_patient_high_low_group.txt',sep='\t',index_col=0)
-# burden3_high = burden3.loc[burden3['identity']=='high',:]
-# high_burden_samples = burden3.index.tolist()
-# occur_in_high = list(set(mutation_camkk2).intersection(set(high_burden_samples)))
-# print(len(occur_in_high))  # 18
-
+mutation_camkk2 = mutation.loc[mutation['gene']=='CAMKK2',:].index.tolist()
+burden3 = pd.read_csv('result_new/survival/burden3_patient_high_low_group.txt',sep='\t',index_col=0)
+burden3_high = burden3.loc[burden3['identity']=='high',:]
+high_burden_samples = burden3_high.index.tolist()
+occur_in_high = list(set(mutation_camkk2).intersection(set(high_burden_samples)))
+print(len(occur_in_high))  # 13
+sys.exit('stop')
 
 # snaf.downstream.survival_regression(freq='result_new/frequency_stage3_verbosity1_uid_gene_symbol_coord_mean_mle.txt',remove_quote=True,
 #                                     rename_func=lambda x:'-'.join(x.split('-')[:4]),survival='TCGA-SKCM.survival.tsv',
