@@ -22,6 +22,14 @@ predict, prioritize and visualize MHC-bound neoantigen for T cell (T antigen) an
 
 Simply put, user needs to supply ``a folder with bam files``, and the ``HLA type`` assciated with each patient (using your favorite HLA typing tool). And it will generate predicted immunogenic MHC-bound peptides and altered surface protein. Moreover, there's a myriad of convenient function that enables users to conduct survival analysis, association analysis and publication-quality visualiztion. Check our tutorials for more detail.
 
+# RNA-SPRINT to infer splicing factor activity from RNA-Seq
+
+Please go into the [RNA-SPRINT folder](https://github.com/frankligy/SNAF/tree/main/RNA-SPRINT) to see instructions on how to run the program.
+
+# BayesTS to infer tumor specificity for any features (gene, protein, splicing junction, etc)
+
+Please go to [BayesTS repository](https://github.com/frankligy/BayesTS) to see instructions on how to run the program.
+
 
 # Citation
 
