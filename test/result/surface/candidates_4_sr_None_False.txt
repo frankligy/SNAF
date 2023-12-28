@@ -1,0 +1,14 @@
+uid:ENSG00000142185:E29.2-E31.1
+scores and freqs:1.2020838,1.0
+comments:[]
+event type:ordinary
+Junction:AGAGG...ACGCG
+Full length transcripts: length 10, indices [1, 5, 6, 7]
+ORF transcripts: length 10, indices [1, 5, 6, 7]
+ORF peptides: length 10, indices [1, 5, 6, 7]
+NMD check: length 10, indices ['#', '#', '#', '#']
+tranlatability check: length 10, indices ['#', '#', '#', '*']
+Alignment: length 10, indices [True, True, True, True]
+valid_indices:[1, 5, 6]
+gene_symbol:TRPM2
+

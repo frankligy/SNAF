@@ -1,0 +1,42 @@
+uid:ENSG00000173698:E20.1-E21.1
+scores and freqs:0.5135729,1.0
+comments:[]
+event type:ordinary
+Junction:CTAAA...CAATG
+Full length transcripts: length 28, indices [3, 20, 22]
+ORF transcripts: length 28, indices [3, 20, 22]
+ORF peptides: length 28, indices [3, 20, 22]
+NMD check: length 28, indices ['#', '#', '#']
+tranlatability check: length 28, indices ['#', '#', '#']
+Alignment: length 28, indices [True, False, True]
+valid_indices:[3, 22]
+gene_symbol:ADGRG2
+
+uid:ENSG00000173698:E22.1-E25.1
+scores and freqs:0.71675354,1.0
+comments:[]
+event type:ordinary
+Junction:ATGTT...CTCAG
+Full length transcripts: length 28, indices [0, 18, 20, 22, 26, 27]
+ORF transcripts: length 28, indices [0, 18, 20, 22, 26, 27]
+ORF peptides: length 28, indices [0, 18, 20, 22, 26, 27]
+NMD check: length 28, indices ['#', '#', '#', '#', '#', '*']
+tranlatability check: length 28, indices ['#', '#', '#', '#', '#', '*']
+Alignment: length 28, indices [True, False, False, True, False, True]
+valid_indices:[0, 22]
+gene_symbol:ADGRG2
+
+uid:ENSG00000142185:E29.2-E31.1
+scores and freqs:1.2020838,1.0
+comments:[]
+event type:ordinary
+Junction:AGAGG...ACGCG
+Full length transcripts: length 10, indices [1, 5, 6, 7]
+ORF transcripts: length 10, indices [1, 5, 6, 7]
+ORF peptides: length 10, indices [1, 5, 6, 7]
+NMD check: length 10, indices ['#', '#', '#', '#']
+tranlatability check: length 10, indices ['#', '#', '#', '*']
+Alignment: length 10, indices [True, True, True, True]
+valid_indices:[1, 5, 6]
+gene_symbol:TRPM2
+

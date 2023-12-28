@@ -23,9 +23,10 @@ Alternatively, lots of HPC on university or institution use Singularity instead 
 Step 2: SNAF
 --------------
 
-SNAF is a python3 package and has been tested on python=3.7, we recommend to use the latest developer version instead of stable release (maybe outdated)::
+SNAF is a python3 package and has been tested on python=3.7, we recommend to use the latest developer version instead of stable release (maybe outdated), you
+might also need to make sure git is loaded to the env::
 
-    pip install git+https://github.com/frankligy/SNAF.git@f697629966e92032ca61298503aecbf9b95ad9dc
+    pip install git+https://github.com/frankligy/SNAF.git@e23ce39512a1a7f58c74e59b4b7cedc89248b908
 
 
 Step 3: Reference Dataset
@@ -52,6 +53,10 @@ These tools can be downloaded from the authors source websites to get the latest
 (`netMHCpan4.1 <https://www.cbs.dtu.dk/service.php?NetMHCpan>`_, `TMHMM2.0 <https://services.healthtech.dtu.dk/service.php?TMHMM-2.0>`_). SNAF will ask you
 to provide software_path (where do you install these two softwares) when running corresponding steps, that's how these two softwares will be used in SNAF.
 
+Testing installation
+-------------------------------------------------------
 
+I provided a dummy input file in the test folder at GitHub, and the script you can executate to test if you can get the exact same result in the result output folder,
+if everything goes well, then congratulations, the installation is successful, please contact me if you run into any issue, I am happy to help!
 
 
