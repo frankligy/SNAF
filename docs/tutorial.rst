@@ -372,8 +372,8 @@ Further, you can examine the different splicing event types::
     # Event type difference
     psi = pd.read_csv('PSI.grow_vs_senes.txt',sep='\t',index_col=0)
     uid_in_exp = [':'.join(item.split('|')[0].split(':')[1:]) for item in psi.loc[(psi['dPSI']<0)&(psi['adjp']<0.05),:].index.tolist()]
-    uid_in_ctr = [':'.join(item.split('|')[0].split(':')[1:]) for item in psi.loc[(psi['dPSI']>0)&(psi['adjp']<0.05),:].index.tolist()]
-    snaf.plot_event_type(pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',uids={'exp':uid_in_exp,'ctl':uid_in_ctl},rel=False,outdir='./')
+    uid_in_ctl = [':'.join(item.split('|')[0].split(':')[1:]) for item in psi.loc[(psi['dPSI']>0)&(psi['adjp']<0.05),:].index.tolist()]
+    snaf.plot_event_type(pea='Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt',uids={'exp':uid_in_exp,'ctl':uid_in_ctl},rel=True,outdir='./')
 
 .. image:: ./_static/DAS.png
     :height: 400px
