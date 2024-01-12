@@ -21,18 +21,18 @@ We provided a `yml` file to fully reproduce the development environment, I devel
 
 ## Run the program
 
-To run that, first you just need to change the capital variables indicated in the `RNA-SPRINT.py` file. And also download the prior network file (`prior.tsv`) from [Synapse](https://www.synapse.org/#!Synapse:syn53038679).
+To run that, first you need to download the prior network file (`prior.tsv`) from [Synapse](https://www.synapse.org/#!Synapse:syn53038679).
 
-Now you can run like following:
+Now you can run like following, modify the path as needed:
 
 ```bash
-python RNA_SPRINT.py --splicing ./osteosarcoma_Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt 
+python RNA_SPRINT.py --splicing ./Hs_RNASeq_top_alt_junctions-PSI_EventAnnotation.txt 
 --prior ./prior.tsv 
 --outdir . 
 --meta ./meta.txt 
 ```
 
-`meta` is a text file with all the metadata information associated with each sample, to facilitate direct visualization on [Morpheus](https://software.broadinstitute.org/morpheus/). The `meta` file should be something like below:
+`meta` is a tab-delimited plain text file with all the metadata information associated with each sample, to facilitate direct visualization on [Morpheus](https://software.broadinstitute.org/morpheus/). The `meta` file should be something like below:
 
 ```
 sample                                                   condition    burden   
@@ -41,7 +41,7 @@ sample_name_2_in_your_event_annotation_file              tumor         90
 sample_name_3_in_your_event_annotation_file              control       12
 ```
 
-Full help prompt is as below:
+Full help prompt is as below by typing `python RNA_SPRINT.py --help`:
 
 ```bash
 usage: RNA_SPRINT.py [-h] [--splicing SPLICING] [--prop PROP] [--cv CV] [--prior PRIOR] [--meta META] [--outdir OUTDIR]
