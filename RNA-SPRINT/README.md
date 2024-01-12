@@ -32,7 +32,14 @@ python RNA_SPRINT.py --splicing ./osteosarcoma_Hs_RNASeq_top_alt_junctions-PSI_E
 --meta ./meta.txt 
 ```
 
-`meta` is a text file with all the metadata information associated with each sample, to facilitate direct visualization on [Morpheus](https://software.broadinstitute.org/morpheus/).
+`meta` is a text file with all the metadata information associated with each sample, to facilitate direct visualization on [Morpheus](https://software.broadinstitute.org/morpheus/). The `meta` file should be something like below:
+
+```
+sample                                                   condition    burden   
+sample_name_1_in_your_event_annotation_file              tumor         56
+sample_name_2_in_your_event_annotation_file              tumor         90
+sample_name_3_in_your_event_annotation_file              control       12
+```
 
 Full help prompt is as below:
 
