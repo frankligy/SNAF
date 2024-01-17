@@ -35,9 +35,7 @@ Simply put, user needs to supply ``a folder with bam files``, and the ``HLA type
 
 # Citation
 
-[Guangyuan Li, Nathan Salomonis. SNAF: Accurate and compatible computational framework for identifying splicing derived neoantigens [abstract]. Cancer Res 2022;82(12_Suppl)](https://aacrjournals.org/cancerres/article/82/12_Supplement/1898/701846/Abstract-1898-SNAF-Accurate-and-compatible)
-
-A preprint will be released soon.
+Guangyuan Li et al. ,Splicing neoantigen discovery with SNAF reveals shared targets for cancer immunotherapy.Sci. Transl. Med.16,eade2886(2024).DOI:10.1126/scitranslmed.ade2886 (https://www.science.org/doi/10.1126/scitranslmed.ade2886)
 
 # Contact
 
