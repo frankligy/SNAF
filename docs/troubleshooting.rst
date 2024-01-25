@@ -17,7 +17,8 @@ If you encounter problem like below using higher singularity version::
     WARNING: By using --writable, Singularity can't create /gpfs destination automatically without overlay or underlay
     FATAL: container creation failed: mount /gpfs/share/apps/singularity/3.9.8/var/singularity/mnt/session/gpfs->/gpfs error: while mounting /gpfs/share/apps/singularity/3.9.8/var/singularity/mnt/session/gpfs: destination /gpfs doesn't exist in container
 
-Following this `thread <https://git.ligo.org/lscsoft/gstlal/-/issues/94>`_, you just need to first manually create a ``gpfs`` folder in the sandbox, then it should work::
+Following this `thread <https://git.ligo.org/lscsoft/gstlal/-/issues/94>`_, you just need to first manually create a ``gpfs`` folder in the sandbox, then it should work. Please
+modify that as needed, in my case it is ``gpfs`` but in your system, the error message might differ::
 
     mkdir altanalyze/gpfs
 
