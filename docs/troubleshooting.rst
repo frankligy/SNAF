@@ -6,17 +6,26 @@ I will put Frequently asked question here and provide solutions. Please refer to
 1. Singularity Error
 ----------------------
 
-If you encounter problem like below::
+First, the command I included in the tutorial should work most of time (if not 100%) using singularity/3.1. 
 
-    Current folder is /run
-    BAM file folder is bam
-    /usr/src/app/AltAnalyze.sh: line 25: cd: bam: No such file or directory
+Second, if you happen to run into any issues, it usually has something to do with your HPC permissions. Some scenario and solutions as below:
 
-That is because there's a folder called ``/run`` in your singularity sandbox, so the first line of ``AltAnalyze.sh`` which use 
-relative path to enter /run folder will mistakenly go into the root folder, in turn cause the bam folder not found. The solution is
-go to your altanalyze/ sandbox, in /usr/src/app folder edit the AltAnalyze.sh first line from ``cd /run`` to ``cd /usr/src/app/run``. Now 
-the problem should be solved.
+If you encounter problem like below using higher singularity version::
 
+    module load singularity/3.9.8
+    singularity run -B $(pwd):/mnt --writable altanalyze/ identify bam 4
+    WARNING: By using --writable, Singularity can't create /gpfs destination automatically without overlay or underlay
+    FATAL: container creation failed: mount /gpfs/share/apps/singularity/3.9.8/var/singularity/mnt/session/gpfs->/gpfs error: while mounting /gpfs/share/apps/singularity/3.9.8/var/singularity/mnt/session/gpfs: destination /gpfs doesn't exist in container
+
+Following this `thread <https://git.ligo.org/lscsoft/gstlal/-/issues/94>`_, you just need to first manually create a ``gpfs`` folder in the sandbox, then it should work::
+
+    mkdir altanalyze/gpfs
+
+Another way to consider is to be more explict and using ``singularity exec``, sometimes this may solve the issue::
+
+    singularity exec -W /usr/src/app -B $(pwd):/mnt --writable altanalyze/ /bin/bash -c "cd /usr/src/app && /usr/src/app/AltAnalyze.sh identity bam 4"
+
+If you still run into problem, contact me and let's figure something out!
 
 2. AltAnalyze warnings and errors
 --------------------------------------
