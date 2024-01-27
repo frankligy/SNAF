@@ -225,14 +225,15 @@ we chop them into 9 and 10 mers without duplicates. Then we remove overlapping c
                             write_unique2=True,prefix='{}_'.format(sample))
 
 The above assume we want to validate the immunogenic neoantigens (stage 3) identified for each patients. You can certainly construct other fastq files
-based on the SNAF-T output, and use the auxiliary functions (``remove_redundant`` and ``compare_two_fasta``) to remove redundant peptides and overlapping peptides.
+based on the SNAF-T output, and optionally use the auxiliary functions (``remove_redundant`` and ``compare_two_fasta``) to remove redundant peptides and overlapping peptides.
 
 Usually, MS software requires a customized fasta database, you've already had that right now. Depending on which MS software you use, the configuration steps
 can vary, but we recommend using `MaxQuant <https://www.maxquant.org/>`_ here which is highly regarded. MaxQuant requires to compile a configuration files called 
 `mqpar.xml` which stores the setting for the search engine, we provide a programatical API to modify the config file based on different instrument, database and 
 raw files you are using, below is using Thermo Orbitrap::
 
-    dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933726.Aligned.sortedByCoord.out.bed_unique2.fasta']
+    dbs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/RNA/snaf_analysis/fasta/SRR5933726.Aligned.sortedByCoord.out.bed_unique2.fasta',
+           '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/human_uniprot_proteome.fasta']
     inputs = ['/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#1.raw',
               '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#2.raw',
               '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#3.raw']
