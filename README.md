@@ -11,7 +11,8 @@ predict, prioritize and visualize MHC-bound neoantigen for T cell (T antigen) an
 
 See [Full Documentation](https://snaf.readthedocs.io).
 
-Particulary, it is advisable to not use the stable pypi version but use this specific commit below to install, because I am actively maintaininig it.
+Particulary, to avoid hassle, it is advisable to start a `fresh conda environment` with `python 3.7` on a `Linux system`, and use this specific git commit (I am actively
+maintaining it) instead of the stable pypi version.
 
 ```bash
 pip install git+https://github.com/frankligy/SNAF.git@e23ce39512a1a7f58c74e59b4b7cedc89248b908
