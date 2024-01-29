@@ -120,6 +120,10 @@ The first step is to load our downloaded reference data into the memory to facil
     add as many h5ad as the normal control. In terms of how to contruct the h5ad or dataframe, please refer to the API->MHC bound peptide(T antigen)
     ->intialize, and the description of the ``add_control`` parameter.
 
+.. note::
+
+    Above, many users didn't specify the correct ``netMHCpan_path``, it is NOT ``/user/ligk2e/netMHCpan-4.1``, but ``/user/ligk2e/netMHCpan-4.1/netMHCpan``,
+    if you get `this issue <https://github.com/frankligy/SNAF/issues/25>`_, that might be the root cause. If not, feel free to send me an email or open an issue.
 
 Running the T antigen workflow
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
