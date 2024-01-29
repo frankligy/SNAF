@@ -172,15 +172,15 @@ As briefly mentioned in the tutorial, there will be a ``T_candidates`` folder th
 The benefit of looking at this folder, is both HLA binding affinity and immunogenicity score will also be reported. There are a few columns that may need further explanations 
 to avoid confusion:
 
-* ``phase``: This is just for internal usage, since we conduct in-silico translation using 3-way open reading frames, I kept tracking which phase the peptide is translated from.
-However, the definition for phase in SNAF program is a bit different from more canonical definition you will see in `Ensembl <https://www.biostars.org/p/63864/>`_. So as an end user,
-you can safely ignore this column.
+* ``phase``: This is just for internal usage, since we conduct in-silico translation using 3-way open reading frames, I kept tracking which phase the peptide is translated from. However, the definition 
+             for phase in SNAF program is a bit different from more canonical definition you will see in `Ensembl <https://www.biostars.org/p/63864/>`_. So as an end user,
+             you can safely ignore this column.
 
 * ``evidences``: Along with the ``phase``, evidence details whether there are documentated transcripts just adopt that particular phase/ORF. The truth is, over one third of 
-protein coding genes in human have multiple ORFs that are not in-frame with each other across different isoforms. And there are multiple papers (i.e. `Ouspenskaia et al. <https://www.nature.com/articles/s41587-021-01021-3>`_) 
-describing non-canonical ORFs evidenced from Ribo-Seq, so no evidence from documtated transcripts do not necessarily mean this peptide is less likely to exist, 
-especially in the context of cancer, where people have revealed it is more prevalent in disease condition due to the relexation of hairpin structure to not adopt the canonical 
-start codon (`Xiang et al. <https://www.nature.com/articles/s41586-023-06500-y>`_). 
+                 protein coding genes in human have multiple ORFs that are not in-frame with each other across different isoforms. And there are multiple papers (i.e. `Ouspenskaia et al. <https://www.nature.com/articles/s41587-021-01021-3>`_) 
+                 describing non-canonical ORFs evidenced from Ribo-Seq, so no evidence from documtated transcripts do not necessarily mean this peptide is less likely to exist, 
+                 especially in the context of cancer, where people have revealed it is more prevalent in disease condition due to the relexation of hairpin structure to not adopt the canonical 
+                 start codon (`Xiang et al. <https://www.nature.com/articles/s41586-023-06500-y>`_). 
 
 * ``binding_affinity``: netMHCpan reported percentile, based on official documentation, weaker binder is less than ``2.0``, strong binder is less than ``0.5``.
 
@@ -190,9 +190,9 @@ start codon (`Xiang et al. <https://www.nature.com/articles/s41586-023-06500-y>`
 ``less than 1 read`` is considered very promising target from a tumor-specificity perspective.
 
 * ``tumor_specificity_mle``: Estimating tumor specificity using Maximum Likelihood Estimation (MLE), although in our internal usage, we have not paid too much attention to 
-this score anymore due to our more advanced `BayesTS score <https://github.com/frankligy/BayesTS>`_. MLE score can still be informative, first it is bound between 0-1, 
-and the ones with about 0.99 usually represent the junctions that are in general not present, but has a slight enrichment in one or two tissue type, which drives the MLE score to go up.
-But this doesn't completely disqualify these targets, it also depends on in your tumor tissue, how upregulated this junction is, the extent of difference also plays a role in the final judgement.
+                             this score anymore due to our more advanced `BayesTS score <https://github.com/frankligy/BayesTS>`_. MLE score can still be informative, first it is bound between 0-1, 
+                             and the ones with about 0.99 usually represent the junctions that are in general not present, but has a slight enrichment in one or two tissue type, which drives the MLE score to go up.
+                             But this doesn't completely disqualify these targets, it also depends on in your tumor tissue, how upregulated this junction is, the extent of difference also plays a role in the final judgement.
 
 
 

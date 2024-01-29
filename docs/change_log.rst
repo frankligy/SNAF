@@ -1,7 +1,7 @@
 Change Log
 ============
 
-Version SNAF.git@e23ce39512a1a7f58c74e59b4b7cedc89248b908 (2024.01.15)
+Version SNAF.git: e23ce39512a1a7f58c74e59b4b7cedc89248b908 (2024.01.15)
 --------------------------------------------------------------------------
 
 I recommend the user who knew our tool from the official publication to use this version, I have tested and it worked. I will not release new pypi version 
