@@ -10,8 +10,7 @@ The input of RNA-SPRINT is the EventAnnotation file from AltAnalyze results (n_s
 ## Dependency
 
 ```
-# using conda to build a env and pip install following
-python=3.8
+# using conda with python=3.8 to build a env and pip install following
 decoupler==1.2.0
 seaborn==0.12.0
 skranger
@@ -32,7 +31,7 @@ python RNA_SPRINT.py --splicing ./Hs_RNASeq_top_alt_junctions-PSI_EventAnnotatio
 --meta ./meta.txt 
 ```
 
-`meta` is a tab-delimited plain text file with all the metadata information associated with each sample, to facilitate direct visualization on [Morpheus](https://software.broadinstitute.org/morpheus/). The `meta` file should be something like below:
+`meta` is a tab-delimited plain text file with all the metadata information associated with each sample, to facilitate direct visualization on [Morpheus](https://software.broadinstitute.org/morpheus/). The `meta` file should be something like below, you can have as many annotation you want, either categorical or numerical:
 
 ```
 sample                                                   condition    burden   
