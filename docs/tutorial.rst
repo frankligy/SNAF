@@ -68,7 +68,7 @@ Identify MHC-bound neoantigens (T-antigen)
 
 With the junction count matrix, we can proceed to predict MHC-bound neoantigens (T antigen). The only additional input we need is
 the patient HLA type information, in this analyis, we use `Optitype <https://github.com/FRED-2/OptiType>`_ to infer the 4 digit HLA type from RNA-Seq data, the ``sample_hla.txt`` file 
-looks like below example::
+looks like below example, please be compliant with the HLA format here::
 
                 sample	                                                hla
     TCGA-X1-A1WX-06A-11R-A38C-07.bed	HLA-A*02:01,HLA-A*02:01,HLA-B*39:10,HLA-B*15:01,HLA-C*03:03,HLA-C*12:03
@@ -182,7 +182,8 @@ For each stage, you may see the following categories of results:
 * ``x_occurence_frequency{0-3}.pdf``: This is an alternative visualization of neoantigen frequency as a histplot, interval (x-axis) with the occurence of each neoantigen across the cohort.
 
 For the final immunogenic neoantigen, we have detailed reports in ``T_candidates`` folder (amplify the webpage to see more clearly), here each row represent
-a peptide-HLA combination, so that binding affinity and immunogenicity are also reported.
+a peptide-HLA combination, so that binding affinity and immunogenicity are also reported. See Troubleshooting page for more detailed explanation for the output file in 
+``T_candidates`` folder.
 
 .. image:: ./_static/T_result_candidates.png
     :height: 180px
