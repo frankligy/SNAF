@@ -119,6 +119,39 @@ def generate_full_results(outdir,freq_path,mode,validation_gtf):
                                             freq_df_path=freq_path,
                                             mode='short_read',outdir=os.path.join(outdir,'B_candidates'),name='sr_str3_report_{}_{}.txt'.format(style,overlap_extracellular)) 
 
+    elif mode == 'find_full_length':
+        # first strigency 5
+        for style in [None,'deletion','insertion']:
+            for overlap_extracellular in [True,False]:
+                cc,cf = fake_generate_results(pickle_path=os.path.join(outdir,'surface_antigen_sr_ffl.p'),strigency=5,outdir=outdir,long_read=False,style=style,overlap_extracellular=overlap_extracellular,gtf=validation_gtf)
+                if cc > 0:
+                    report_candidates(pickle_path=os.path.join(outdir,'surface_antigen_sr_ffl.p'),
+                                            candidates_path=os.path.join(outdir,'candidates_5_sr_ffl_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            validation_path=os.path.join(outdir,'validation_5_sr_ffl_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            freq_df_path=freq_path,
+                                            mode='short_read',outdir=os.path.join(outdir,'B_candidates'),name='sr_ffl_str5_report_{}_{}.txt'.format(style,overlap_extracellular)) 
+        # next strigency 4
+        for style in [None,'deletion','insertion']:
+            for overlap_extracellular in [True,False]:
+                cc, cf = fake_generate_results(pickle_path=os.path.join(outdir,'surface_antigen_sr_ffl.p'),strigency=4,outdir=outdir,long_read=False,style=style,overlap_extracellular=overlap_extracellular,gtf=validation_gtf)
+                if cc > 0:
+                    report_candidates(pickle_path=os.path.join(outdir,'surface_antigen_sr_ffl.p'),
+                                            candidates_path=os.path.join(outdir,'candidates_4_sr_ffl_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            validation_path=os.path.join(outdir,'validation_4_sr_ffl_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            freq_df_path=freq_path,
+                                            mode='short_read',outdir=os.path.join(outdir,'B_candidates'),name='sr_ffl_str4_report_{}_{}.txt'.format(style,overlap_extracellular)) 
+
+         # then strigency 3
+        for style in [None,'deletion','insertion']:
+            for overlap_extracellular in [True,False]:
+                cc, cf = fake_generate_results(pickle_path=os.path.join(outdir,'surface_antigen_sr_ffl.p'),strigency=3,outdir=outdir,long_read=False,style=style,overlap_extracellular=overlap_extracellular,gtf=None)
+                if cc > 0:
+                    report_candidates(pickle_path=os.path.join(outdir,'surface_antigen_sr_ffl.p'),
+                                            candidates_path=os.path.join(outdir,'candidates_3_sr_ffl_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            validation_path=os.path.join(outdir,'validation_3_sr_ffl_{}_{}.txt'.format(style,overlap_extracellular)),
+                                            freq_df_path=freq_path,
+                                            mode='short_read',outdir=os.path.join(outdir,'B_candidates'),name='sr_ffl_str3_report_{}_{}.txt'.format(style,overlap_extracellular)) 
+
 def _run_dash_prioritizer_return_events(candidates):
     # candidates is a list of each lines, containing the newline symbol
     collect = []
@@ -609,14 +642,27 @@ def run(uids,outdir,prediction_mode='short_read',n_stride=2,gtf=None,tmhmm=False
             sa.pseudo_orf_check()  # change
             sa.align_uniprot(tmhmm=tmhmm,software_path=software_path)
             results.append(sa)
+    elif prediction_mode == 'find_full_length':
+        file_name = 'surface_antigen_sr_ffl.p'
+        for uid,score,df,ed,freq in tqdm(uids,total=len(uids)):
+            sa = SurfaceAntigen(uid,score,df,ed,freq,False)
+            sa.detect_type()
+            sa.retrieve_junction_seq()
+            sa.recovery_full_length_protein()
+            sa.find_orf()
+            sa.orf_check(n_stride=n_stride)
+            sa.fake_align_uniprot(tmhmm=tmhmm,software_path=software_path)
+            results.append(sa)
+    
     if serialize:
         with open(os.path.join(outdir,file_name),'wb') as f:
             pickle.dump(results,f)     
 
     # remove scratch
-    name = os.getpid()
-    int_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'scratch','{}.fasta'.format(name))  
-    os.remove(int_file_path) 
+    if tmhmm:
+        name = os.getpid()
+        int_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'scratch','{}.fasta'.format(name))  
+        os.remove(int_file_path) 
     
     return results
 
@@ -776,57 +822,58 @@ def report_candidates(pickle_path,candidates_path,validation_path,freq_df_path,m
                                   'result','sr_str3_report.txt')
 
     '''
-    if not os.path.exists(outdir):
-        os.mkdir(outdir)
-    with open(pickle_path,'rb') as f1:
-        results = pickle.load(f1)   # a list of sa object
-    with open(candidates_path,'r') as f2:
-        candidates = f2.readlines()
-    freq_df = pd.read_csv(freq_df_path,sep='\t',index_col=0)
-    freq_df['uid'] = [item.split(',')[1] for item in freq_df.index]
-    uid_2_ts_mean = pd.Series(index=freq_df['uid'].values,data=freq_df['tumor_specificity_mean'].values).to_dict()
-    uid_2_ts_mle = pd.Series(index=freq_df['uid'].values,data=freq_df['tumor_specificity_mle'].values).to_dict()
-    collect_uid = _run_dash_prioritizer_return_events(candidates)
-    collect_gene = _run_dash_prioritizer_return_gene(candidates)
-    candidate_count = 0
-    if mode == 'short_read':
-        with open(os.path.join(outdir,name),'w') as f3, open(validation_path,'r') as f4:
-            f3.write('Candidate_id\tNeoJunction\tmode\tevidence\tmRNA_sequence\tpeptide_sequence\tgene_symbol\tcohort_frequency\ttumor_specificity_mean\ttumor_specificity_mle\tvalidation\n')
-            lines = f4.readlines()
-            for uid,gene,line in tqdm(zip(collect_uid,collect_gene,lines),total=len(collect_uid)):
-                ts_mean = uid_2_ts_mean[uid]
-                ts_mle = uid_2_ts_mle[uid]
-                value = uid
-                sa = _run_dash_prioritizer_return_sa(results,value)
-                valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)
-                ensg = value.split(':')[0]
-                df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensg,:]
-                df_certain = df_certain.iloc[valid_indices,:]
-                df_certain.insert(loc=0,column='index',value=valid_indices)
-                for value_index in valid_indices:
-                    orft_sequence = sa.orft[value_index]
-                    orfp_sequence = sa.orfp[value_index]
-                    evidence = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
-                    candidate_count += 1
-                    stream = 'candidate{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(candidate_count,uid,mode,evidence,orft_sequence,orfp_sequence,gene,sa.freq,ts_mean,ts_mle,line.rstrip('\n'))
-                    f3.write(stream)
-    elif mode == 'long_read':
-        with open(os.path.join(outdir,name),'w') as f3, open(validation_path,'r') as f4:
-            f3.write('Candidate_id\tNeoJunction\tmode\tevidence\tmRNA_sequence\tpeptide_sequence\tgene_symbol\tcohort_frequency\ttumor_specificity_mean\ttumor_specificity_mle\tvalidation\n')
-            lines = f4.readlines()
-            for uid,gene,line in tqdm(zip(collect_uid,collect_gene,lines),total=len(collect_uid)):
-                ts_mean = uid_2_ts_mean[uid]
-                ts_mle = uid_2_ts_mle[uid]
-                value = uid
-                sa = _run_dash_prioritizer_return_sa(results,value)
-                valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)
-                for value_index in valid_indices:
-                    orft_sequence = sa.orft[value_index]
-                    orfp_sequence = sa.orfp[value_index]
-                    evidence = sa.full_length_attrs[value_index]
-                    candidate_count += 1
-                    stream = 'candidate{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(candidate_count,uid,mode,evidence,orft_sequence,orfp_sequence,gene,sa.freq,ts_mean,ts_mle,line.rstrip('\n'))
-                    f3.write(stream)        
+    if os.path.exists(candidates_path):  # if no, then just simply skip 
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+        with open(pickle_path,'rb') as f1:
+            results = pickle.load(f1)   # a list of sa object
+        with open(candidates_path,'r') as f2:
+            candidates = f2.readlines()
+        freq_df = pd.read_csv(freq_df_path,sep='\t',index_col=0)
+        freq_df['uid'] = [item.split(',')[1] for item in freq_df.index]
+        uid_2_ts_mean = pd.Series(index=freq_df['uid'].values,data=freq_df['tumor_specificity_mean'].values).to_dict()
+        uid_2_ts_mle = pd.Series(index=freq_df['uid'].values,data=freq_df['tumor_specificity_mle'].values).to_dict()
+        collect_uid = _run_dash_prioritizer_return_events(candidates)
+        collect_gene = _run_dash_prioritizer_return_gene(candidates)
+        candidate_count = 0
+        if mode == 'short_read':
+            with open(os.path.join(outdir,name),'w') as f3, open(validation_path,'r') as f4:
+                f3.write('Candidate_id\tNeoJunction\tmode\tevidence\tmRNA_sequence\tpeptide_sequence\tgene_symbol\tcohort_frequency\ttumor_specificity_mean\ttumor_specificity_mle\tvalidation\n')
+                lines = f4.readlines()
+                for uid,gene,line in tqdm(zip(collect_uid,collect_gene,lines),total=len(collect_uid)):
+                    ts_mean = uid_2_ts_mean[uid]
+                    ts_mle = uid_2_ts_mle[uid]
+                    value = uid
+                    sa = _run_dash_prioritizer_return_sa(results,value)
+                    valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)
+                    ensg = value.split(':')[0]
+                    df_certain = df_exonlist.loc[df_exonlist['EnsGID']==ensg,:]
+                    df_certain = df_certain.iloc[valid_indices,:]
+                    df_certain.insert(loc=0,column='index',value=valid_indices)
+                    for value_index in valid_indices:
+                        orft_sequence = sa.orft[value_index]
+                        orfp_sequence = sa.orfp[value_index]
+                        evidence = df_certain.loc[df_certain['index']==value_index,:]['EnsTID'].values[0]
+                        candidate_count += 1
+                        stream = 'candidate{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(candidate_count,uid,mode,evidence,orft_sequence,orfp_sequence,gene,sa.freq,ts_mean,ts_mle,line.rstrip('\n'))
+                        f3.write(stream)
+        elif mode == 'long_read':
+            with open(os.path.join(outdir,name),'w') as f3, open(validation_path,'r') as f4:
+                f3.write('Candidate_id\tNeoJunction\tmode\tevidence\tmRNA_sequence\tpeptide_sequence\tgene_symbol\tcohort_frequency\ttumor_specificity_mean\ttumor_specificity_mle\tvalidation\n')
+                lines = f4.readlines()
+                for uid,gene,line in tqdm(zip(collect_uid,collect_gene,lines),total=len(collect_uid)):
+                    ts_mean = uid_2_ts_mean[uid]
+                    ts_mle = uid_2_ts_mle[uid]
+                    value = uid
+                    sa = _run_dash_prioritizer_return_sa(results,value)
+                    valid_indices = _run_dash_prioritizer_return_valid_indices(candidates,collect_uid,value)
+                    for value_index in valid_indices:
+                        orft_sequence = sa.orft[value_index]
+                        orfp_sequence = sa.orfp[value_index]
+                        evidence = sa.full_length_attrs[value_index]
+                        candidate_count += 1
+                        stream = 'candidate{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(candidate_count,uid,mode,evidence,orft_sequence,orfp_sequence,gene,sa.freq,ts_mean,ts_mle,line.rstrip('\n'))
+                        f3.write(stream)        
 
 
 def overlap_with_extracellular(sa):
@@ -889,6 +936,92 @@ def send_or_not(op,ref_seq,style,overlap_extracellular,sa):
         else:
             send = True
     return send
+
+def fake_generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False,style=None,overlap_extracellular=False):
+    # make sure ref_seq is just a placeholder
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+    if gtf is not None:
+        global gtf_dict
+        gtf_dict = process_est_or_long_read_with_id(gtf)
+    if overlap_extracellular:   # have to load some database
+        global ensg2ensps
+        global ensp2regions
+        ensg2ensps = pd.Series(index=df_exonlist['EnsGID'].values,data=df_exonlist['EnsPID'].values).groupby(level=0).apply(lambda x:x.tolist()).to_dict()
+        df_topology['region'] = [(int(start),int(end)) for start,end in zip(df_topology['genomic_start'],df_topology['genomic_stop'])]
+        ensp2regions = df_topology.groupby(by='ensembl_prot')['region'].apply(lambda x:x.tolist()).to_dict()
+    with open(pickle_path,'rb') as f:
+        results = pickle.load(f)
+    count_candidates = 0
+    count_further = 0
+    candidates = []
+    with open(os.path.join(outdir,'further.txt'),'w') as f2:
+        for sa in results:
+            uid = sa.uid
+            ensg = sa.uid.split(':')[0]
+            ref_seq = 'placeholder'
+            valid_indices = []
+            if len(sa.comments) > 0:
+                print(sa,file=f2)
+                count_further += 1
+            else:
+                sends = []
+                for i,(op,n,t,a) in enumerate(zip(sa.orfp,sa.nmd,sa.translatability,sa.alignment)):
+                    if strigency == 5:
+                        if n == '#' and t == '#' and a==True:
+                            value,cand_attrs = is_support_by_est_or_long_read(sa,op,strict=True)
+                            if value:
+                                send = send_or_not(op,ref_seq,style,overlap_extracellular,sa)
+                                sends.append(send)
+                                if send:
+                                    valid_indices.append(i)
+                    elif strigency == 4:
+                        if n == '#' and t == '#' and a==True:
+                            value,cand_attrs = is_support_by_est_or_long_read(sa,op,strict=False)
+                            if value:
+                                send = send_or_not(op,ref_seq,style,overlap_extracellular,sa)
+                                sends.append(send)
+                                if send:
+                                    valid_indices.append(i)
+                    elif strigency == 3:
+                        if n == '#' and t == '#' and a==True:
+                            send = send_or_not(op,ref_seq,style,overlap_extracellular,sa)
+                            sends.append(send)
+                            if send:
+                                valid_indices.append(i)
+                                cand_attrs = None
+                    elif strigency == 2:    # out of development
+                        if t == '#' and a==True:
+                            send = compare_length(op,ref_seq,style)
+                            if send:
+                                valid_indices.append(i)
+                                cand_attrs = None
+                    elif strigency == 1:   # out of development
+                        if a==True:
+                            send = compare_length(op,ref_seq,style)
+                            if send:
+                                valid_indices.append(i)
+                                cand_attrs = None
+                if any(sends):
+                    candidates.append((sa,sa.score,sa.freq,len(valid_indices),sa.uid,valid_indices,cand_attrs))
+                    count_candidates += 1
+    if count_candidates > 0:
+        sorted_candidates = sorted(candidates,key=lambda x:(x[1],-x[2],-x[3]),reverse=False)
+        uid_list = list(list(zip(*sorted_candidates))[4])
+        ensg_list = [uid.split(':')[0] for uid in uid_list]
+        gene_symbols = ensemblgene_to_symbol(ensg_list,'human')
+        if long_read:
+            file_name_lr = '_lr'
+        else:
+            file_name_lr = '_sr_ffl'
+        with open(os.path.join(outdir,'candidates_{}{}_{}_{}.txt'.format(strigency,file_name_lr,style,overlap_extracellular)),'w') as f1, open(os.path.join(outdir,'validation_{}{}_{}_{}.txt'.format(strigency,file_name_lr,style,overlap_extracellular)),'w') as f3:
+            for (sa,score,freq,hit,uid,vi,ca),gene in zip(sorted_candidates,gene_symbols):
+                print(sa,'valid_indices:{}\n'.format(vi),'gene_symbol:{}\n'.format(gene),file=f1,sep='',end='\n')
+                print(ca,file=f3,sep='\n',end='\n')
+    else:
+        print('no candidates for strigency {} style {} overlap_extracellular {}'.format(strigency, style, overlap_extracellular))
+    return count_candidates,count_further
+
 
 
 def generate_results(pickle_path,strigency=3,outdir='.',gtf=None,long_read=False,style=None,overlap_extracellular=False):
@@ -1332,6 +1465,13 @@ class SurfaceAntigen(object):
         self.alignment = results
         if tmhmm:
             subprocess.run('rm -r ./TMHMM_*',shell=True)  
+
+    def fake_align_uniprot(self,tmhmm,software_path=None):
+        # no TMHMM at all
+        results = []
+        for o in self.orfp:
+            results.append(True)
+        self.alignment = results
 
     def visualize(self,index,outdir='.',name=None,fragment=None):
         full_length = self.full_length[index]

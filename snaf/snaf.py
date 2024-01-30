@@ -322,6 +322,25 @@ class JunctionCountMatrixQuery():
             membrane_tuples.append((uid,mean_gtex,df_gtex,ed,freq))
         return membrane_tuples
 
+    @staticmethod
+    def get_fake_membrane_tuples(df,**kwargs):
+        '''
+        same as the actual get_membrane_tuples, but actually not filter down to human membrane protein,
+        used for just get full length isoform for NeoJunctions
+
+        '''
+        from .surface import filter_to_membrane_protein
+        jcmq = JunctionCountMatrixQuery(junction_count_matrix=df,**kwargs)
+        print(jcmq)
+        neojunctions = jcmq.valid
+        membrane_uid = neojunctions
+        membrane_tuples = []
+        for uid in membrane_uid:
+            mean_gtex, df_gtex = tumor_specificity(uid,method='mean',return_df=True)
+            ed, freq = jcmq.get_neojunction_info(uid)
+            membrane_tuples.append((uid,mean_gtex,df_gtex,ed,freq))
+        return membrane_tuples
+
 
 
     @staticmethod    
