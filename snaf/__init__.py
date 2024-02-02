@@ -17,10 +17,10 @@ def initialize(df,db_dir,gtex_mode='count',software_path=None,binding_method=Non
     :param gtex_mode: string, either 'psi' or 'count'
     :param software_path: string or None, either the path to the netMHCpan4.1 executable or None (using MHCflurry)
     :param binding_method: string or None, either 'netMHCpan' or 'MHCflurry'
-    :param t_min: int, the minimum number of read count the tumor sample should be larget than average number in normal database
+    :param t_min: int, the minimum number of read count the tumor sample should be larger than average number in normal database
     :param n_max: int, the maximum number of average read count normal database count have
-    :param normal_cutoff: int, below which read count we consider a junction is not expressed in normal tissue
-    :param tumor_cutoff: int, above which read count we consider a junction is expressed in tumor tissue
+    :param normal_cutoff: int, below which read count we consider a junction is not expressed in normal tissue, for prevalance mode
+    :param tumor_cutoff: int, above which read count we consider a junction is expressed in tumor tissue, for prevalance mode
     :param normal_prevalance_cutoff: float, if below this fraction, we consider a junction is not present in normal tissue at an appreciable amount
     :param tumor_prevalance_cutoff: float, if above this fraction, we consider a junction is present in tumor tissue at an appreciable amount
     :param add_control: None or a dictionary containing additional controls, additional controls can a dataframe or anndata, for instance, if adding two controls asides from internal GTEx,
