@@ -516,7 +516,7 @@ We first obtain the membrane splicing events::
 
 There are two modes for running B-pipeline, one is de novo prediction of full isoform from short-read, and validate those prediction by providing an additional long-read gtf.
 Alternatively, you can use one of our internal pan-cancer long-read isoform database to predict the full-length isoform. The former is called ``short_read`` mode, the latter is called 
-``long_read`` mode::
+``long_read`` mode. The below referred gtf files can be downloaded from `this synapse folder <https://www.synapse.org/#!Synapse:syn32785802>`_::
 
     # short_read mode
     surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='short_read',
@@ -558,7 +558,14 @@ Particurly, a more human-readable results can be found in ``B_candidates`` folde
 ``str`` controls the strigency, ``deletion/insertion/None`` indicate whether the candidate has deleted or inserted neo-epitope, None is the combination of both. ``False/True`` represents whether
 the candidate will be extracellular or not, False is the superset of True.
 
-The long-read mode output is similar and the file names should be self-explanable if you can follow the above clarificaitons.
+.. warning::
+
+    The prediction for extracellular and intracellular is subject to false prediction, due to complexity of altered topology.
+    The program basically intersected the junction region with the documented extracellular regions, but for multiple Transmembrane protein with drastically
+    disrupted topology, it is hard to precisely define. Further inspection using B-Viewer, Protter and Alphafold2 would be beneficial. 
+
+The long-read mode output is similar and the file names should be self-explanable if you can follow the above clarificaitons. Basically you should be looking for
+a file named ``lr_str3_report_None_False.txt`` for human readable result, and ``candidates_3_lr_None_False.txt`` for using B-antigen Viewer as shown below.
 
 Interactive neoantigen viewer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -584,7 +591,7 @@ importantly, please specify the full path to the python executable you use to ru
 
 .. _reference_to_compatibility:
 
-Compatibility (Gene Symbol & chromsome coordinates)
+Compatibility (Gene Symbol & chromsome Coordinates & Genome Version)
 -------------------------------------------------------
 
 For some historical reasons, different RNA splicing pipeline (i.e. `AltAnalyze <http://www.altanalyze.org/>`_, `MAJIQ <https://majiq.biociphers.org/>`_, 
@@ -594,6 +601,11 @@ reprensented in diverse annotation in different pipelines.
 
 It is in our to-do list but also requires a lot of work to harmonize all the annotations, for now, we provide functions to convert AltAnalyze annotation
 to the most generic representation, namely, ``gene symbol`` and ``chromosome coordinates``. It will be handled by two functions, :ref:`reference_to_add_gene_symbol` and :ref:`reference_to_add_chromsome_coordinate`.
+And in the latest version, an enhanced version of frequency tables will be automatically generated. Below is just for illustration purpose.
+
+Regarding the Genome Version, The best practice now is to use ``hg38 aligned bam`` file to run ``SNAF``, utilizing the richest and well-evaluated reference database 
+we curated. Then users can use `liftover` program downloadable from UCSC genome browser to lift the junction coordinate from one to the other. From my experience,
+despite certain false conversion, most of the time the conversion is very accurate.
 
 Now let's take the output ``frequency_stage2_verbosity1_uid.txt`` as the example (most important thing is pandas dataframe index format)::
 
