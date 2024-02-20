@@ -222,7 +222,7 @@ we chop them into 9 and 10 mers without duplicates. Then we remove overlapping c
     jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
     os.mkdir('./fasta')
     snaf.chop_normal_pep_db(fasta_path='../SNAF_ecosystem/snaf_aux/human_uniprot_proteome.fasta',output_path='./fasta/human_proteome_uniprot_9_10_mers_unique.fasta',mers=[9,10],allow_duplicates=False)
-    for sample in df.columns:
+    for sample in df.columns:  # df is the counts.original.pruned.txt file
         jcmq.show_neoantigen_as_fasta(outdir='./fasta',name='neoantigen_{}.fasta'.format(sample),stage=3,verbosity=1,contain_uid=True,sample=sample)
         snaf.remove_redundant('./fasta/neoantigen_{}.fasta'.format(sample),'./fasta/neoantigen_{}_unique.fasta'.format(sample))
         snaf.compare_two_fasta(fa1_path='./fasta/human_proteome_uniprot_9_10_mers_unique.fasta',
@@ -251,11 +251,11 @@ raw files you are using, below is using Thermo Orbitrap::
     1. For the above, even just one file path, please still use list. Second, please use absolute path to avoid maxquant error
 
     2. The above parameters just represent a suggestions not a fixed requrement. For discovery analysis, 
-       I tent to set `peptide_fdr=1` to give the software best chance to find the peptides then gradually descrease the FDR to see how the results change.
-       Alternative metrics I considered before are MaxQuant-returned `Andromedata score>40` and `Posterior Error Probability (PEP)<0.01` when evaluating
+       I tent to set ``peptide_fdr=1`` to give the software best chance to find the peptides then gradually descrease the FDR to see how the results change.
+       Alternative metrics I considered before are MaxQuant-returned ``Andromedata score>40`` and ``Posterior Error Probability (PEP)<0.01`` when evaluating
        whether a peptide-spectrum match worth validating or not.
 
-    3. In the manuscript, I also tried to not including human proteome but search directly against the neoantigen database, in this context, you should set `enzyme_mode=5` (no digestion).
+    3. In the manuscript, I also tried to not including human proteome but search directly against the neoantigen database, in this context, you should set ``enzyme_mode=5`` (no digestion).
        This inherently subject to false positive but can also be informative, because the searching will be calibrated specifically for short, non-trypic peptides.
 
 
