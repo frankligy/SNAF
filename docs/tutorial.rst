@@ -244,7 +244,7 @@ raw files you are using, below is using Thermo Orbitrap::
               '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#3.raw']
     outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48'
     snaf.proteomics.set_maxquant_configuration(base='mqpar.xml',dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=4,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
-                                               outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
+                                               outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=11)
 
 .. warning::
 
