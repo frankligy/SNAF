@@ -243,17 +243,26 @@ raw files you are using, below is using Thermo Orbitrap::
               '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#2.raw',
               '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48/OvCa48_classI_Rep#3.raw']
     outdir = '/data/salomonis2/LabFiles/Frank-Li/neoantigen/MS/schuster/MS/OvCa48'
-    snaf.proteomics.set_maxquant_configuration(base='mqpar.xml',dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=5,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
+    snaf.proteomics.set_maxquant_configuration(base='mqpar.xml',dbs=dbs,n_threads=20,inputs=inputs,enzymes=None,enzyme_mode=4,protein_fdr=1,peptide_fdr=0.05,site_fdr=1,
                                                outdir=outdir,minPepLen=8,minPeptideLengthForUnspecificSearch=8,maxPeptideLengthForUnspecificSearch=25)
 
 .. warning::
 
-    For the above, even just one file path, please still use list. Second, please use absolute path to avoid maxquant error
+    1. For the above, even just one file path, please still use list. Second, please use absolute path to avoid maxquant error
+
+    2. The above parameters just represent a suggestions not a fixed requrement. For discovery analysis, 
+       I tent to set `peptide_fdr=1` to give the software best chance to find the peptides then gradually descrease the FDR to see how the results change.
+       Alternative metrics I considered before are MaxQuant-returned `Andromedata score>40` and `Posterior Error Probability (PEP)<0.01` when evaluating
+       whether a peptide-spectrum match worth validating or not.
+
+    3. In the manuscript, I also tried to not including human proteome but search directly against the neoantigen database, in this context, you should set `enzyme_mode=5` (no digestion).
+       This inherently subject to false positive but can also be informative, because the searching will be calibrated specifically for short, non-trypic peptides.
 
 
 Above, we need a base 'mqpar.xml' file to modify upon, we provide a few `base files <https://github.com/frankligy/SNAF/tree/main/maxquant>`_, if your 
 MS raw files are not in these formats, you can either contact me or just follow the MaxQuant GUI instructions. A automatically generated configuration 
 file (mqpar.xml) will be shown in the outdir that you specified. More information can be found in the :ref:`reference_to_proteomics`.
+
 
 Visualization
 ~~~~~~~~~~~~~~~~~
