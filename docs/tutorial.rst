@@ -248,7 +248,8 @@ raw files you are using, below is using Thermo Orbitrap::
 
 .. warning::
 
-    1. For the above, even just one file path, please still use list. Second, please use absolute path to avoid maxquant error
+    1. For the above, even just one file path, please still use list. Second, please use absolute path to avoid maxquant error. Third, see troubleshooting page for 
+       how to run MaxQuant on Linux.
 
     2. The ``outdir`` should be folder where all your .raw or .d file/folder sit.
 
