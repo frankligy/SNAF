@@ -256,7 +256,9 @@ raw files you are using, below is using Thermo Orbitrap::
     3. The above parameters just represent a suggestions not a fixed requrement. For discovery analysis, 
        I tent to set ``peptide_fdr=1`` to give the software best chance to find the peptides then gradually descrease the FDR to see how the results change.
        Alternative metrics I considered before are MaxQuant-returned ``Andromedata score>40`` and ``Posterior Error Probability (PEP)<0.01`` when evaluating
-       whether a peptide-spectrum match worth validating or not.
+       whether a peptide-spectrum match worth validating or not. I have seen hundreds of high-confidence peptides reported by other proprietory softwares (ProteomeDiscovery,
+       PEAKS, Byonic) that didn't pass MaxQuant FDR cutoff or reported as low score, this issue has been reported by other users as well (`issue1 <https://groups.google.com/g/maxquant-list/c/BWTXol8hOYM/m/JVj20D6bBQAJ>`_, 
+       `issue2 <https://groups.google.com/g/maxquant-list/c/jQIkbcCxjSw/m/P9OBTvjKAAAJ>`_, `issue3 <https://groups.google.com/g/maxquant-list/c/lUhCE085gs4/m/hS6LuZ8dAQAJ>`_).
 
     4. In the manuscript, I also tried to not including human proteome but search directly against the neoantigen database, in this context, you should set ``enzyme_mode=5`` (no digestion).
        This inherently subject to false positive but can also be informative, because the searching will be calibrated specifically for short, non-trypic peptides.
