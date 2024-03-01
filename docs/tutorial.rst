@@ -278,6 +278,11 @@ usually we want to first deserialize the resultant pickle object back to memory 
     jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
     jcmq.visualize(uid='ENSG00000167291:E38.6-E39.1',sample='TCGA-DA-A1I1-06A-12R-A18U-07.bed',outdir='./result')
 
+.. warning::
+
+    For all the visualization functions, you still need to load all the required global variable by first initializing SNAF, so the initialization code should precede 
+    the visualization code, see `this issue for more detail. <https://github.com/frankligy/SNAF/issues/32#issuecomment-1973434506>`_. 
+
 .. image:: ./_static/t_visual.png
     :height: 400px
     :width: 500px

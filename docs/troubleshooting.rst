@@ -207,6 +207,13 @@ and the ones with about 0.99 usually represent the junctions that are in general
 But this doesn't completely disqualify these targets, it also depends on in your tumor tissue, how upregulated this junction is, the extent of difference also plays a role in the final judgement.
 
 
+* ``in_db``
+
+`in_db` means whether this splicing junction is present in one of the documented isoforms in the large database. We do not recommend filter by that, because a lot of isoforms 
+documented so far are actually cancer or disease specific isoform. What we would suggest for those labelled as "in_db", is to go to the GTEx portal, look for 
+exon/junction/isoform expression to see whether the transcript carrying this junction is actually expressed in normal tissue or not. But since SNAF has already filtered the junction 
+based on their expression level in GTEx, most of the case, these are not highly detected in normal tissue.
+
 
 
 
