@@ -118,7 +118,7 @@ The first step is to load our downloaded reference data into the memory to facil
     It is important to have a as comprehensive as possible normal tissue database, we initially provide the GTEx database containing >2500 samples
     spanning over 54 tissue types. We further provide TCGA paratumor database an additional GTEx skin tissue for this melanoma analysis. User can 
     add as many h5ad as the normal control. In terms of how to contruct the h5ad or dataframe, please refer to the API->MHC bound peptide(T antigen)
-    ->intialize, and the description of the ``add_control`` parameter.
+    ->intialize, and the description of the ``add_control`` parameter, or refer to `this github issue <https://github.com/frankligy/SNAF/issues/34>`_.
 
 .. note::
 
@@ -553,6 +553,8 @@ Alternatively, you can use one of our internal pan-cancer long-read isoform data
     surface.generate_full_results(outdir='result_new/surface',mode='long_read',
                                   freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',
                                   validation_gtf=None)
+
+You can refer to `GitHub Issue 35 <https://github.com/frankligy/SNAF/issues/35>`_ for how to construct your own custom GTF/GFF for long-read data.
 
 In your result folder, if running short_read mode, you will be able to get following results (amplify the webpage to see more clearly):
 
