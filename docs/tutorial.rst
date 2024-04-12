@@ -367,12 +367,28 @@ comps file is just one line with 1,tab,2,newline::
     # comps.task.txt file
     1   2
 
-Once you have these two files, you can run Differential anlaysis first using the docker again, for illustration purpose, imagine you copy the group file to 
-the folder where ``altanalyze_output`` folder sits from first step, and you are now in this folder::
+Once you have these two files, you can run Differential anlaysis first using the docker again, please pay special attention to how the folder structure look like::
+
+    bam/
+    bed/
+    altanalyze_output/
+        AltAnalyze_report-20231007-154042.log  
+        AltResults/
+        ExpressionInput/
+        AltDatabase/                         
+        DataPlots/   
+        ExpressionOutput/
+        AltExpression/
+        ExonPlots/ 
+        GO-Elite/
+    groups.task.txt
+    comps.task.txt
+        
+Imagining the above is your current folder ($PWD), Now you can run the following commands::
 
     # using singularity
-    singularity run -B $PWD:/mnt --writable ./altanalyze/ DE altanalyze_output groups.txt  # differential gene 
-    singularity run -B $PWD:/mnt --writable ./altanalyze/ DAS altanalyze_output groups.txt   # differential splicing
+    singularity run -B $PWD:/mnt --writable /path/to/altanalyze/ DE altanalyze_output groups.txt  # differential gene 
+    singularity run -B $PWD:/mnt --writable /path/to/altanalyze/ DAS altanalyze_output groups.txt   # differential splicing
 
     # using docker
     docker run -v $PWD:/mnt frankligy123/altanalyze:0.7.0.1 DE altanalyze_output groups.txt  # differential gene 
@@ -419,7 +435,7 @@ This will create a gene_list file to extract genes that fullfil the cutoffs you 
 imagine you copy the gene_list file to the folder where ``altanalyze_output`` folder sits from first step, and you are now in this folder::
 
     # using singularity
-    singularity run -B $PWD:/mnt --writable ./altanalyze/ GO gene_list.txt
+    singularity run -B $PWD:/mnt --writable /path/to/altanalyze/ GO gene_list.txt
 
     # using docker
     docker run -v $PWD:/mnt frankligy123/altanalyze:0.7.0.1 GO gene_list.txt
