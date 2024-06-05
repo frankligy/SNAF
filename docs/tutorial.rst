@@ -229,7 +229,7 @@ we chop them into 9 and 10 mers without duplicates. Then we remove overlapping c
                             fa2_path='./fasta/neoantigen_{}_unique.fasta'.format(sample),outdir='./fasta',
                             write_unique2=True,prefix='{}_'.format(sample))
 
-The above assume we want to validate the immunogenic neoantigens (stage 3) identified for each patients. You can certainly construct other fastq files
+The above assume we want to validate the immunogenic neoantigens (stage 3) identified for each patients. You can certainly construct other fasta files
 based on the SNAF-T output, and optionally use the auxiliary functions (``remove_redundant`` and ``compare_two_fasta``) to remove redundant peptides and overlapping peptides.
 
 Usually, MS software requires a customized fasta database, you've already had that right now. Depending on which MS software you use, the configuration steps
@@ -264,8 +264,10 @@ raw files you are using, below is using Thermo Orbitrap::
        This inherently subject to false positive but can also be informative, because the searching will be calibrated specifically for short, non-trypic peptides.
 
 
-Above, we need a base 'mqpar.xml' file to modify upon, we provide a few `base files <https://github.com/frankligy/SNAF/tree/main/maxquant>`_, if your 
-MS raw files are not in these formats, you can either contact me or just follow the MaxQuant GUI instructions. A automatically generated configuration 
+Above, we need a base 'mqpar.xml' file to modify upon, we provide a few `base files <https://github.com/frankligy/SNAF/tree/main/maxquant>`_. 
+For folks who are not familiar with MaxQuant, Here I provided the `MaxQuant 2.0.3.1 <https://www.dropbox.com/scl/fo/kknc25qh2n9um25bezaje/h?rlkey=hl9dovk17zj6mpsq8qz292jhk&st=rvkrch95&dl=0>`_ just download the whole 
+folder, and then you just use the v2.0.3.1 base ``mqpar.xml`` provided in the GitHub. Alternatively, if you are familiar with MaxQuant, you can download the latest version from their official
+website, using your windows PC to configure a ``mqpar.xml`` file. If your MS raw files are not in these formats (e.g. orbitrap FAMIS), you can either contact me or just follow the MaxQuant GUI instructions. A automatically generated configuration 
 file (mqpar.xml) will be shown in the outdir that you specified. More information can be found in the :ref:`reference_to_proteomics`.
 
 
