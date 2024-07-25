@@ -324,7 +324,7 @@ to be the same, that's why we need a few lines of code for parsing below::
     burden_df = pd.read_csv('burden_stage2.txt',sep='\t',index_col=0)
     burden_df.rename(columns=lambda x:'-'.join(x.split('-')[:4]),inplace=True)
     # convenient function for survival, and save the output for whether a sample is in which group (high, low)
-    burden_output, _ = snaf.survival_analysis(burden,survival,n=2,stratification_plot='result/stage2_stratify.pdf',survival_plot='result/stage2_survival.pdf')
+    burden_output, _ = snaf.survival_analysis(burden_df,survival,n=2,stratification_plot='result/stage2_stratify.pdf',survival_plot='result/stage2_survival.pdf')
     burden_output.to_csv('result/sample_to_burden_group.txt',sep='\t')
 
 
