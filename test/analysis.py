@@ -19,25 +19,25 @@ df = pd.read_csv('counts.original.pruned.txt',sep='\t',index_col=0)
 snaf.initialize(df=df,db_dir=db_dir,binding_method='netMHCpan',software_path=netMHCpan_path,add_control=add_control)
 print('-------------pass initiate test----------------')
 
-# # test T antigen function
-# jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=8,add_control=add_control,outdir='result')
-# hlas = [['HLA-A*02:01','HLA-A*02:01','HLA-B*39:10','HLA-B*15:01','HLA-C*03:03','HLA-C*12:03'],
-#         ['HLA-A*02:01','HLA-A*01:01','HLA-B*40:01','HLA-B*52:01','HLA-C*03:04','HLA-C*12:02']]
-# jcmq.run(hlas=hlas,outdir='./result')
-# snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
-# print('-------------pass T antigen function test----------------')
+# test T antigen function
+jcmq = snaf.JunctionCountMatrixQuery(junction_count_matrix=df,cores=8,add_control=add_control,outdir='result')
+hlas = [['HLA-A*02:01','HLA-A*02:01','HLA-B*39:10','HLA-B*15:01','HLA-C*03:03','HLA-C*12:03'],
+        ['HLA-A*02:01','HLA-A*01:01','HLA-B*40:01','HLA-B*52:01','HLA-C*03:04','HLA-C*12:02']]
+jcmq.run(hlas=hlas,outdir='./result')
+snaf.JunctionCountMatrixQuery.generate_results(path='./result/after_prediction.p',outdir='./result')
+print('-------------pass T antigen function test----------------')
 
-# # test T antigen visual and server, for dash T viewer, please modify the full path accordingly
-# jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
-# uid = 'ENSG00000183856:E10.1-E12.7'
-# jcmq.visualize(uid=uid,sample='SRR5933726.Aligned.sortedByCoord.out.bed',outdir='./result')
-# dff = snaf.gtex_visual_combine(uid=uid,outdir='result',norm=False,tumor=df,group_by_tissue=False)
-# snaf.analyze_neoantigens(freq_path='result/frequency_stage2_verbosity1_uid.txt',junction_path='result/burden_stage0.txt',total_samples=2,outdir='result',mers=None,fasta=False)
-# print('-------------pass visualization test and please check your T antigen viewer following the prompt and URL, after checking, you can close this session, SNAF-T test done----------------')
-# snaf.run_dash_T_antigen(input_abs_path='/gpfs/data/yarmarkovichlab/Frank/test_snaf/result/shared_vs_unique_neoantigen_all.txt')
+# test T antigen visual and server, for dash T viewer, please modify the full path accordingly
+jcmq = snaf.JunctionCountMatrixQuery.deserialize('result/after_prediction.p')
+uid = 'ENSG00000183856:E10.1-E12.7'
+jcmq.visualize(uid=uid,sample='SRR5933726.Aligned.sortedByCoord.out.bed',outdir='./result')
+dff = snaf.gtex_visual_combine(uid=uid,outdir='result',norm=False,tumor=df,group_by_tissue=False)
+snaf.analyze_neoantigens(freq_path='result/frequency_stage2_verbosity1_uid.txt',junction_path='result/burden_stage0.txt',total_samples=2,outdir='result',mers=None,fasta=False)
+print('-------------pass visualization test and please check your T antigen viewer following the prompt and URL, after checking, you can close this session, SNAF-T test done----------------')
+snaf.run_dash_T_antigen(input_abs_path='/gpfs/data/yarmarkovichlab/Frank/test_snaf/result/shared_vs_unique_neoantigen_all.txt')
 
 
-# test B antigen, you can comment out "test T antigen function" and "test T antigen viusual and server" section
+# test B antigen, you can comment out "test T antigen viusual and server" section
 # change the software_path accordingly
 # change the python_executable accordingly
 from snaf import surface
@@ -65,7 +65,7 @@ surface.generate_full_results(outdir='result/surface',mode='long_read',
 print('-------------pass B antigen short long mode test----------------')
 print('-------------SNAF-B viewer will be launched, follow prompt, once finished, you can close the session----------------')
 
-surface.run_dash_B_antigen(pkl='result/surface_antigen_lr.p',candidates='result/surface/candidates_3_lr_None.txt',prediction_mode='long_read',
+surface.run_dash_B_antigen(pkl='result/surface/surface_antigen_lr.p',candidates='result/surface/candidates_3_lr_None.txt',prediction_mode='long_read',
                            python_executable='/gpfs/data/yarmarkovichlab/Frank/test_snaf/test_snaf_env/bin/python3.7')
 
 
