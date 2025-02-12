@@ -65,7 +65,7 @@ surface.generate_full_results(outdir='result/surface',mode='long_read',
 print('-------------pass B antigen short long mode test----------------')
 print('-------------SNAF-B viewer will be launched, follow prompt, once finished, you can close the session----------------')
 
-surface.run_dash_B_antigen(pkl='result/surface/surface_antigen_lr.p',candidates='result/surface/candidates_3_lr_None.txt',prediction_mode='long_read',
+surface.run_dash_B_antigen(pkl='result/surface/surface_antigen_lr.p',candidates='result/surface/candidates_3_lr_None_False.txt',prediction_mode='long_read',
                            python_executable='/gpfs/data/yarmarkovichlab/Frank/test_snaf/test_snaf_env/bin/python3.7')
 
 
