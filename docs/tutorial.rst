@@ -560,17 +560,17 @@ Alternatively, you can use one of our internal pan-cancer long-read isoform data
     surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='short_read',
                 gtf=None,
                 tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
-    surface.generate_full_results(outdir='result_new/surface',mode='short_read',
-                                  freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',
+    surface.generate_full_results(outdir='result/surface',mode='short_read',
+                                  freq_path='result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',
                                   validation_gtf='/data/salomonis2/LabFiles/Frank-Li/neoantigen/TCGA/SKCM/snaf_analysis/SQANTI-all/collapse_isoforms_classification.filtered_lite.gtf')
 
 
     # long_read mode
-    surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='long_read',
+    surface.run(uids=membrane_tuples,outdir='result/surface',prediction_mode='long_read',
                 gtf='/data/salomonis2/LabFiles/Frank-Li/refactor/data/2021UHRRIsoSeq_SQANTI3_filtered.gtf',
                 tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
-    surface.generate_full_results(outdir='result_new/surface',mode='long_read',
-                                  freq_path='result_new/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',
+    surface.generate_full_results(outdir='result/surface',mode='long_read',
+                                  freq_path='result/frequency_stage0_verbosity1_uid_gene_symbol_coord_mean_mle.txt',
                                   validation_gtf=None)
 
 You can refer to `GitHub Issue 35 <https://github.com/frankligy/SNAF/issues/35>`_ for how to construct your own custom GTF/GFF for long-read data.
