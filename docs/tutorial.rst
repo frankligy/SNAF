@@ -557,7 +557,7 @@ Alternatively, you can use one of our internal pan-cancer long-read isoform data
 ``long_read`` mode. The below referred gtf files can be downloaded from `this synapse folder <https://www.synapse.org/#!Synapse:syn32785802>`_::
 
     # short_read mode
-    surface.run(uids=membrane_tuples,outdir='result_new/surface',prediction_mode='short_read',
+    surface.run(uids=membrane_tuples,outdir='result/surface',prediction_mode='short_read',
                 gtf=None,
                 tmhmm=True,software_path='/data/salomonis2/LabFiles/Frank-Li/python3/TMHMM/tmhmm-2.0c/bin/tmhmm')
     surface.generate_full_results(outdir='result/surface',mode='short_read',
